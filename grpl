@@ -1,0 +1,43 @@
+#!/bin/bash
+set -e
+export GRPL_WORKDIR=$(cd $(dirname $0) && pwd)
+# shellcheck source=common
+. "$GRPL_WORKDIR/common"
+
+cli_help() {
+  cli_name=${0##*/}
+  echo "
+$cli_name
+the grapple cli
+Version: $(cat $GRPL_WORKDIR/VERSION)
+https://grapple-solutions.com/
+
+Usage: $cli_name [command]
+
+Commands:
+  install    Installation
+  cluster    Cluster commands
+  *          Help
+"
+  exit 1
+}
+
+# cli_log "Exporting config ..."
+# [ ! -f "$GRPL_WORKDIR/config" ] \
+#   && echo "ERROR: No $GRPL_WORKDIR/config file found. " \
+#   && echo "cp $GRPL_WORKDIR/config.template $GRPL_WORKDIR/config and adjust." \
+#   && exit 1
+
+# export $(cat "$GRPL_WORKDIR/config" | xargs)
+
+case "$1" in
+  install|i)
+    "$GRPL_WORKDIR/commands/install" "$2" | tee -ia "$GRPL_WORKDIR/logs/install_${2}.log"
+    ;;
+  cluster|c)
+    "$GRPL_WORKDIR/commands/cluster" "$2" | tee -ia "$GRPL_WORKDIR/logs/cluster_${2}.log"
+    ;;
+  *)
+    cli_help
+    ;;
+esac

@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+. "$GRPL_WORKDIR/common"
+
+cli_help_cluster_create() {
+  echo "
+Command: cluster create
+
+Usage: 
+  cluster create"
+  exit 1
+}
+
+[ ! -n "$1" ] && cli_help_cluster_create
+
+export BAGCLI_PROJECT_NAME=$1
+
+cli_log "cluster create BEGIN"
+
+
+
+cli_log "cluster create END"

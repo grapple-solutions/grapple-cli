@@ -1,53 +1,87 @@
 #!/bin/bash
+set -e
+. "$GRPL_WORKDIR/common"
 
-# Ensure gum is installed: https://github.com/charmbracelet/gum
+cli_help_cluster_install() {
+  echo "
+Command: cluster install
 
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+Usage: 
+  cluster install
 
-exit_on_interrupt() {
-    echo; echo -e "${RED}Script interrupted by user. Exiting...${NC}" >&2
-    exit 130
+Variables:
+  TARGET_PLATFORM=CIVO / Kubernetes
+
+  CIVO_REGION = Available CIVO regions (e.g. FRA1)
+  CIVO_CLUSTER = CIVO cluster name
+  EDITION = 
+  AUTO_CONFIRM = false / true
+"
+  exit 1
 }
 
-prompt_for_input_with_validation() {
-    local prompt=$1
-    local placeholder=$2
-    local regex=$3
-    local error_message=$4
-    local default_value=$5  # Added parameter for default value
-    local input=""
+# [ ! -n "$1" ] && cli_help_cluster_install
 
-    while [[ ! $input =~ $regex ]]; do
-        input=$(gum input --prompt "$prompt" --placeholder "$placeholder" --value "$default_value") || exit_on_interrupt
-        if [[ ! $input =~ $regex ]]; then
-            echo -e "${RED}$error_message${NC}" >&2
-        fi
-    done
-    echo "$input"
-}
+export BAGCLI_PROJECT_NAME=$1
 
-# list of regexes used for validation
-ip_regex="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
-email_regex="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-dns_regex="^[A-Za-z0-9]([-A-Za-z0-9]*[A-Za-z0-9])?(\.[A-Za-z0-9]([-A-Za-z0-9]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$"
-non_empty_regex=".+" 
+cli_log "cluster install BEGIN"
 
+# verify install target platform
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose "CIVO" "Kubernetes"; fi)
+echo "selected target platform: ${TARGET_PLATFORM}"
+
+# if CIVO, then pre-set the configuration params
+if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
+  if ! civo --version 2>&1; then
+    echo "civo cli is required"
+    echo "installing civo cli..."
+    install civo
+  fi
+
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else civo region ls -o custom -f code | gum choose; fi)
+  civo region use ${CIVO_REGION} | true
+
+  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if civo k8s ls -o custom -f name >/dev/null 2>&1; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+  echo "selected civo cluster: ${CIVO_CLUSTER}"
+  civo k8s config ${CIVO_CLUSTER} --save --switch
+
+  # if a CIVO cluster was selected, pre-set the configuration
+  CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
+  CIVO_CLUSTER_ID=$(civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
+  GRAPPLE_DNS=${CIVO_CLUSTER}
+
+  CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  echo "selected civo cluster ID: ${CIVO_CLUSTER_ID}"
+
+  CIVO_CLUSTER_NAME=$(if [ "${CIVO_CLUSTER_NAME}" != "" ]; then echo ${CIVO_CLUSTER_NAME}; else prompt_for_input_with_validation "Enter CIVO_CLUSTER_NAME: " "Provide an name for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  echo "selected civo cluster name: ${CIVO_CLUSTER_NAME}"
+
+  CIVO_MASTER_IP=$(if [ "${CIVO_MASTER_IP}" != "" ]; then echo ${CIVO_MASTER_IP}; else civo k8s show grpl-cli -o custom -f "MasterIP"; fi) || exit $?
+  echo "selected civo master ip: ${CIVO_MASTER_IP}"
+
+  CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
+  echo "selected civo email address: ${CIVO_EMAIL_ADDRESS}"
+
+fi
 
 # Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
-GRAPPLE_DNS=$(prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$dns_regex" "Invalid DNS name format. Please try again.") || exit $?
-CIVO_CLUSTER_ID=$(prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty.") || exit $?
-CIVO_CLUSTER_NAME=$(prompt_for_input_with_validation "Enter CIVO_CLUSTER_NAME: " "Provide an name for the cluster" "$non_empty_regex" "Input cannot be empty.") || exit $?
-CIVO_REGION=$(prompt_for_input_with_validation "Enter CIVO_REGION: " "Provide the region for the cluster" "$non_empty_regex" "Input cannot be empty.") || exit $?
-CIVO_MASTER_IP=$(prompt_for_input_with_validation "Enter CIVO_MASTER_IP: " "Provide the IP of the master node - valide IPv4 is required" "$ip_regex" "Invalid IP address format. Please try again.") || exit $?
-CIVO_EMAIL_ADDRESS=$(prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again.") || exit $?
-GRAPPLE_VERSION=$(prompt_for_input_with_validation "Enter GRAPPLE_VERSION: " "Provide Grapple version" "$non_empty_regex" "Input cannot be empty.") || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
+GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
+echo "installing dns: ${GRAPPLE_DNS}"
 
-NS=$(prompt_for_input_with_validation "Enter namespace: " "grapple-demo-namspace" "$non_empty_regex" "Namespace cannot be empty.") || exit $?
-TESTNS=$(prompt_for_input_with_validation "Enter namespace for test case: " "grapple-test-demo-namspace: " "$non_empty_regex" "Namespace for test case cannot be empty.") || exit $?
-TESTNSDB=$(prompt_for_input_with_validation "Enter namespace for test case with DB: " "grapple-testdb-demo-namspace" "$non_empty_regex" "Namespace for test case with DB cannot be empty.") || exit $?
-awsregistry=$(prompt_for_input_with_validation "Enter id of the AWS registry (default: p7h7z5g3): " "Leave it empty if you want to use default value: 'p7h7z5g3'" "$non_empty_regex" "AWS registry ID cannot be empty." "p7h7z5g3") || exit $?
-VERSION=$(prompt_for_input_with_validation "Enter version of the grapple solution framework: " "Semver version is expected. Default value if empty: 0.2.0" "$non_empty_regex" "Version cannot be empty." "0.2.0") || exit $?
+GRAPPLE_VERSION=$(if [ "${GRAPPLE_VERSION}" != "" ]; then echo ${GRAPPLE_VERSION}; else gum choose "0.2.1" "0.2.0"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
+echo "installing grapple version: ${GRAPPLE_VERSION}"
+
+EDITION=$(if [ "${EDITION}" != "" ]; then echo ${EDITION}; else gum choose "grpl-basic-all" "grpl-basic" "grpl-basic-db" "grpl-basic-dbfile"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
+echo "installing grapple edition: ${EDITION}"
+
+# NS=$(prompt_for_input_with_validation "Enter namespace: " "grapple-demo-namspace" "$non_empty_regex" "Namespace cannot be empty.") || exit $?
+# TESTNS=$(prompt_for_input_with_validation "Enter namespace for test case: " "grapple-test-demo-namspace: " "$non_empty_regex" "Namespace for test case cannot be empty.") || exit $?
+# TESTNSDB=$(prompt_for_input_with_validation "Enter namespace for test case with DB: " "grapple-testdb-demo-namspace" "$non_empty_regex" "Namespace for test case with DB cannot be empty.") || exit $?
+NS=grpl-system
+TESTNS=grpl-dbfile
+TESTNSDB=grpl-db
+awsregistry="p7h7z5g3"
+# VERSION=$(prompt_for_input_with_validation "Enter version of the grapple solution framework: " "Semver version is expected. Default value if empty: 0.2.0" "$non_empty_regex" "Version cannot be empty." "0.2.0") || exit $?
 
 # The script then proceeds to dynamically generate values-override.yaml with user inputs
 cat <<EOF > ./values-override.yaml
@@ -75,32 +109,31 @@ EOF
 cat ./values-override.yaml
 
 # Use gum to confirm before proceeding
-gum confirm "Proceed with deployment using the values above?" || exit
+if [ "${AUTO_CONFIRM}" != "true" ]; then
+  gum confirm "Proceed with deployment using the values above?" || exit
+fi
 
-
-# Define helm_deploy function with version selection via gum
+# Define helm_deploy function 
 helm_deploy() {
     i=$1
-    v=$(gum choose --header "Select version for $i" "latest" "stable" "custom" --selected "custom")
-    if [ "$v" == "custom" ]; then
-      v=$(gum input --placeholder "Enter custom version for $i")
+    v=${2:-$GRAPPLE_VERSION}
+    if [ "$v" != "" ]; then 
+      version="--version ${v}"
+    else
+      version=""
     fi
-    version="--version ${v}"
 
     echo "Deploying $i with version $version"
     helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
 }
 
+kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
 kubectl run grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${GRAPPLE_DNS}" --env="CIVO_MASTER_IP=${CIVO_MASTER_IP}" --restart=Never
 
 echo 
 echo ----
 
 helm_deploy grsf-init 
-
-if gum confirm "Deploy grsf-init?"; then
-    helm_deploy grsf-init
-fi
 
 echo "wait for cert-manager to be ready"
 if helm get -n kube-system notes traefik >/dev/null 2>&1; then 
@@ -131,9 +164,7 @@ echo
 echo ----
 echo "Ready for grsf deployment"
 
-if gum confirm "Deploy grsf?"; then
-    helm_deploy grsf
-fi
+helm_deploy grsf
 
 echo "wait for providerconfigs to be ready"
 sleep 10
@@ -157,19 +188,14 @@ fi
 echo 
 echo ----
 
-if gum confirm "Deploy grsf-config?"; then
-    helm_deploy grsf-config 
-fi
+helm_deploy grsf-config 
 
+helm_deploy grsf-integration
 
-if gum confirm "Deploy grsf-integration?"; then
-    helm_deploy grsf-integration
-fi
-
-cho 
+echo 
 echo ----
 echo "enable ssl"
-kubectl apply -f ./clusterissuer.yaml
+kubectl apply -f $GRPL_WORKDIR/files/clusterissuer.yaml
 
 echo "check all crossplane packages are ready"
 for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i; done
@@ -186,14 +212,14 @@ if [ "${EDITION}" = "grpl-basic-dbfile" ] || [ "${EDITION}" = "grpl-basic-all" ]
   CRD=composition/grapi.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
   CRD=composition/muim.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
 
-  helm upgrade --install ${TESTNS} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNS} -f ./test.yaml --create-namespace 
+  helm upgrade --install ${TESTNS} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNS} -f $GRPL_WORKDIR/files/test.yaml --create-namespace 
 
   while ! kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
 
   sleep 10
 
   if [ "$(kubectl get -n ${TESTNS} $(kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi -o name) --template '{{(index .status.initContainerStatuses 0).ready}}')" = "false" ]; then
-    kubectl cp -n ${TESTNS} ./db.json $(kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi -o name | sed "s,pod/,,g"):/tmp/db.json -c init-db
+    kubectl cp -n ${TESTNS} $GRPL_WORKDIR/files/db.json $(kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi -o name | sed "s,pod/,,g"):/tmp/db.json -c init-db
   fi
 
   # wait for the grapi of the first test case to be deployed
@@ -207,8 +233,8 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
   curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash
   sleep 2
 
-  if ! kbcli cluster list 2>/dev/null; then 
-    kbcli kubeblocks install --set image.registry="docker.io"
+  if ! kbcli cluster list 2>/dev/null || ! kbcli kubeblocks status; then
+    kbcli kubeblocks install --set image.registry="docker.io" | true
   fi
 
   echo 
@@ -221,7 +247,7 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
 
   kubectl create ns ${TESTNSDB} 2>/dev/null || true
 
-  kubectl apply -n ${TESTNSDB} -f ./db.yaml
+  kubectl apply -n ${TESTNSDB} -f $GRPL_WORKDIR/files/db.yaml
 
   sleep 10 
 
@@ -229,14 +255,17 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
 
   sleep 5 
 
-  helm upgrade --install ${TESTNSDB} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNSDB} -f ./testdb.yaml --create-namespace 
+  helm upgrade --install ${TESTNSDB} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNSDB} -f $GRPL_WORKDIR/files/testdb.yaml --create-namespace 
 
   while ! kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
 
   sleep 30
 
   if [ "$(kubectl get -n ${TESTNSDB} $(kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi -o name) --template '{{(index .status.initContainerStatuses 0).ready}}')" = "false" ]; then
-    kubectl cp -n ${TESTNSDB} ./classicmodelsid.tgz $(kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi -o name | sed "s,pod/,,g"):/tmp/classicmodelsid.tgz -c init-db
+    kubectl cp -n ${TESTNSDB} $GRPL_WORKDIR/files/classicmodelsid.tgz $(kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi -o name | sed "s,pod/,,g"):/tmp/classicmodelsid.tgz -c init-db
   fi
 
 fi
+
+
+cli_log "cluster install END"

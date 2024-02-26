@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e
+. "$GRPL_WORKDIR/common"
+
+cli_help() {
+  cli_name=${0##*/}
+  echo "
+$cli_name
+the grapple cli
+Version: $(cat $GRPL_WORKDIR/VERSION)
+https://grapple-solutions.com/
+
+Usage: $cli_name [command]
+
+Commands:
+  status     Cluster status
+  install    Cluster installation
+  create     Cluster creation
+  *          Help
+"
+  exit 1
+}
+
+case "$1" in
+  status|s)
+    "$GRPL_WORKDIR/commands/cluster_commands/status" "$2" | tee -ia "$GRPL_WORKDIR/logs/cluster_status_${2}.log"
+    ;;
+  install|i)
+    "$GRPL_WORKDIR/commands/cluster_commands/install" "$2" | tee -ia "$GRPL_WORKDIR/logs/cluster_install_${2}.log"
+    ;;
+  create|c)
+    "$GRPL_WORKDIR/commands/cluster_commands/create" "$2" | tee -ia "$GRPL_WORKDIR/logs/cluster_create_${2}.log"
+    ;;
+  *)
+    cli_help
+    ;;
+esac
