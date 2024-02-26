@@ -4,7 +4,7 @@ set -e
 
 cli_help_cluster_install() {
   echo "
-Command: cluster install
+Command: grpl cluster install
 
 Usage: 
   cluster install
@@ -12,15 +12,27 @@ Usage:
 Variables:
   TARGET_PLATFORM=CIVO / Kubernetes
 
-  CIVO_REGION = Available CIVO regions (e.g. FRA1)
-  CIVO_CLUSTER = CIVO cluster name
-  EDITION = 
+  # general configurations
+  GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.1')
+  EDITION = "grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
   AUTO_CONFIRM = false / true
+
+  # kubernetes related configurations
+  KUBE_CONTEXT = kubernetes context
+
+  # CIVO related configurations
+  CIVO_REGION = Available CIVO regions (e.g. FRA1)
+  CIVO_CLUSTER = CIVO cluster
+  CIVO_CLUSTER_NAME = CIVO cluster name
+  CIVO_CLUSTER_ID = CIVO cluster ID
+  CIVO_MASTER_IP = CIVO cluster master IP address
+  CIVO_EMAIL_ADDRESS = email address of your CIVO account
+
 "
   exit 1
 }
 
-# [ ! -n "$1" ] && cli_help_cluster_install
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_install
 
 export BAGCLI_PROJECT_NAME=$1
 
@@ -62,6 +74,11 @@ if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
   CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
   echo "selected civo email address: ${CIVO_EMAIL_ADDRESS}"
 
+fi
+
+# if CIVO, then pre-set the configuration params
+if [ "${TARGET_PLATFORM}" = "Kubernetes" ]; then
+  KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else kubectl config get-contexts -o name | gum choose; fi)
 fi
 
 # Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum

@@ -11,9 +11,7 @@ Usage:
   exit 1
 }
 
-[ ! -n "$1" ] && cli_help_cluster_create
-
-export BAGCLI_PROJECT_NAME=$1
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_create
 
 cli_log "cluster create BEGIN"
 

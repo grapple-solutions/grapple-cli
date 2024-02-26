@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 export GRPL_WORKDIR=$(cd $(dirname $0) && pwd)
+export FULL_COMMAND="$0 $@"
 # shellcheck source=common
 . "$GRPL_WORKDIR/common"
 
@@ -22,6 +23,7 @@ Commands:
   exit 1
 }
 
+
 # cli_log "Exporting config ..."
 # [ ! -f "$GRPL_WORKDIR/config" ] \
 #   && echo "ERROR: No $GRPL_WORKDIR/config file found. " \
@@ -32,10 +34,10 @@ Commands:
 
 case "$1" in
   install|i)
-    "$GRPL_WORKDIR/commands/install" "$2" | tee -ia "$GRPL_WORKDIR/logs/install_${2}.log"
+    "$GRPL_WORKDIR/commands/install" $(echo $@ | sed 's,install,,g' | sed 's,i ,,') | tee -ia "$GRPL_WORKDIR/logs/install.log"
     ;;
   cluster|c)
-    "$GRPL_WORKDIR/commands/cluster" "$2" | tee -ia "$GRPL_WORKDIR/logs/cluster_${2}.log"
+    "$GRPL_WORKDIR/commands/cluster" $(echo $@ | sed 's,cluster,,g' | sed 's,c ,,') | tee -ia "$GRPL_WORKDIR/logs/cluster.log"
     ;;
   *)
     cli_help
