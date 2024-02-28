@@ -2,6 +2,10 @@
 set -e
 . "$GRPL_WORKDIR/common"
 
+NS=grpl-system
+awsregistry="p7h7z5g3"
+
+
 cli_help_cluster_install() {
   echo "
 Command: grpl cluster install
@@ -131,8 +135,9 @@ helm_deploy() {
 
     echo "Deploying $i with version $version"
     # why does gum spin not work like this?
-    # gum spin -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
-    helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
+    gum spin -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
+    # echo helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
+    # helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
 }
 
 kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
