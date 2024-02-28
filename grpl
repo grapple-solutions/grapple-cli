@@ -18,6 +18,7 @@ Usage: $cli_name [command]
 Commands:
   install    Installation
   cluster    Cluster commands
+  example    example commands
   *          Help
 "
   exit 1
@@ -38,6 +39,15 @@ case "$1" in
     ;;
   cluster|c)
     "$GRPL_WORKDIR/commands/cluster" $(echo $@ | sed 's,cluster,,g' | sed 's,c ,,') | tee -ia "$GRPL_WORKDIR/logs/cluster.log"
+    ;;
+  example|e)
+    "$GRPL_WORKDIR/commands/example" $(echo $@ | sed 's,example,,g' | sed 's,e ,,') | tee -ia "$GRPL_WORKDIR/logs/example.log"
+    ;;
+  version|v)
+    "$GRPL_WORKDIR/commands/version" $(echo $@ | sed 's,version,,g' | sed 's,v ,,') | tee -ia "$GRPL_WORKDIR/logs/version.log"
+    ;;
+  upgrade|u)
+    "$GRPL_WORKDIR/commands/upgrade" $(echo $@ | sed 's,upgrade,,g' | sed 's,u ,,') | tee -ia "$GRPL_WORKDIR/logs/upgrade.log"
     ;;
   *)
     cli_help

@@ -14,7 +14,6 @@ Variables:
 
   # general configurations
   GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.1')
-  EDITION = "grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
   AUTO_CONFIRM = false / true
 
   # kubernetes related configurations
@@ -88,16 +87,6 @@ echo "installing dns: ${GRAPPLE_DNS}"
 GRAPPLE_VERSION=$(if [ "${GRAPPLE_VERSION}" != "" ]; then echo ${GRAPPLE_VERSION}; else gum choose "0.2.1" "0.2.0"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
 echo "installing grapple version: ${GRAPPLE_VERSION}"
 
-EDITION=$(if [ "${EDITION}" != "" ]; then echo ${EDITION}; else gum choose "grpl-basic-all" "grpl-basic" "grpl-basic-db" "grpl-basic-dbfile"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
-echo "installing grapple edition: ${EDITION}"
-
-# NS=$(prompt_for_input_with_validation "Enter namespace: " "grapple-demo-namspace" "$non_empty_regex" "Namespace cannot be empty.") || exit $?
-# TESTNS=$(prompt_for_input_with_validation "Enter namespace for test case: " "grapple-test-demo-namspace: " "$non_empty_regex" "Namespace for test case cannot be empty.") || exit $?
-# TESTNSDB=$(prompt_for_input_with_validation "Enter namespace for test case with DB: " "grapple-testdb-demo-namspace" "$non_empty_regex" "Namespace for test case with DB cannot be empty.") || exit $?
-NS=grpl-system
-TESTNS=grpl-dbfile
-TESTNSDB=grpl-db
-awsregistry="p7h7z5g3"
 # VERSION=$(prompt_for_input_with_validation "Enter version of the grapple solution framework: " "Semver version is expected. Default value if empty: 0.2.0" "$non_empty_regex" "Version cannot be empty." "0.2.0") || exit $?
 
 # The script then proceeds to dynamically generate values-override.yaml with user inputs
@@ -141,6 +130,8 @@ helm_deploy() {
     fi
 
     echo "Deploying $i with version $version"
+    # why does gum spin not work like this?
+    # gum spin -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
     helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
 }
 
@@ -216,73 +207,6 @@ kubectl apply -f $GRPL_WORKDIR/files/clusterissuer.yaml
 
 echo "check all crossplane packages are ready"
 for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i; done
-
-if [ "${EDITION}" = "grpl-basic-dbfile" ] || [ "${EDITION}" = "grpl-basic-all" ]; then
-
-  echo 
-  echo ----
-  echo "deploy test case: dbfile"
-
-  echo "check xrds are available"
-  CRD=grapi && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
-  CRD=compositegrappleapis && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
-  CRD=composition/grapi.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
-  CRD=composition/muim.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
-
-  helm upgrade --install ${TESTNS} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNS} -f $GRPL_WORKDIR/files/test.yaml --create-namespace 
-
-  while ! kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
-
-  sleep 10
-
-  if [ "$(kubectl get -n ${TESTNS} $(kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi -o name) --template '{{(index .status.initContainerStatuses 0).ready}}')" = "false" ]; then
-    kubectl cp -n ${TESTNS} $GRPL_WORKDIR/files/db.json $(kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi -o name | sed "s,pod/,,g"):/tmp/db.json -c init-db
-  fi
-
-  # wait for the grapi of the first test case to be deployed
-  # while ! kubectl wait deployment -n ${TESTNS} ${TESTNS}-${TESTNS}-grapi --for condition=Progressing=True 2>/dev/null; do echo -n .; sleep 2; done
-
-fi
-
-
-if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; then
-
-  curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash
-  sleep 2
-
-  if ! kbcli cluster list 2>/dev/null || ! kbcli kubeblocks status; then
-    kbcli kubeblocks install --set image.registry="docker.io" | true
-  fi
-
-  echo 
-  echo ----
-  echo "deploy test case: db"
-
-  for i in $(kubectl get clusterversion -o name); do 
-    kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f -; 
-  done
-
-  kubectl create ns ${TESTNSDB} 2>/dev/null || true
-
-  kubectl apply -n ${TESTNSDB} -f $GRPL_WORKDIR/files/db.yaml
-
-  sleep 10 
-
-  kubectl rollout status -n ${TESTNSDB} --watch --timeout=600s sts grappledb-mysql
-
-  sleep 5 
-
-  helm upgrade --install ${TESTNSDB} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNSDB} -f $GRPL_WORKDIR/files/testdb.yaml --create-namespace 
-
-  while ! kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
-
-  sleep 30
-
-  if [ "$(kubectl get -n ${TESTNSDB} $(kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi -o name) --template '{{(index .status.initContainerStatuses 0).ready}}')" = "false" ]; then
-    kubectl cp -n ${TESTNSDB} $GRPL_WORKDIR/files/classicmodelsid.tgz $(kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi -o name | sed "s,pod/,,g"):/tmp/classicmodelsid.tgz -c init-db
-  fi
-
-fi
 
 
 cli_log "cluster install END"

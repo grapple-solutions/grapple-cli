@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+. "$GRPL_WORKDIR/common"
+
+cli_help_cluster_status() {
+  echo "
+Command: example status
+
+Usage: 
+  example status"
+  exit 1
+}
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_status
+
+
+cli_log "example status BEGIN"
+
+
+
+cli_log "example status END"
