@@ -1,0 +1,69 @@
+#!/bin/bash
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  OS=gnu
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  OS=mac
+elif [[ "$OSTYPE" == "cygwin" ]]; then
+  OS=posix
+elif [[ "$OSTYPE" == "msys" ]]; then
+  OS=lw
+elif [[ "$OSTYPE" == "freebsd"* ]]; then
+  OS=freebsd
+else
+  OS=unknown
+fi
+
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+cli_log() {
+  script_name=${0##*/}
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  echo "== $script_name $timestamp $1"
+}
+
+exit_on_interrupt() {
+    echo; echo -e "${RED}Script interrupted by user. Exiting...${NC}" >&2
+    exit 130
+}
+
+install() {
+  PACKAGE=$1
+  if [ "${OS}" = "mac" ]; then
+    brew install ${PACKAGE} 
+  else
+    echo "cannot install ${PACKAGE}... Please install and try again"
+  fi
+}
+
+prompt_for_input_with_validation() {
+    local prompt=$1
+    local placeholder=$2
+    local regex=$3
+    local error_message=$4
+    local default_value=$5  # Added parameter for default value
+    local input=""
+
+    while [[ ! $input =~ $regex ]]; do
+        input=$(gum input --prompt "$prompt" --placeholder "$placeholder" --value "$default_value") || exit_on_interrupt
+        if [[ ! $input =~ $regex ]]; then
+            echo -e "${RED}$error_message${NC}" >&2
+        fi
+    done
+    echo "$input"
+}
+
+# Ensure gum is installed: https://github.com/charmbracelet/gum
+if ! gum --version >/dev/null 2>&1; then
+  echo "gum is a prerequisite for this script to run."
+  echo "installing gum..."
+  install gum
+fi
+
+# list of regexes used for validation
+ip_regex="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
+email_regex="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+dns_regex="^[A-Za-z0-9]([-A-Za-z0-9]*[A-Za-z0-9])?(\.[A-Za-z0-9]([-A-Za-z0-9]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$"
+grpl_dns_regex="^[[:alnum:]-]{3,}$"
+non_empty_regex=".+" 
+

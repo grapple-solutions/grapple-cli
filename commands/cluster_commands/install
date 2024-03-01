@@ -1,0 +1,217 @@
+#!/bin/bash
+set -e
+. "$GRPL_WORKDIR/common"
+
+NS=grpl-system
+awsregistry="p7h7z5g3"
+
+
+cli_help_cluster_install() {
+  echo "
+Command: grpl cluster install
+
+Usage: 
+  cluster install
+
+Variables:
+  TARGET_PLATFORM=CIVO / Kubernetes
+
+  # general configurations
+  GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.1')
+  AUTO_CONFIRM = false / true
+
+  # kubernetes related configurations
+  KUBE_CONTEXT = kubernetes context
+
+  # CIVO related configurations
+  CIVO_REGION = Available CIVO regions (e.g. FRA1)
+  CIVO_CLUSTER = CIVO cluster
+  CIVO_CLUSTER_NAME = CIVO cluster name
+  CIVO_CLUSTER_ID = CIVO cluster ID
+  CIVO_MASTER_IP = CIVO cluster master IP address
+  CIVO_EMAIL_ADDRESS = email address of your CIVO account
+
+"
+  exit 1
+}
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_install
+
+export BAGCLI_PROJECT_NAME=$1
+
+cli_log "cluster install BEGIN"
+
+# verify install target platform
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose "CIVO" "Kubernetes"; fi)
+echo "selected target platform: ${TARGET_PLATFORM}"
+
+# if CIVO, then pre-set the configuration params
+if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
+  if ! civo --version 2>&1; then
+    echo "civo cli is required"
+    echo "installing civo cli..."
+    install civo
+  fi
+
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else civo region ls -o custom -f code | gum choose; fi)
+  civo region use ${CIVO_REGION} | true
+
+  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if civo k8s ls -o custom -f name >/dev/null 2>&1; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+  echo "selected civo cluster: ${CIVO_CLUSTER}"
+  civo k8s config ${CIVO_CLUSTER} --save --switch
+
+  # if a CIVO cluster was selected, pre-set the configuration
+  CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
+  CIVO_CLUSTER_ID=$(civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
+  GRAPPLE_DNS=${CIVO_CLUSTER}
+
+  CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  echo "selected civo cluster ID: ${CIVO_CLUSTER_ID}"
+
+  CIVO_CLUSTER_NAME=$(if [ "${CIVO_CLUSTER_NAME}" != "" ]; then echo ${CIVO_CLUSTER_NAME}; else prompt_for_input_with_validation "Enter CIVO_CLUSTER_NAME: " "Provide an name for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  echo "selected civo cluster name: ${CIVO_CLUSTER_NAME}"
+
+  CIVO_MASTER_IP=$(if [ "${CIVO_MASTER_IP}" != "" ]; then echo ${CIVO_MASTER_IP}; else civo k8s show grpl-cli -o custom -f "MasterIP"; fi) || exit $?
+  echo "selected civo master ip: ${CIVO_MASTER_IP}"
+
+  CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
+  echo "selected civo email address: ${CIVO_EMAIL_ADDRESS}"
+
+fi
+
+# if CIVO, then pre-set the configuration params
+if [ "${TARGET_PLATFORM}" = "Kubernetes" ]; then
+  KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else kubectl config get-contexts -o name | gum choose; fi)
+fi
+
+# Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
+GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
+echo "installing dns: ${GRAPPLE_DNS}"
+
+GRAPPLE_VERSION=$(if [ "${GRAPPLE_VERSION}" != "" ]; then echo ${GRAPPLE_VERSION}; else gum choose "0.2.1" "0.2.0"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
+echo "installing grapple version: ${GRAPPLE_VERSION}"
+
+# VERSION=$(prompt_for_input_with_validation "Enter version of the grapple solution framework: " "Semver version is expected. Default value if empty: 0.2.0" "$non_empty_regex" "Version cannot be empty." "0.2.0") || exit $?
+
+# The script then proceeds to dynamically generate values-override.yaml with user inputs
+cat <<EOF > ./values-override.yaml
+# Default values for grsf-init.
+
+clusterdomain: ${GRAPPLE_DNS}.grapple-demo.com
+
+# Configuration
+config:
+  clusterdomain: ${GRAPPLE_DNS}.grapple-demo.com
+  grapiversion: "0.0.1"
+  gruimversion: "0.0.1"
+  ssl: "true"
+  sslissuer: "letsencrypt-grapple-demo"
+  CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}
+  CIVO_CLUSTER_NAME: ${CIVO_CLUSTER_NAME}
+  CIVO_REGION: ${CIVO_REGION}
+  CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}
+  CIVO_MASTER_IP: ${CIVO_MASTER_IP}
+  GRAPPLE_DNS: ${GRAPPLE_DNS}
+  GRAPPLE_VERSION: ${GRAPPLE_VERSION}
+# Additional configurations omitted for brevity
+EOF
+
+cat ./values-override.yaml
+
+# Use gum to confirm before proceeding
+if [ "${AUTO_CONFIRM}" != "true" ]; then
+  gum confirm "Proceed with deployment using the values above?" || exit
+fi
+
+# Define helm_deploy function 
+helm_deploy() {
+    i=$1
+    v=${2:-$GRAPPLE_VERSION}
+    if [ "$v" != "" ]; then 
+      version="--version ${v}"
+    else
+      version=""
+    fi
+
+    echo "Deploying $i with version $version"
+    # why does gum spin not work like this?
+    gum spin -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
+    # echo helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
+    # helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
+}
+
+kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
+kubectl run grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${GRAPPLE_DNS}" --env="CIVO_MASTER_IP=${CIVO_MASTER_IP}" --restart=Never
+
+echo 
+echo ----
+
+helm_deploy grsf-init 
+
+echo "wait for cert-manager to be ready"
+if helm get -n kube-system notes traefik >/dev/null 2>&1; then 
+    CRD=Middleware && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi
+if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; then 
+    kubectl wait deployment -n ${NS} grsf-init-cert-manager --for condition=Available=True --timeout=300s
+    CRD=ClusterIssuer && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi
+
+# remove the DNS job again
+kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
+
+echo "wait for crossplane to be ready"
+if kubectl get deploy -n grpl-system crossplane >/dev/null 2>&1; then 
+    CRD=Provider && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi
+
+echo "wait for external-secrets to be ready"
+if kubectl get deploy -n grpl-system grsf-init-external-secrets-webhook >/dev/null 2>&1; then 
+    CRD=ExternalSecrets && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+    echo "wait for external-secrets to be ready"
+    kubectl wait deployment -n ${NS} grsf-init-external-secrets-webhook --for condition=Available=True --timeout=300s
+fi 
+
+
+echo 
+echo ----
+echo "Ready for grsf deployment"
+
+helm_deploy grsf
+
+echo "wait for providerconfigs to be ready"
+sleep 10
+if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-civo) >/dev/null 2>&1; then 
+    kubectl wait -n ${NS} provider.pkg.crossplane.io/provider-civo --for condition=Healthy=True --timeout=300s
+    echo "wait for provider-civo to be ready"
+    CRD=providerconfigs.civo.crossplane.io  && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi 
+
+for i in $(kubectl get pkg -n ${NS} -o name); do 
+    kubectl wait -n ${NS} $i --for condition=Healthy=True --timeout=300s;
+done
+if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-helm) >/dev/null 2>&1; then 
+    CRD=providerconfigs.helm.crossplane.io  && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi 
+if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-kubernetes) >/dev/null 2>&1; then 
+    CRD=providerconfigs.kubernetes.crossplane.io  && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi 
+
+
+echo 
+echo ----
+
+helm_deploy grsf-config 
+
+helm_deploy grsf-integration
+
+echo 
+echo ----
+echo "enable ssl"
+kubectl apply -f $GRPL_WORKDIR/files/clusterissuer.yaml
+
+echo "check all crossplane packages are ready"
+for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i; done
+
+
+cli_log "cluster install END"

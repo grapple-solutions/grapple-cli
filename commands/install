@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+. "$GRPL_WORKDIR/common"
+
+cli_help_install() {
+  echo "
+Command: install
+
+Usage: 
+  install tool_name"
+  exit 1
+}
+
+[ ! -n "$1" ] && cli_help_install
+
+export BAGCLI_PROJECT_NAME=$1
+
+cli_log "install BEGIN"
+
+
+
+cli_log "install END"

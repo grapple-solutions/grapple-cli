@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -e
+. "$GRPL_WORKDIR/common"
+
+cli_upgrade_help() {
+  cli_name=${0##*/}
+  echo "
+$cli_name
+the grapple cli
+Version: $(cat $GRPL_WORKDIR/VERSION)
+https://grapple-solutions.com/
+
+Usage: $cli_name [command]
+
+Commands:
+  *         Help
+"
+  exit 1
+}
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_upgrade_help
+
+echo "run upgrade"

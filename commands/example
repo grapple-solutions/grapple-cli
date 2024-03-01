@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+. "$GRPL_WORKDIR/common"
+
+cli_help() {
+  cli_name=${0##*/}
+  echo "
+$cli_name
+the grapple cli
+Version: $(cat $GRPL_WORKDIR/VERSION)
+https://grapple-solutions.com/
+
+Usage: $cli_name [command]
+
+Commands:
+  status    status of example
+  deploy    deploy an example
+  *         Help
+"
+  exit 1
+}
+
+case "$1" in
+  status|s)
+    "$GRPL_WORKDIR/commands/example_commands/status" $(echo $@ | sed 's,status,,g' | sed 's,s ,,') | tee -ia "$GRPL_WORKDIR/logs/example_status.log"
+    ;;
+  deploy|d)
+    "$GRPL_WORKDIR/commands/example_commands/deploy" $(echo $@ | sed 's,deploy,,g' | sed 's,i ,,') | tee -ia "$GRPL_WORKDIR/logs/example_deploy.log"
+    ;;
+  *)
+    cli_help
+    ;;
+esac
