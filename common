@@ -31,6 +31,17 @@ install() {
   PACKAGE=$1
   if [ "${OS}" = "mac" ]; then
     brew install ${PACKAGE} 
+  elif [ "${OS}" = "gnu" ]; then
+
+    if [ "${PACKAGE}" == "gum" ]; then 
+      sudo mkdir -p /etc/apt/keyrings
+      curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+      echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+      sudo apt update && sudo apt install gum
+      sudo ln -s /usr/bin/gum /snap/bin/gum
+    else 
+      snap install ${PACKAGE} --classic
+    fi
   else
     echo "cannot install ${PACKAGE}... Please install and try again"
   fi
