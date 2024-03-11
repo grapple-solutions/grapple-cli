@@ -137,7 +137,6 @@ helm_deploy() {
     echo "Deploying $i with version $version"
 
     output=$(gum spin --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml)
-    echo $output
     if [[ "$output" == *"access denied"* ]]; then
       output=$(helm registry logout public.ecr.aws/${awsregistry} 2>&1)
       if [[ "$output" == "Removing login credentials for public.ecr.aws/${awsregistry}" ]]; then
