@@ -50,7 +50,7 @@ if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
   if ! civo version 2>&1; then
     echo "civo cli is required"
     echo "installing civo cli..."
-    install civo
+    curl -sL https://civo.com/get | sh
   fi
 
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else civo region ls -o custom -f code | gum choose; fi)
@@ -123,6 +123,7 @@ if [ "${AUTO_CONFIRM}" != "true" ]; then
   gum confirm "Proceed with deployment using the values above?" || exit
 fi
 
+
 # Define helm_deploy function 
 helm_deploy() {
     i=$1
@@ -134,10 +135,22 @@ helm_deploy() {
     fi
 
     echo "Deploying $i with version $version"
-    # why does gum spin not work like this?
-    gum spin -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
-    # echo helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
-    # helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
+
+    output=$(gum spin --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml)
+    echo $output
+    if [[ "$output" == *"access denied"* ]]; then
+      output=$(helm registry logout public.ecr.aws/${awsregistry} 2>&1)
+      if [[ "$output" == "Removing login credentials for public.ecr.aws/${awsregistry}" ]]; then
+        helm_deploy $i
+      elif [[ "$output" == "Error: not logged in" ]]; then
+        output=$(helm registry logout public.ecr.aws 2>&1)
+        if [[ "$output" == "Removing login credentials for public.ecr.aws" ]]; then
+          helm_deploy $i
+        else
+          echo $output
+        fi
+      fi
+    fi
 }
 
 kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
