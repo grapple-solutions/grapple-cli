@@ -13,7 +13,7 @@ grapi:
     spec:
       name: init-db
       image: mysql
-      command: ['bash', '-c', 'sleep 5; while ! mysql -h $(host) -P $(port) -u $(username) -p$(password) -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h $(host) -P $(port) -u $(username) -p$(password) -e "use classicmodelsid; select * from customers limit 1;"; then echo "database already exists..."; else while ! test -f /tmp/classicmodelsid.tgz; do echo -n .; sleep 2; done; echo; cd tmp; tar xvfz classicmodelsid.tgz; mysql -h $(host) -P $(port) -u $(username) -p$(password) < /tmp/classicmodelsid.sql; rm /tmp/classicmodelsid.sql /tmp/classicmodelsid.tgz; fi']
+      command: ['bash', '-c', 'sleep 5; while ! mysql -h $(host) -P $(port) -u $(username) -p$(password) -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h $(host) -P $(port) -u $(username) -p$(password) -e "use classicmodelsid; select * from customers limit 1;"; then echo "database already exists..."; else curl -o /tmp/classicmodelsid.sql https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql; mysql -h $(host) -P $(port) -u $(username) -p$(password) < /tmp/classicmodelsid.sql; rm /tmp/classicmodelsid.sql; fi']
   datasources:
   - name: "classicmodelsdb"
     spec:

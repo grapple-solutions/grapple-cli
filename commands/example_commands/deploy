@@ -33,6 +33,13 @@ cli_log "example deploy BEGIN"
 EDITION=$(if [ "${EDITION}" != "" ]; then echo ${EDITION}; else gum choose "grpl-basic-all" "grpl-basic" "grpl-basic-db" "grpl-basic-dbfile"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
 echo "installing grapple edition: ${EDITION}"
 
+if [ "$(kubectl config current-context)" = "minikube" ]; then
+  echo "patching for minikube..."
+  MINIKUBE_PATCH=" --set gras.ssl=false --set grapi.ssl=false --set gruim.ssl=false "
+else
+  MINIKUBE_PATCH=""
+fi
+
 
 if [ "${EDITION}" = "grpl-basic-dbfile" ] || [ "${EDITION}" = "grpl-basic-all" ]; then
 
@@ -46,13 +53,12 @@ if [ "${EDITION}" = "grpl-basic-dbfile" ] || [ "${EDITION}" = "grpl-basic-all" ]
   CRD=composition/grapi.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
   CRD=composition/muim.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
 
-  MINIKUBE_PATCH=" --set gras.ssl=false --set grapi.ssl=false --set gruim.ssl=false "
-
   helm upgrade --install ${TESTNS} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNS} -f $GRPL_WORKDIR/files/test.yaml ${MINIKUBE_PATCH} --create-namespace 
   
-  while ! kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
+  # not required anymore since downloading the file from the git repo
+  # while ! kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
 
-  sleep 10
+  # sleep 10
 
   # if [ "$(kubectl get -n ${TESTNS} $(kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi -o name) --template '{{(index .status.initContainerStatuses 0).ready}}')" = "false" ]; then
   #   kubectl cp -n ${TESTNS} $GRPL_WORKDIR/files/db.json $(kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi -o name | sed "s,pod/,,g"):/tmp/db.json -c init-db
@@ -93,15 +99,16 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
 
   sleep 5 
 
-  helm upgrade --install ${TESTNSDB} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNSDB} -f $GRPL_WORKDIR/files/testdb.yaml --create-namespace 
+  helm upgrade --install ${TESTNSDB} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNSDB} -f $GRPL_WORKDIR/files/testdb.yaml ${MINIKUBE_PATCH} --create-namespace 
 
-  while ! kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
+  # not required anymore since downloading the file from the git repo
+  # while ! kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
 
-  sleep 30
+  # sleep 30
 
-  if [ "$(kubectl get -n ${TESTNSDB} $(kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi -o name) --template '{{(index .status.initContainerStatuses 0).ready}}')" = "false" ]; then
-    kubectl cp -n ${TESTNSDB} $GRPL_WORKDIR/files/classicmodelsid.tgz $(kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi -o name | sed "s,pod/,,g"):/tmp/classicmodelsid.tgz -c init-db
-  fi
+  # if [ "$(kubectl get -n ${TESTNSDB} $(kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi -o name) --template '{{(index .status.initContainerStatuses 0).ready}}')" = "false" ]; then
+  #   kubectl cp -n ${TESTNSDB} $GRPL_WORKDIR/files/classicmodelsid.tgz $(kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi -o name | sed "s,pod/,,g"):/tmp/classicmodelsid.tgz -c init-db
+  # fi
 
 fi
 
