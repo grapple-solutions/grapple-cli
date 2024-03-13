@@ -1,8 +1,8 @@
-# Grpl Command-Line Client
+# grpl Command-Line Client
 
 ## Introduction
 
-Grpl CLI is tool to manage your grapple apps on kubernetes cluster. Grpl provides a guided UI to perform each of its operations which helps the user to interact more freely with the CLI. Grpl allows you to do the following
+grpl CLI is tool to manage your grapple apps on kubernetes cluster. grpl provides a guided UI to perform each of its operations which helps the user to interact more freely with the CLI. grpl allows you to do the following
 - Create a Cluster
 - Install grapple apps on the cluster
 - View the status of the cluster
@@ -18,7 +18,7 @@ Grpl CLI is tool to manage your grapple apps on kubernetes cluster. Grpl provide
 - [Set-Up](#set-up)
 ## Set-up
 
-Grpl CLI is built with Bash and distributed as binary files, available for multiple operating systems
+grpl CLI is built with Bash and distributed as binary files, available for multiple operating systems
 
 ### Installing on macOS
 
@@ -35,11 +35,11 @@ Will be added Later
 Will be added Later
 
 
-### Running the Grpl CLI tool and getting help
+### Running the grpl CLI tool and getting help
 
 To use the tool, simply run `grpl` with your chosen options. You can find context-sensitive help for commands and their options by invoking the `help` or `-h` command:
 `grpl help`,
-The main components of Grpl CLI are outlined in the following sections.
+The main components of grpl CLI are outlined in the following sections.
 
 ## Global Options
 
