@@ -46,7 +46,9 @@ if [ "${EDITION}" = "grpl-basic-dbfile" ] || [ "${EDITION}" = "grpl-basic-all" ]
   CRD=composition/grapi.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
   CRD=composition/muim.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
 
-  helm upgrade --install ${TESTNS} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNS} -f $GRPL_WORKDIR/files/test.yaml --create-namespace 
+  MINIKUBE_PATCH=" --set gras.ssl=false --set grapi.ssl=false --set gruim.ssl=false "
+
+  helm upgrade --install ${TESTNS} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNS} -f $GRPL_WORKDIR/files/test.yaml ${MINIKUBE_PATCH} --create-namespace 
   
   while ! kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
 

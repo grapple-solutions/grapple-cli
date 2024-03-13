@@ -23,6 +23,9 @@ Variables:
   # kubernetes related configurations
   KUBE_CONTEXT = kubernetes context
 
+  # minikube related configurations
+  # none yet...
+
   # CIVO related configurations
   CIVO_REGION = Available CIVO regions (e.g. FRA1)
   CIVO_CLUSTER = CIVO cluster
