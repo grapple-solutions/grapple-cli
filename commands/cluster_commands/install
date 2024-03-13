@@ -63,7 +63,8 @@ if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
   # if a CIVO cluster was selected, pre-set the configuration
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
   CIVO_CLUSTER_ID=$(civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
-  GRAPPLE_DNS=${CIVO_CLUSTER}.grapple-demo.com
+  GRAPPLE_DNS=${CIVO_CLUSTER}
+  GRAPPLE_DOMAIN=".grapple-demo.com"
 
   CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "selected civo cluster ID: ${CIVO_CLUSTER_ID}"
@@ -113,6 +114,7 @@ timeout 5" > /tmp/minikube-test
     fi
   fi 
   GRAPPLE_DNS=test
+  GRAPPLE_DOMAIN=""
 
 fi
 
@@ -131,11 +133,11 @@ echo "installing grapple version: ${GRAPPLE_VERSION}"
 cat <<EOF > ./values-override.yaml
 # Default values for grsf-init.
 
-clusterdomain: ${GRAPPLE_DNS}
+clusterdomain: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
 
 # Configuration
 config:
-  clusterdomain: ${GRAPPLE_DNS}
+  clusterdomain: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
   grapiversion: "0.0.1"
   gruimversion: "0.0.1"
   ssl: "true"
@@ -145,7 +147,7 @@ config:
   CIVO_REGION: ${CIVO_REGION}
   CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}
   CIVO_MASTER_IP: ${CIVO_MASTER_IP}
-  GRAPPLE_DNS: ${GRAPPLE_DNS}
+  GRAPPLE_DNS: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
   GRAPPLE_VERSION: ${GRAPPLE_VERSION}
 # Additional configurations omitted for brevity
 EOF
