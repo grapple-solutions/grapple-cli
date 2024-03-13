@@ -10,7 +10,7 @@ grapi:
     spec:
       name: init-db
       image: busybox:1.28
-      command: ['sh', '-c', "if ! test -f /data/db.json; then while ! test -f /tmp/db.json; do echo -n .; sleep 2; done; echo; cp /tmp/db.json /data; chmod 777 /data/db.json; fi"]
+      command: ['sh', '-c', "if ! test -f /data/db.json; then wget -O /data/db.json https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/db.json; chmod 777 /data/db.json; fi"]
   volumes:
   - name: data
     emptyDir: {}
