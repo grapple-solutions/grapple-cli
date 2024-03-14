@@ -16,6 +16,7 @@ grpl CLI is tool to manage your grapple apps on kubernetes cluster. grpl provide
 - [Introduction](#introduction)
 - [Global Options](#global-options)
 - [Set-Up](#set-up)
+- [Example](#examples)
 ## Set-up
 
 grpl CLI is built with Bash and distributed as binary files, available for multiple operating systems
@@ -24,7 +25,10 @@ grpl CLI is built with Bash and distributed as binary files, available for multi
 
 If you have a Mac, you can install it using [Homebrew](https://brew.sh):
 
-Will be added Soon
+```bash
+brew tap grapple-solutions/grapple
+brew install grapple-cli
+```
 
 ### Installing on Windows
 
@@ -47,4 +51,12 @@ The grpl cli have multiple global options, that you can use, like this:
 
 ```
   -h, --help            help for grpl
+```
+
+## Examples
+
+```bash
+grpl --version
+grpl --help
+grpl cluster install
 ```
