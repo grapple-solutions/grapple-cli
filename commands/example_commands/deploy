@@ -102,7 +102,7 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
   # so now we'll directly check of the status of statefulset
   timedOut=true
   for _ in {1..120}; do  # 120 iterations for 10 minutes with 5 seconds interval
-      kubectl get statefulset grappledb-mysql -n grpl-db > /dev/null 2>&1 && {
+      kubectl get statefulset grappledb-mysql -n grpl-db | grep '1/1' > /dev/null 2>&1 && {
           echo "StatefulSet grappledb-mysql is now running. Proceeding."
           timedOut=false
           break
