@@ -93,11 +93,27 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
 
   kubectl apply -n ${TESTNSDB} -f $GRPL_WORKDIR/files/db.yaml
 
-  sleep 10 
 
-  kubectl rollout status -n ${TESTNSDB} --watch --timeout=600s sts grappledb-mysql
+  # previously we were running
+  # kubectl rollout status -n grpl-db --watch --timeout=600s sts grappledb-mysql
+  # and getting "error: rollout status is only available for RollingUpdate strategy type"
+  # because grappledb-mysql is of type statefulset not deployment
+  # and rollour status is only avaialble for deployments
+  # so now we'll directly check of the status of statefulset
+  timedOut=true
+  for _ in {1..120}; do  # 120 iterations for 10 minutes with 5 seconds interval
+      kubectl get statefulset grappledb-mysql -n grpl-db > /dev/null 2>&1 && {
+          echo "StatefulSet grappledb-mysql is now running. Proceeding."
+          timedOut=false
+          break
+      }
+      sleep 5
+  done
+  if ${timedOut}; then
+    echo "StatefulSet $STATEFULSET_NAME did not start within 10 minutes. Exiting."
+    exit 1
+  fi
 
-  sleep 5 
 
   helm upgrade --install ${TESTNSDB} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNSDB} -f $GRPL_WORKDIR/files/testdb.yaml ${MINIKUBE_PATCH} --create-namespace 
 
