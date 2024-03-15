@@ -90,6 +90,26 @@ fi
 
 if [ "${TARGET_PLATFORM}" = "minikube" ]; then
 
+  # first check if minikube is installed or not, if not? then install it
+  if ! minikube version 2>&1; then
+    echo "minikube cli is required"
+    echo "installing minikube cli..."
+    if [ "${OS}" == "mac" ]; then
+      brew install minikube
+    elif [ "${OS}" == "gnu" ]; then
+      wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+      chmod +x minikube-linux-amd64
+      sudo mv minikube-linux-amd64 /usr/local/bin/minikube
+    fi
+  fi
+
+  # check if minikube cluster is running or not, if not? then start it
+  if minikube status | grep -q "host: Stopped"; then
+      echo "Minikube is not running. Starting Minikube..."
+      minikube start
+  fi
+
+
   if ! minikube addons list | grep enabled | grep ingress >/dev/null 2>&1; then
     if [ "${AUTO_CONFIRM}" != "true" ]; then
       gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" && exit)
@@ -100,10 +120,10 @@ if [ "${TARGET_PLATFORM}" = "minikube" ]; then
   fi 
 
   if ! grep -r $(minikube ip) /etc/resolver/ >/dev/null 2>&1; then
-echo "domain test
-nameserver $(minikube ip)
-search_order 1
-timeout 5" > /tmp/minikube-test
+    echo "domain test
+    nameserver $(minikube ip)
+    search_order 1
+    timeout 5" > /tmp/minikube-test
 
     echo "please run the following commands before clicking on 'confirm':"
     gum style \
