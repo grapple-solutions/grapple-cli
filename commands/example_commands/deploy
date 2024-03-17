@@ -21,7 +21,7 @@ Variables:
   example     all / db / dbfile
   EDITION = "grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
 "
-  exit 1
+  exit 0
 }
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_deploy

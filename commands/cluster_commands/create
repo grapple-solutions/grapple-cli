@@ -8,7 +8,7 @@ Command: cluster create
 
 Usage: 
   cluster create"
-  exit 1
+  exit 0
 }
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_create

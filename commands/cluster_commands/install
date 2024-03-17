@@ -35,7 +35,7 @@ Variables:
   CIVO_EMAIL_ADDRESS = email address of your CIVO account
 
 "
-  exit 1
+  exit 0
 }
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_install

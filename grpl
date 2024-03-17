@@ -21,7 +21,7 @@ Commands:
   example    example commands
   *          Help
 "
-  exit 1
+  exit 0
 }
 
 
