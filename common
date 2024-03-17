@@ -75,6 +75,12 @@ install_prerequisite(){
   fi
 }
 
+create_logs_dir(){
+  if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
+    mkdir logs
+  fi
+}
+
 prompt_for_input_with_validation() {
     local prompt=$1
     local placeholder=$2
@@ -93,6 +99,7 @@ prompt_for_input_with_validation() {
 }
 
 install_prerequisite
+create_logs_dir
 
 # list of regexes used for validation
 ip_regex="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
