@@ -27,6 +27,7 @@ exit_on_interrupt() {
     exit 130
 }
 
+# check and install all pre-requsite packages
 install_prerequisite(){
 
 
@@ -75,6 +76,7 @@ install_prerequisite(){
   fi
 }
 
+# need to create log folder as its a pre-requsite
 create_logs_dir(){
   if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
     mkdir logs
