@@ -27,6 +27,54 @@ exit_on_interrupt() {
     exit 130
 }
 
+install_prerequisite(){
+
+
+  # if OS is gnu, we want to check and install snap
+  # this package will be used to install other packages in future
+  if [ $OS == "gnu" ] && ! snap version >/dev/null 2>&1; then
+    sudo apt update
+    sudo apt install snapd
+  fi
+
+
+  # installing helm
+  if ! helm version >/dev/null 2>&1; then
+    echo "helm is a prerequisite for this script to run."
+    echo "installing helm..."
+    if [ $OS == "mac" ]; then 
+      brew install helm
+    elif [ $OS == "gnu" ]; then
+      sudo snap install helm --classic
+    fi
+  fi
+
+  if ! kubectl version >/dev/null 2>&1; then
+    echo "kubectl is a prerequisite for this script to run."
+    echo "installing kubectl..."
+    if [ $OS == "mac" ]; then 
+      brew install kubectl
+    elif [ $OS == "gnu" ]; then
+      sudo snap install kubectl --classic
+    fi
+  fi
+
+  # Ensure gum is installed: https://github.com/charmbracelet/gum
+  if ! gum --version >/dev/null 2>&1; then
+    echo "gum is a prerequisite for this script to run."
+    echo "installing gum..."
+    if [ "${OS}" == "mac" ]; then
+      brew install gum
+    elif [ "${OS}" == "gnu" ]; then 
+      sudo mkdir -p /etc/apt/keyrings
+      curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+      echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+      sudo apt update && sudo apt install gum
+      sudo ln -s /usr/bin/gum /snap/bin/gum
+    fi
+  fi
+}
+
 prompt_for_input_with_validation() {
     local prompt=$1
     local placeholder=$2
@@ -44,24 +92,7 @@ prompt_for_input_with_validation() {
     echo "$input"
 }
 
-# Ensure gum is installed: https://github.com/charmbracelet/gum
-if ! gum --version >/dev/null 2>&1; then
-  echo "gum is a prerequisite for this script to run."
-  echo "installing gum..."
-  # since intalling can be done following dif steps on each OS
-  # and even in same os we have to use different package managers
-  # so if we create one install function we'll soon endup with a lot of 
-  # if and elses in that, so its better to install each package separately.
-  if [ "${OS}" == "gnu" ]; then 
-    sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
-    sudo apt update && sudo apt install gum
-    sudo ln -s /usr/bin/gum /snap/bin/gum
-  elif [ "${OS}" == "mac" ]; then
-    brew install gum
-  fi
-fi
+install_prerequisite
 
 # list of regexes used for validation
 ip_regex="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
