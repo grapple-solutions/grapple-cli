@@ -57,11 +57,6 @@ if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
     echo "civo cli is required"
     echo "installing civo cli..."
     curl -sL https://civo.com/get | sh
-  else
-    errMsg="Failed to install civo, OS ${OS} not supported at the moment"
-    echo $errMsg
-    status_log $TYPE_ERROR $errMsg
-    exit 1
   fi
 
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else civo region ls -o custom -f code | gum choose; fi)
