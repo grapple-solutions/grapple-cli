@@ -121,7 +121,7 @@ install_prerequisite(){
 # need to create log folder as its a pre-requsite
 create_logs_dir(){
   if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
-    mkdir logs
+    mkdir $GRPL_WORKDIR/logs 2>/dev/null | true
   fi
 }
 
