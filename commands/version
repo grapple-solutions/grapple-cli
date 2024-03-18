@@ -16,7 +16,7 @@ Usage: $cli_name [command]
 Commands:
   *         Help
 "
-  exit 1
+  exit 0
 }
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_version_help

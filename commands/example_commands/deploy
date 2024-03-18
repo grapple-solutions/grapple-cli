@@ -21,7 +21,7 @@ Variables:
   example     all / db / dbfile
   EDITION = "grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
 "
-  exit 1
+  exit 0
 }
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_deploy
@@ -32,6 +32,8 @@ cli_log "example deploy BEGIN"
 
 EDITION=$(if [ "${EDITION}" != "" ]; then echo ${EDITION}; else gum choose "grpl-basic-all" "grpl-basic" "grpl-basic-db" "grpl-basic-dbfile"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
 echo "installing grapple edition: ${EDITION}"
+
+status_log $TYPE_INFO "${EDITION} deployment is in progress"
 
 if [ "$(kubectl config current-context)" = "minikube" ]; then
   echo "patching for minikube..."
@@ -53,7 +55,7 @@ if [ "${EDITION}" = "grpl-basic-dbfile" ] || [ "${EDITION}" = "grpl-basic-all" ]
   CRD=composition/grapi.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
   CRD=composition/muim.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
 
-  helm upgrade --install ${TESTNS} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNS} -f $GRPL_WORKDIR/files/test.yaml ${MINIKUBE_PATCH} --create-namespace 
+  gum spin --title "Deploying ${EDITION}" -- helm upgrade --install ${TESTNS} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNS} -f $GRPL_WORKDIR/files/test.yaml ${MINIKUBE_PATCH} --create-namespace 
   
   # not required anymore since downloading the file from the git repo
   # while ! kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
@@ -111,11 +113,12 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
   done
   if ${timedOut}; then
     echo "StatefulSet $STATEFULSET_NAME did not start within 10 minutes. Exiting."
+    status_log $TYPE_ERROR "${EDITION} Failed to Deploy"
     exit 1
   fi
 
 
-  helm upgrade --install ${TESTNSDB} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNSDB} -f $GRPL_WORKDIR/files/testdb.yaml ${MINIKUBE_PATCH} --create-namespace 
+  gum spin --title "Deploying ${EDITION}" -- helm upgrade --install ${TESTNSDB} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNSDB} -f $GRPL_WORKDIR/files/testdb.yaml ${MINIKUBE_PATCH} --create-namespace 
 
   # not required anymore since downloading the file from the git repo
   # while ! kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
@@ -128,5 +131,5 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
 
 fi
 
-
+status_log $TYPE_SUCCESS "${EDITION} is successfuly deployed"
 cli_log "example deploy END"

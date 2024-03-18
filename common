@@ -24,7 +24,105 @@ cli_log() {
 
 exit_on_interrupt() {
     echo; echo -e "${RED}Script interrupted by user. Exiting...${NC}" >&2
+    status_log $TYPE_ERROR "Script interrupted by user. Exiting..."
     exit 130
+}
+
+
+# Status Types
+TYPE_SUCCESS='SUCCESS'
+TYPE_INFO='INFO'
+TYPE_ERROR='ERROR'
+# Status Type Colors
+success_color="\033[1;32m"  # Green color
+info_color="\033[1;33m"  # Blue color
+error_color="\033[1;31m"  # Red color
+reset_color="\033[0m"    # Reset color
+
+# calling syntax : status_log <type> <message>
+# supported types : "info", "success", "error"
+status_log() {
+
+  # first select color
+  log_color=""
+  if [ $1 == $TYPE_INFO ]; then log_color=$info_color
+  elif [ $1 == $TYPE_SUCCESS ]; then log_color=$success_color
+  elif [ $1 == $TYPE_ERROR ]; then log_color=$error_color
+  fi
+
+  gum log "$(printf "${log_color}${2}${reset_color}")"
+
+}
+
+# check and install all pre-requsite packages
+install_prerequisite(){
+
+
+  # if OS is gnu, we want to check and install snap
+  # this package will be used to install other packages in future
+  if [ $OS == "gnu" ] && ! snap version >/dev/null 2>&1; then
+    sudo apt update
+    sudo apt install snapd
+  fi
+
+
+  # installing helm
+  if ! helm version >/dev/null 2>&1; then
+    echo "helm is a prerequisite for this script to run."
+    echo "installing helm..."
+    if [ $OS == "mac" ]; then 
+      brew install helm
+    elif [ $OS == "gnu" ]; then
+      sudo snap install helm --classic
+    else
+      errMsg="Failed to install a prerequisite helm, OS ${OS} not supported at the moment"
+      echo $errMsg
+      status_log $TYPE_ERROR $errMsg
+      exit 1
+    fi
+  fi
+
+  if ! kubectl version >/dev/null 2>&1; then
+    echo "kubectl is a prerequisite for this script to run."
+    echo "installing kubectl..."
+    if [ $OS == "mac" ]; then 
+      brew install kubectl
+    elif [ $OS == "gnu" ]; then
+      sudo snap install kubectl --classic
+    else
+      errMsg="Failed to install a prerequisite kubectl, OS ${OS} not supported at the moment"
+      echo $errMsg
+      status_log $TYPE_ERROR $errMsg
+      exit 1
+    fi
+  fi
+
+  # Ensure gum is installed: https://github.com/charmbracelet/gum
+  if ! gum --version >/dev/null 2>&1; then
+    echo "gum is a prerequisite for this script to run."
+    echo "installing gum..."
+    if [ "${OS}" == "mac" ]; then
+      brew install gum
+    elif [ "${OS}" == "gnu" ]; then 
+      sudo mkdir -p /etc/apt/keyrings
+      curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+      echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+      sudo apt update && sudo apt install gum
+      sudo ln -s /usr/bin/gum /snap/bin/gum
+    else
+      errMsg="Failed to install a prerequisite gum, OS ${OS} not supported at the moment"
+      echo $errMsg
+      status_log $TYPE_ERROR $errMsg
+      exit 1
+    fi
+  fi
+}
+
+# need to create log folder as its a pre-requsite
+create_logs_dir(){
+  if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
+    mkdir logs
+  fi
 }
 
 prompt_for_input_with_validation() {
@@ -44,24 +142,8 @@ prompt_for_input_with_validation() {
     echo "$input"
 }
 
-# Ensure gum is installed: https://github.com/charmbracelet/gum
-if ! gum --version >/dev/null 2>&1; then
-  echo "gum is a prerequisite for this script to run."
-  echo "installing gum..."
-  # since intalling can be done following dif steps on each OS
-  # and even in same os we have to use different package managers
-  # so if we create one install function we'll soon endup with a lot of 
-  # if and elses in that, so its better to install each package separately.
-  if [ "${OS}" == "gnu" ]; then 
-    sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
-    sudo apt update && sudo apt install gum
-    sudo ln -s /usr/bin/gum /snap/bin/gum
-  elif [ "${OS}" == "mac" ]; then
-    brew install gum
-  fi
-fi
+install_prerequisite
+create_logs_dir
 
 # list of regexes used for validation
 ip_regex="^([0-9]{1,3}\.){3}[0-9]{1,3}$"

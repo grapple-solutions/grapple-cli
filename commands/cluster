@@ -19,7 +19,7 @@ Commands:
   create     Cluster creation
   *          Help
 "
-  exit 1
+  exit 0
 }
 
 case "$1" in
