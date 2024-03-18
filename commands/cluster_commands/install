@@ -2,7 +2,7 @@
 set -e
 . "$GRPL_WORKDIR/common"
 
-status_log "error" "Installation of grpl is in progress"
+status_log $TYPE_INFO "Installation of grpl is in progress"
 
 
 NS=grpl-system
@@ -210,13 +210,13 @@ helm_deploy() {
           helm_deploy $i
         else
           echo $output
-          status_log "error" "${i} Failed to Installed"
+          status_log $TYPE_ERROR "${i} Failed to Installed"
           exit 1
         fi
       fi
     fi
 
-    status_log success "${i} Installed"
+    status_log $TYPE_SUCCESS "${i} Installed"
 }
 
 if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
@@ -299,4 +299,4 @@ for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i;
 
 cli_log "cluster install END"
 
-status_log "success" "Successfuly Installed grpl"
+status_log $TYPE_SUCCESS "Successfuly Installed grpl"
