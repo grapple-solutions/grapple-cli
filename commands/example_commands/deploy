@@ -111,6 +111,7 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
   done
   if ${timedOut}; then
     echo "StatefulSet $STATEFULSET_NAME did not start within 10 minutes. Exiting."
+    status_log "error" "${i} Failed to Installed"
     exit 1
   fi
 

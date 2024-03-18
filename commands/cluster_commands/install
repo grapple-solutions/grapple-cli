@@ -2,6 +2,9 @@
 set -e
 . "$GRPL_WORKDIR/common"
 
+status_log "error" "Installation of grpl is in progress"
+
+
 NS=grpl-system
 awsregistry="p7h7z5g3"
 
@@ -196,7 +199,7 @@ helm_deploy() {
     echo "Deploying $i with version $version"
 
     # helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
-    output=$(gum spin --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml)
+    output=$(gum spin --title "Installing ${i} component" --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml)
     if [[ "$output" == *"access denied"* ]]; then
       output=$(helm registry logout public.ecr.aws/${awsregistry} 2>&1)
       if [[ "$output" == "Removing login credentials for public.ecr.aws/${awsregistry}" ]]; then
@@ -207,9 +210,13 @@ helm_deploy() {
           helm_deploy $i
         else
           echo $output
+          status_log "error" "${i} Failed to Installed"
+          exit 1
         fi
       fi
     fi
+
+    status_log success "${i} Installed"
 }
 
 if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
@@ -291,3 +298,5 @@ for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i;
 
 
 cli_log "cluster install END"
+
+status_log "success" "Successfuly Installed grpl"

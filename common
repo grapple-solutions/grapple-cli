@@ -27,6 +27,27 @@ exit_on_interrupt() {
     exit 130
 }
 
+
+success_color="\033[1;32m"  # Green color
+info_color="\033[1;33m"  # Blue color
+error_color="\033[1;31m"  # Red color
+reset_color="\033[0m"    # Reset color
+
+# calling syntax : status_log <type> <message>
+# supported types : "info", "success", "error"
+status_log() {
+
+  # first select color
+  log_color=""
+  if [ $1 == "info" ]; then log_color=$info_color
+  elif [ $1 == "success" ]; then log_color=$success_color
+  elif [ $1 == "error" ]; then log_color=$error_color
+  fi
+
+  gum log "$(printf "${log_color}${2}${reset_color}")"
+
+}
+
 # check and install all pre-requsite packages
 install_prerequisite(){
 
