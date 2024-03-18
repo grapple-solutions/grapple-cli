@@ -57,6 +57,11 @@ if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
     echo "civo cli is required"
     echo "installing civo cli..."
     curl -sL https://civo.com/get | sh
+  else
+    errMsg="Failed to install civo, OS ${OS} not supported at the moment"
+    echo $errMsg
+    status_log $TYPE_ERROR $errMsg
+    exit 1
   fi
 
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else civo region ls -o custom -f code | gum choose; fi)
@@ -103,6 +108,11 @@ if [ "${TARGET_PLATFORM}" = "minikube" ]; then
       wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
       chmod +x minikube-linux-amd64
       sudo mv minikube-linux-amd64 /usr/local/bin/minikube
+    else
+      errMsg="Failed to install minikube, OS ${OS} not supported at the moment"
+      echo $errMsg
+      status_log $TYPE_ERROR $errMsg
+      exit 1
     fi
   fi
 
@@ -115,7 +125,7 @@ if [ "${TARGET_PLATFORM}" = "minikube" ]; then
 
   if ! minikube addons list | grep enabled | grep ingress >/dev/null 2>&1; then
     if [ "${AUTO_CONFIRM}" != "true" ]; then
-      gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" && exit)
+      gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     fi
     echo "enabling ingress addons for minikube"
     minikube addons enable ingress
@@ -134,7 +144,7 @@ if [ "${TARGET_PLATFORM}" = "minikube" ]; then
       --align center --width 100 --margin "1 2" --padding "2 4" \
       'sudo cp /tmp/minikube-test /etc/resolver/minikube-test'
     if [ "${AUTO_CONFIRM}" != "true" ]; then
-      gum confirm "Proceed with ingress configuration?" || (echo "grapple cannot be installed without dns / ingress configuration" && exit)
+      gum confirm "Proceed with ingress configuration?" || (echo "grapple cannot be installed without dns / ingress configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     else
       sudo cp /tmp/minikube-test /etc/resolver/minikube-test
     fi
@@ -182,7 +192,7 @@ cat ./values-override.yaml
 
 # Use gum to confirm before proceeding
 if [ "${AUTO_CONFIRM}" != "true" ]; then
-  gum confirm "Proceed with deployment using the values above?" || exit
+  gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
 fi
 
 
