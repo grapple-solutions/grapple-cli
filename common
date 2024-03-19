@@ -71,9 +71,9 @@ install_prerequisite(){
     echo "helm is a prerequisite for this script to run."
     echo "installing helm..."
     if [ $OS == "mac" ]; then 
-      brew install helm
+      gum spin --title "a prerequisite helm is not installed, now installing helm" --show-output -- brew install helm
     elif [ $OS == "gnu" ]; then
-      sudo snap install helm --classic
+      gum spin --title "a prerequisite helm is not installed, now installing helm" --show-output -- sudo snap install helm --classic
     else
       errMsg="Failed to install a prerequisite helm, OS ${OS} not supported at the moment"
       echo $errMsg
@@ -86,9 +86,9 @@ install_prerequisite(){
     echo "kubectl is a prerequisite for this script to run."
     echo "installing kubectl..."
     if [ $OS == "mac" ]; then 
-      brew install kubectl
+      gum spin --title "a prerequisite kubectl is not installed, now installing kubectl" --show-output -- brew install kubectl
     elif [ $OS == "gnu" ]; then
-      sudo snap install kubectl --classic
+      gum spin --title "a prerequisite kubectl is not installed, now installing kubectl" --show-output -- sudo snap install kubectl --classic
     else
       errMsg="Failed to install a prerequisite kubectl, OS ${OS} not supported at the moment"
       echo $errMsg
@@ -102,12 +102,12 @@ install_prerequisite(){
     echo "gum is a prerequisite for this script to run."
     echo "installing gum..."
     if [ "${OS}" == "mac" ]; then
-      brew install gum
+      gum spin --title "a prerequisite gum is not installed, now installing gum" --show-output -- brew install gum
     elif [ "${OS}" == "gnu" ]; then 
       sudo mkdir -p /etc/apt/keyrings
       curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
       echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
-      sudo apt update && sudo apt install gum
+      gum spin --title "a prerequisite gum is not installed, now installing gum" --show-output -- sudo apt update && sudo apt install gum
       sudo ln -s /usr/bin/gum /snap/bin/gum
     else
       errMsg="Failed to install a prerequisite gum, OS ${OS} not supported at the moment"

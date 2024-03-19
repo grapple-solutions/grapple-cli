@@ -56,19 +56,19 @@ if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
   if ! civo version 2>&1; then
     echo "civo cli is required"
     echo "installing civo cli..."
-    curl -sL https://civo.com/get | sh
+    gum spin --title "civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
   fi
 
-  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else civo region ls -o custom -f code | gum choose; fi)
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
 
-  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if civo k8s ls -o custom -f name >/dev/null 2>&1; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
   echo "selected civo cluster: ${CIVO_CLUSTER}"
-  civo k8s config ${CIVO_CLUSTER} --save --switch
+  gum spin --title "switching to ${CIVO_CLUSTER}" --show-output -- civo k8s config ${CIVO_CLUSTER} --save --switch
 
   # if a CIVO cluster was selected, pre-set the configuration
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
-  CIVO_CLUSTER_ID=$(civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
+  CIVO_CLUSTER_ID=$(gum spin --title "fetching cluster id of ${CIVO_CLUSTER} cluster" --show-output -- civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
   GRAPPLE_DNS=${CIVO_CLUSTER}
   GRAPPLE_DOMAIN=".grapple-demo.com"
 
@@ -98,9 +98,9 @@ if [ "${TARGET_PLATFORM}" = "minikube" ]; then
     echo "minikube cli is required"
     echo "installing minikube cli..."
     if [ "${OS}" == "mac" ]; then
-      brew install minikube
+      gum spin --title "minikube is not installed, now installing minikube" --show-output --  brew install minikube
     elif [ "${OS}" == "gnu" ]; then
-      wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+      gum spin --title "minikube is not installed, now installing minikube" --show-output --  wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
       chmod +x minikube-linux-amd64
       sudo mv minikube-linux-amd64 /usr/local/bin/minikube
     else
@@ -114,7 +114,7 @@ if [ "${TARGET_PLATFORM}" = "minikube" ]; then
   # check if minikube cluster is running or not, if not? then start it
   if minikube status | grep -q "host: Stopped"; then
       echo "Minikube is not running. Starting Minikube..."
-      minikube start
+      gum spin --title "minikube is not running, now starting minikube" --show-output -- minikube start
   fi
 
 

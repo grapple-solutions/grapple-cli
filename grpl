@@ -22,6 +22,13 @@ Commands:
   exit 0
 }
 
+# its a pre-requsite to create logs folder for log files
+# since we don't want to import everything from common, so just 
+# creating he here
+if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
+  mkdir $GRPL_WORKDIR/logs 2>/dev/null | true
+fi
+
 
 # generating a uuid will use it later to supress stdout
 uuid=$(openssl rand -hex 16 | tr '[:lower:]' '[:upper:]')
