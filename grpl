@@ -2,8 +2,6 @@
 set -e
 export GRPL_WORKDIR=$(cd $(dirname $0) && pwd)
 export FULL_COMMAND="$0 $@"
-# shellcheck source=common
-. "$GRPL_WORKDIR/common"
 
 cli_help() {
   cli_name=${0##*/}
