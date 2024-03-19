@@ -88,7 +88,7 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
   echo "deploy test case: db"
 
   for i in $(kubectl get clusterversion -o name); do 
-    kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f -; 
+    kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null; 
   done
 
   kubectl create ns ${TESTNSDB} 2>/dev/null || true
@@ -102,9 +102,10 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
   # because grappledb-mysql is of type statefulset not deployment
   # and rollour status is only avaialble for deployments
   # so now we'll directly check of the status of statefulset
+  sleep 5
   timedOut=true
   for _ in {1..120}; do  # 120 iterations for 10 minutes with 5 seconds interval
-      kubectl get statefulset grappledb-mysql -n grpl-db | grep '1/1' > /dev/null 2>&1 && {
+      kubectl get statefulset grappledb-mysql -n grpl-db | grep '1/1' >/dev/null 2>&1 && {
           echo "StatefulSet grappledb-mysql is now running. Proceeding."
           timedOut=false
           break
