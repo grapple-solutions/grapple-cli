@@ -75,26 +75,29 @@ fi
 if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; then
 
   if ! kbcli >/dev/null 2>&1; then
-    curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash 
+    gum spin --title "a prerequisite kbcli is not installed, now installing kbcli" --show-output -- curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash 
     sleep 2
   fi
 
   if ! kbcli cluster list 2>/dev/null || ! kbcli kubeblocks status; then
-    kbcli kubeblocks install --set image.registry="docker.io"
+    gum spin --title "installing kubeblocks" --show-output -- kbcli kubeblocks install --set image.registry="docker.io"
   fi
 
   echo 
   echo ----
   echo "deploy test case: db"
 
+
+  status_log $TYPE_INFO "waiting for configs to apply"
   for i in $(kubectl get clusterversion -o name); do 
-    kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null; 
+    kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
   done
 
   kubectl create ns ${TESTNSDB} 2>/dev/null || true
 
   kubectl apply -n ${TESTNSDB} -f $GRPL_WORKDIR/files/db.yaml
 
+  status_log $TYPE_SUCCESS "all configs are applied"
 
   # previously we were running
   # kubectl rollout status -n grpl-db --watch --timeout=600s sts grappledb-mysql
@@ -102,11 +105,13 @@ if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; th
   # because grappledb-mysql is of type statefulset not deployment
   # and rollour status is only avaialble for deployments
   # so now we'll directly check of the status of statefulset
+  status_log $TYPE_INFO "wating for StatefulSet grappledb-mysql to be in running state"
   sleep 5
   timedOut=true
   for _ in {1..120}; do  # 120 iterations for 10 minutes with 5 seconds interval
       kubectl get statefulset grappledb-mysql -n grpl-db | grep '1/1' >/dev/null 2>&1 && {
           echo "StatefulSet grappledb-mysql is now running. Proceeding."
+          status_log $TYPE_SUCCESS "StatefulSet grappledb-mysql is now running. Proceeding."
           timedOut=false
           break
       }

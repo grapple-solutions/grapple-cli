@@ -48,27 +48,27 @@ export BAGCLI_PROJECT_NAME=$1
 cli_log "cluster install BEGIN"
 
 # verify install target platform
-TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose "minikube" "CIVO" "Kubernetes"; fi)
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
 # if CIVO, then pre-set the configuration params
-if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
+if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   if ! civo version 2>&1; then
     echo "civo cli is required"
     echo "installing civo cli..."
-    curl -sL https://civo.com/get | sh
+    gum spin --title "civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
   fi
 
-  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else civo region ls -o custom -f code | gum choose; fi)
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
 
-  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if civo k8s ls -o custom -f name >/dev/null 2>&1; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
   echo "selected civo cluster: ${CIVO_CLUSTER}"
-  civo k8s config ${CIVO_CLUSTER} --save --switch
+  gum spin --title "switching to ${CIVO_CLUSTER}" --show-output -- civo k8s config ${CIVO_CLUSTER} --save --switch
 
   # if a CIVO cluster was selected, pre-set the configuration
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
-  CIVO_CLUSTER_ID=$(civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
+  CIVO_CLUSTER_ID=$(gum spin --title "fetching cluster id of ${CIVO_CLUSTER} cluster" --show-output -- civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
   GRAPPLE_DNS=${CIVO_CLUSTER}
   GRAPPLE_DOMAIN=".grapple-demo.com"
 
@@ -87,20 +87,20 @@ if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
 fi
 
 # if CIVO, then pre-set the configuration params
-if [ "${TARGET_PLATFORM}" = "Kubernetes" ]; then
+if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
   KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else kubectl config get-contexts -o name | gum choose; fi)
 fi
 
-if [ "${TARGET_PLATFORM}" = "minikube" ]; then
+if [ "${TARGET_PLATFORM}" = $Minikube ]; then
 
   # first check if minikube is installed or not, if not? then install it
   if ! minikube version 2>&1; then
     echo "minikube cli is required"
     echo "installing minikube cli..."
     if [ "${OS}" == "mac" ]; then
-      brew install minikube
+      gum spin --title "minikube is not installed, now installing minikube" --show-output --  brew install minikube
     elif [ "${OS}" == "gnu" ]; then
-      wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+      gum spin --title "minikube is not installed, now installing minikube" --show-output --  wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
       chmod +x minikube-linux-amd64
       sudo mv minikube-linux-amd64 /usr/local/bin/minikube
     else
@@ -114,8 +114,11 @@ if [ "${TARGET_PLATFORM}" = "minikube" ]; then
   # check if minikube cluster is running or not, if not? then start it
   if minikube status | grep -q "host: Stopped"; then
       echo "Minikube is not running. Starting Minikube..."
-      minikube start
+      gum spin --title "minikube is not running, now starting minikube" --show-output -- minikube start
   fi
+
+  # siwtch to minikube
+  kubectl config use-context minikube
 
 
   if ! minikube addons list | grep enabled | grep ingress >/dev/null 2>&1; then
@@ -146,11 +149,12 @@ if [ "${TARGET_PLATFORM}" = "minikube" ]; then
   fi 
   GRAPPLE_DNS=test
   GRAPPLE_DOMAIN=""
+  
 
 fi
 
 # Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
-if [ "${TARGET_PLATFORM}" != "minikube" ]; then
+if [ "${TARGET_PLATFORM}" != $Minikube ]; then
   GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
   echo "installing dns: ${GRAPPLE_DNS}"
 fi
@@ -187,6 +191,23 @@ cat ./values-override.yaml
 
 # Use gum to confirm before proceeding
 if [ "${AUTO_CONFIRM}" != "true" ]; then
+
+  status_log $TYPE_DEFAULT "Going to deploy grpl on ${TARGET_PLATFORM} with following configurations"  
+  if [ "${TARGET_PLATFORM}" == $CIVO ]; then 
+    
+    status_log $TYPE_DEFAULT "CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}"
+    status_log $TYPE_DEFAULT "CIVO_CLUSTER_NAME: ${CIVO_CLUSTER_NAME}"
+    status_log $TYPE_DEFAULT "CIVO_REGION: ${CIVO_REGION}"
+    status_log $TYPE_DEFAULT "CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}"
+    status_log $TYPE_DEFAULT "CIVO_MASTER_IP: ${CIVO_MASTER_IP}"
+    status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
+    status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}"
+
+  elif [ "${TARGET_PLATFORM}" == $Minikube ]; then 
+    status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
+    status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}"
+  fi
+
   gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
 fi
 
@@ -221,10 +242,9 @@ helm_deploy() {
       fi
     fi
 
-    status_log $TYPE_SUCCESS "${i} Installed"
 }
 
-if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
+if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
   kubectl run grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${GRAPPLE_DNS}" --env="CIVO_MASTER_IP=${CIVO_MASTER_IP}" --restart=Never
 fi
@@ -233,6 +253,7 @@ echo
 echo ----
 
 helm_deploy grsf-init 
+status_log $TYPE_INFO "waiting for grsf-init to be ready"
 
 echo "wait for cert-manager to be ready"
 if helm get -n kube-system notes traefik >/dev/null 2>&1; then 
@@ -244,7 +265,7 @@ if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; the
 fi
 
 # remove the DNS job again
-if [ "${TARGET_PLATFORM}" = "CIVO" ]; then
+if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
 fi
 
@@ -261,11 +282,14 @@ if kubectl get deploy -n grpl-system grsf-init-external-secrets-webhook >/dev/nu
 fi 
 
 
+status_log $TYPE_SUCCESS "grsf-init is Installed"
+
 echo 
 echo ----
 echo "Ready for grsf deployment"
 
 helm_deploy grsf
+status_log $TYPE_INFO "waiting for grsf to be ready"
 
 echo "wait for providerconfigs to be ready"
 sleep 10
@@ -286,10 +310,13 @@ if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-ku
 fi 
 
 
+status_log $TYPE_SUCCESS "grsf is Installed"
+
 echo 
 echo ----
 
 helm_deploy grsf-config 
+status_log $TYPE_SUCCESS "grsf-config is Installed"
 
 helm_deploy grsf-integration
 
@@ -301,6 +328,7 @@ kubectl apply -f $GRPL_WORKDIR/files/clusterissuer.yaml
 echo "check all crossplane packages are ready"
 for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i; done
 
+status_log $TYPE_SUCCESS "grsf-integration is Installed"
 
 cli_log "cluster install END"
 
