@@ -1,4 +1,7 @@
 #!/bin/bash
+
+. "$GRPL_WORKDIR/constants"
+
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   OS=gnu
 elif [[ "$OSTYPE" == "darwin"* ]]; then
@@ -13,9 +16,6 @@ else
   OS=unknown
 fi
 
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
 cli_log() {
   script_name=${0##*/}
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -29,18 +29,8 @@ exit_on_interrupt() {
 }
 
 
-# Status Types
-TYPE_SUCCESS='SUCCESS'
-TYPE_INFO='INFO'
-TYPE_ERROR='ERROR'
-# Status Type Colors
-success_color="\033[1;32m"  # Green color
-info_color="\033[1;33m"  # Blue color
-error_color="\033[1;31m"  # Red color
-reset_color="\033[0m"    # Reset color
-
 # calling syntax : status_log <type> <message>
-# supported types : "info", "success", "error"
+# supported types : TYPE_INFO, TYPE_SUCCESS, TYPE_ERROR, TYPE_DEFAULT
 status_log() {
 
   # first select color
@@ -48,6 +38,7 @@ status_log() {
   if [ $1 == $TYPE_INFO ]; then log_color=$info_color
   elif [ $1 == $TYPE_SUCCESS ]; then log_color=$success_color
   elif [ $1 == $TYPE_ERROR ]; then log_color=$error_color
+  elif [ $1 == $TYPE_DEFAULT ]; then log_color=$reset_color
   fi
 
   gum log "$(printf "${log_color}${2}${reset_color}")"
@@ -144,11 +135,4 @@ prompt_for_input_with_validation() {
 
 install_prerequisite
 create_logs_dir
-
-# list of regexes used for validation
-ip_regex="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
-email_regex="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-dns_regex="^[A-Za-z0-9]([-A-Za-z0-9]*[A-Za-z0-9])?(\.[A-Za-z0-9]([-A-Za-z0-9]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$"
-grpl_dns_regex="^[[:alnum:]-]{3,}$"
-non_empty_regex=".+" 
 
