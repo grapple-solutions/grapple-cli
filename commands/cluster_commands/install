@@ -149,6 +149,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
   fi 
   GRAPPLE_DNS=test
   GRAPPLE_DOMAIN=""
+  
 
 fi
 
@@ -241,7 +242,6 @@ helm_deploy() {
       fi
     fi
 
-    status_log $TYPE_SUCCESS "${i} Installed"
 }
 
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
@@ -253,6 +253,7 @@ echo
 echo ----
 
 helm_deploy grsf-init 
+status_log $TYPE_INFO "waiting for grsf-init to be ready"
 
 echo "wait for cert-manager to be ready"
 if helm get -n kube-system notes traefik >/dev/null 2>&1; then 
@@ -281,11 +282,14 @@ if kubectl get deploy -n grpl-system grsf-init-external-secrets-webhook >/dev/nu
 fi 
 
 
+status_log $TYPE_SUCCESS "grsf-init is Installed"
+
 echo 
 echo ----
 echo "Ready for grsf deployment"
 
 helm_deploy grsf
+status_log $TYPE_INFO "waiting for grsf to be ready"
 
 echo "wait for providerconfigs to be ready"
 sleep 10
@@ -306,10 +310,13 @@ if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-ku
 fi 
 
 
+status_log $TYPE_SUCCESS "grsf is Installed"
+
 echo 
 echo ----
 
 helm_deploy grsf-config 
+status_log $TYPE_SUCCESS "grsf-config is Installed"
 
 helm_deploy grsf-integration
 
@@ -321,6 +328,7 @@ kubectl apply -f $GRPL_WORKDIR/files/clusterissuer.yaml
 echo "check all crossplane packages are ready"
 for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i; done
 
+status_log $TYPE_SUCCESS "grsf-integration is Installed"
 
 cli_log "cluster install END"
 
