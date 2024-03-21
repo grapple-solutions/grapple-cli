@@ -57,26 +57,6 @@ install_prerequisite(){
   fi
 
 
-  # Ensure gum is installed: https://github.com/charmbracelet/gum
-  if ! gum --version >/dev/null 2>&1; then
-    echo "gum is a prerequisite for this script to run."
-    echo "installing gum..."
-    if [ "${OS}" == "mac" ]; then
-      brew install gum
-    elif [ "${OS}" == "gnu" ]; then 
-      sudo mkdir -p /etc/apt/keyrings
-      curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
-      echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
-      sudo apt update && sudo apt install gum
-      sudo ln -s /usr/bin/gum /snap/bin/gum
-    else
-      errMsg="Failed to install a prerequisite gum, OS ${OS} not supported at the moment"
-      echo $errMsg
-      status_log $TYPE_ERROR $errMsg
-      exit 1
-    fi
-  fi
-
   # installing helm
   if ! helm version >/dev/null 2>&1; then
     echo "helm is a prerequisite for this script to run."
@@ -108,6 +88,25 @@ install_prerequisite(){
     fi
   fi
 
+  # Ensure gum is installed: https://github.com/charmbracelet/gum
+  if ! gum --version >/dev/null 2>&1; then
+    echo "gum is a prerequisite for this script to run."
+    echo "installing gum..."
+    if [ "${OS}" == "mac" ]; then
+      gum spin --title "a prerequisite gum is not installed, now installing gum" --show-output -- brew install gum
+    elif [ "${OS}" == "gnu" ]; then 
+      sudo mkdir -p /etc/apt/keyrings
+      curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+      echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+      gum spin --title "a prerequisite gum is not installed, now installing gum" --show-output -- sudo apt update && sudo apt install gum
+      sudo ln -s /usr/bin/gum /snap/bin/gum
+    else
+      errMsg="Failed to install a prerequisite gum, OS ${OS} not supported at the moment"
+      echo $errMsg
+      status_log $TYPE_ERROR $errMsg
+      exit 1
+    fi
+  fi
 }
 
 # need to create log folder as its a pre-requsite
