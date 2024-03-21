@@ -112,7 +112,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
   fi
 
   # check if minikube cluster is running or not, if not? then start it
-  if minikube status | grep -q "host: Stopped"; then
+  if ! minikube status | grep "host: Running"; ; then
       echo "Minikube is not running. Starting Minikube..."
       gum spin --title "minikube is not running, now starting minikube" --show-output -- minikube start
   fi
