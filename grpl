@@ -1,5 +1,16 @@
 #!/bin/bash
 set -e
+
+#need to make sure that nix-shell package is installed
+if ! nix-shell --version >/dev/null 2>&1 ; then
+  echo "Nix shell is a per-requsite, installing nix-shell package, this might take a while"
+  curl -L https://nixos.org/nix/install | sh -s -- --daemon 
+  echo "Nix shell is a installed"
+fi
+
+# just a dummy step to install all the pre-reqs we need to this script
+nix-shell --run "echo"
+
 export GRPL_WORKDIR=$(cd $(dirname $0) && pwd)
 export FULL_COMMAND="$0 $@"
 
@@ -48,7 +59,7 @@ case "$1" in
     "$GRPL_WORKDIR/commands/install" $(echo $@ | sed 's,install,,g' | sed 's,i ,,') | tee -ia "$GRPL_WORKDIR/logs/install.log"  | grep $uuid
     ;;
   cluster|c)
-    "$GRPL_WORKDIR/commands/cluster" $(echo $@ | sed 's,cluster,,g' | sed 's,c ,,') | tee -ia "$GRPL_WORKDIR/logs/cluster.log"  | grep $uuid
+    "$GRPL_WORKDIR/commands/cluster" $(echo $@ | sed 's,cluster,,g' | sed 's,c ,,') | tee -ia "$GRPL_WORKDIR/logs/cluster.log"
     ;;
   example|e)
     "$GRPL_WORKDIR/commands/example" $(echo $@ | sed 's,example,,g' | sed 's,e ,,') | tee -ia "$GRPL_WORKDIR/logs/example.log"  | grep $uuid

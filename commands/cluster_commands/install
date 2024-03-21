@@ -53,22 +53,17 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
-  if ! civo version 2>&1; then
-    echo "civo cli is required"
-    echo "installing civo cli..."
-    gum spin --title "civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
-  fi
 
-  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
-  civo region use ${CIVO_REGION} | true
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else nix-shell --run "gum spin --title 'fetching civo regions' --show-output -- civo region ls -o custom -f code | gum choose"; fi)
+  nix-shell --run "civo region use ${CIVO_REGION}" | true
 
-  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if nix-shell --run "gum spin --title 'fetching civo clusters' -- civo k8s ls -o custom -f name"; then nix-shell --run "civo k8s ls -o custom -f name | gum choose"; else echo ""; fi; fi)
   echo "selected civo cluster: ${CIVO_CLUSTER}"
-  gum spin --title "switching to ${CIVO_CLUSTER}" --show-output -- civo k8s config ${CIVO_CLUSTER} --save --switch
+  nix-shell --run "gum spin --title 'switching to ${CIVO_CLUSTER}' --show-output -- nix-shell --run 'civo k8s config ${CIVO_CLUSTER} --save --switch'"
 
   # if a CIVO cluster was selected, pre-set the configuration
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
-  CIVO_CLUSTER_ID=$(gum spin --title "fetching cluster id of ${CIVO_CLUSTER} cluster" --show-output -- civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
+  CIVO_CLUSTER_ID=$(nix-shell --run "gum spin --title 'fetching cluster id of ${CIVO_CLUSTER} cluster' --show-output -- civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
   GRAPPLE_DNS=${CIVO_CLUSTER}
   GRAPPLE_DOMAIN=".grapple-demo.com"
 
@@ -78,7 +73,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   CIVO_CLUSTER_NAME=$(if [ "${CIVO_CLUSTER_NAME}" != "" ]; then echo ${CIVO_CLUSTER_NAME}; else prompt_for_input_with_validation "Enter CIVO_CLUSTER_NAME: " "Provide an name for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "selected civo cluster name: ${CIVO_CLUSTER_NAME}"
 
-  CIVO_MASTER_IP=$(if [ "${CIVO_MASTER_IP}" != "" ]; then echo ${CIVO_MASTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
+  CIVO_MASTER_IP=$(if [ "${CIVO_MASTER_IP}" != "" ]; then echo ${CIVO_MASTER_IP}; else nix-shell --run "civo k8s show ${CIVO_CLUSTER} -o custom -f 'MasterIP'"; fi) || exit $?
   echo "selected civo master ip: ${CIVO_MASTER_IP}"
 
   CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
@@ -88,61 +83,43 @@ fi
 
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
-  KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else kubectl config get-contexts -o name | gum choose; fi)
+  KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else nix-shell --run "kubectl config get-contexts -o name | gum choose"; fi)
 fi
 
 if [ "${TARGET_PLATFORM}" = $Minikube ]; then
 
-  # first check if minikube is installed or not, if not? then install it
-  if ! minikube version 2>&1; then
-    echo "minikube cli is required"
-    echo "installing minikube cli..."
-    if [ "${OS}" == "mac" ]; then
-      gum spin --title "minikube is not installed, now installing minikube" --show-output --  brew install minikube
-    elif [ "${OS}" == "gnu" ]; then
-      gum spin --title "minikube is not installed, now installing minikube" --show-output --  wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-      chmod +x minikube-linux-amd64
-      sudo mv minikube-linux-amd64 /usr/local/bin/minikube
-    else
-      errMsg="Failed to install minikube, OS ${OS} not supported at the moment"
-      echo $errMsg
-      status_log $TYPE_ERROR $errMsg
-      exit 1
-    fi
-  fi
 
   # check if minikube cluster is running or not, if not? then start it
-  if ! minikube status | grep "host: Running"; ; then
+  if ! nix-shell --run "minikube status" | grep "host: Running";then
       echo "Minikube is not running. Starting Minikube..."
-      gum spin --title "minikube is not running, now starting minikube" --show-output -- minikube start
+      nix-shell --run "gum spin --title 'minikube is not running, now starting minikube' --show-output -- minikube start"
   fi
 
   # siwtch to minikube
-  kubectl config use-context minikube
+  nix-shell --run  "kubectl config use-context minikube"
 
-
-  if ! minikube addons list | grep enabled | grep ingress >/dev/null 2>&1; then
+  if ! nix-shell --run  "minikube addons list" | grep enabled | grep ingress >/dev/null 2>&1; then
     if [ "${AUTO_CONFIRM}" != "true" ]; then
-      gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
+      nix-shell --run  "gum confirm 'Configure dns for your minikube?'" || (echo "grapple cannot be installed without dns / ingress configuration" &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     fi
     echo "enabling ingress addons for minikube"
-    minikube addons enable ingress
-    minikube addons enable ingress-dns
+    nix-shell --run  "gum spin --title 'enable ingress' --show-output -- minikube addons enable ingress"
+    nix-shell --run  "gum spin --title 'enable ingress-dns' --show-output -- minikube addons enable ingress-dns"
   fi 
 
-  if ! grep -r $(minikube ip) /etc/resolver/ >/dev/null 2>&1; then
+  if ! grep -r $(nix-shell --run  "minikube ip") /etc/resolver/ >/dev/null 2>&1; then
     echo "domain test
-    nameserver $(minikube ip)
+    nameserver $(nix-shell --run  "minikube ip")
     search_order 1
     timeout 5" > /tmp/minikube-test
 
-    echo "please run the following commands before clicking on 'confirm':"
-    gum style \
+    status_log $TYPE_INFO "please run the following commands before clicking on 'confirm':"
+    nix-shell --run  "gum style \
       --foreground 212 --border-foreground 212 --border double \
-      --align center --width 100 --margin "1 2" --padding "2 4" \
-      'sudo cp /tmp/minikube-test /etc/resolver/minikube-test'
+      --align center --width 100 --margin '1 2' --padding '2 4' \
+      'sudo cp /tmp/minikube-test /etc/resolver/minikube-test'"
     if [ "${AUTO_CONFIRM}" != "true" ]; then
-      gum confirm "Proceed with ingress configuration?" || (echo "grapple cannot be installed without dns / ingress configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
+      nix-shell --run  "gum confirm 'Proceed with ingress configuration?'" || (echo "grapple cannot be installed without dns / ingress configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     else
       sudo cp /tmp/minikube-test /etc/resolver/minikube-test
     fi
@@ -209,7 +186,7 @@ if [ "${AUTO_CONFIRM}" != "true" ]; then
     status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}"
   fi
 
-  gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
+  nix-shell --run 'gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)'
 fi
 
 
@@ -226,13 +203,13 @@ helm_deploy() {
     echo "Deploying $i with version $version"
 
     # helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
-    output=$(gum spin --title "Installing ${i} component" --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml)
+    output=$(nix-shell --run "gum spin --title 'Installing ${i} component' --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml")
     if [[ "$output" == *"access denied"* ]]; then
-      output=$(helm registry logout public.ecr.aws/${awsregistry} 2>&1)
+      output=$(nix-shell --run "helm registry logout public.ecr.aws/${awsregistry} 2>&1")
       if [[ "$output" == "Removing login credentials for public.ecr.aws/${awsregistry}" ]]; then
         helm_deploy $i
       elif [[ "$output" == "Error: not logged in" ]]; then
-        output=$(helm registry logout public.ecr.aws 2>&1)
+        output=$(nix-shell --run "helm registry logout public.ecr.aws 2>&1")
         if [[ "$output" == "Removing login credentials for public.ecr.aws" ]]; then
           helm_deploy $i
         else
@@ -246,40 +223,41 @@ helm_deploy() {
 }
 
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
-  kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
-  kubectl run grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${GRAPPLE_DNS}" --env="CIVO_MASTER_IP=${CIVO_MASTER_IP}" --restart=Never
+  nix-shell --run "kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1" | true
+  nix-shell --run "kubectl run grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env='GRAPPLE_DNS=${GRAPPLE_DNS}' --env='CIVO_MASTER_IP=${CIVO_MASTER_IP}' --restart=Never"
 fi
 
 echo 
 echo ----
 
+status_log $TYPE_INFO "going to deploy grsf-init"
 helm_deploy grsf-init 
 status_log $TYPE_INFO "waiting for grsf-init to be ready"
 
 echo "wait for cert-manager to be ready"
-if helm get -n kube-system notes traefik >/dev/null 2>&1; then 
-    CRD=Middleware && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+if nix-shell --run "helm get -n kube-system notes traefik >/dev/null 2>&1"; then 
+    CRD=Middleware && echo "wait for $CRD to be deployed:" && until nix-shell --run "kubectl explain $CRD >/dev/null 2>&1"; do echo -n .; sleep 1; done && echo "$CRD deployed"
 fi
-if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; then 
-    kubectl wait deployment -n ${NS} grsf-init-cert-manager --for condition=Available=True --timeout=300s
-    CRD=ClusterIssuer && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+if nix-shell --run "kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1"; then 
+    nix-shell --run  "kubectl wait deployment -n ${NS} grsf-init-cert-manager --for condition=Available=True --timeout=300s"
+    CRD=ClusterIssuer && echo "wait for $CRD to be deployed:" && until nix-shell --run "kubectl explain $CRD >/dev/null 2>&1"; do echo -n .; sleep 1; done && echo "$CRD deployed"
 fi
 
 # remove the DNS job again
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
-  kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
+  nix-shell --run  "kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS}"
 fi
 
 echo "wait for crossplane to be ready"
-if kubectl get deploy -n grpl-system crossplane >/dev/null 2>&1; then 
-    CRD=Provider && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+if nix-shell --run "kubectl get deploy -n grpl-system crossplane >/dev/null 2>&1"; then 
+    CRD=Provider && echo "wait for $CRD to be deployed:" && until nix-shell --run "kubectl explain $CRD >/dev/null 2>&1"; do echo -n .; sleep 1; done && echo "$CRD deployed"
 fi
 
 echo "wait for external-secrets to be ready"
-if kubectl get deploy -n grpl-system grsf-init-external-secrets-webhook >/dev/null 2>&1; then 
-    CRD=ExternalSecrets && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+if nix-shell --run "kubectl get deploy -n grpl-system grsf-init-external-secrets-webhook >/dev/null 2>&1"; then 
+    CRD=ExternalSecrets && echo "wait for $CRD to be deployed:" && until nix-shell --run "kubectl explain $CRD >/dev/null 2>&1"; do echo -n .; sleep 1; done && echo "$CRD deployed"
     echo "wait for external-secrets to be ready"
-    kubectl wait deployment -n ${NS} grsf-init-external-secrets-webhook --for condition=Available=True --timeout=300s
+    nix-shell --run "kubectl wait deployment -n ${NS} grsf-init-external-secrets-webhook --for condition=Available=True --timeout=300s"
 fi 
 
 
@@ -294,20 +272,20 @@ status_log $TYPE_INFO "waiting for grsf to be ready"
 
 echo "wait for providerconfigs to be ready"
 sleep 10
-if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-civo) >/dev/null 2>&1; then 
-    kubectl wait -n ${NS} provider.pkg.crossplane.io/provider-civo --for condition=Healthy=True --timeout=300s
+if nix-shell --run "kubectl get -n ${NS} $(nix-shell --run "kubectl get deploy -n ${NS} -o name" | grep provider-civo) >/dev/null 2>&1"; then 
+    nix-shell --run "kubectl wait -n ${NS} provider.pkg.crossplane.io/provider-civo --for condition=Healthy=True --timeout=300s"
     echo "wait for provider-civo to be ready"
-    CRD=providerconfigs.civo.crossplane.io  && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+    CRD=providerconfigs.civo.crossplane.io  && echo "wait for $CRD to be deployed:" && until nix-shell --run "kubectl explain $CRD >/dev/null 2>&1"; do echo -n .; sleep 1; done && echo "$CRD deployed"
 fi 
 
-for i in $(kubectl get pkg -n ${NS} -o name); do 
-    kubectl wait -n ${NS} $i --for condition=Healthy=True --timeout=300s;
+for i in $(nix-shell --run "kubectl get pkg -n ${NS} -o name"); do 
+    nix-shell --run "kubectl wait -n ${NS} $i --for condition=Healthy=True --timeout=300s;"
 done
-if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-helm) >/dev/null 2>&1; then 
-    CRD=providerconfigs.helm.crossplane.io  && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+if nix-shell --run "kubectl get -n ${NS} $(nix-shell --run "kubectl get deploy -n ${NS} -o name" | grep provider-helm) >/dev/null 2>&1"; then 
+    CRD=providerconfigs.helm.crossplane.io  && echo "wait for $CRD to be deployed:" && until nix-shell --run "kubectl explain $CRD >/dev/null 2>&1"; do echo -n .; sleep 1; done && echo "$CRD deployed"
 fi 
-if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-kubernetes) >/dev/null 2>&1; then 
-    CRD=providerconfigs.kubernetes.crossplane.io  && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+if nix-shell --run  "kubectl get -n ${NS} $(nix-shell --run  "kubectl get deploy -n ${NS} -o name" | grep provider-kubernetes) >/dev/null 2>&1"; then 
+    CRD=providerconfigs.kubernetes.crossplane.io  && echo "wait for $CRD to be deployed:" && until nix-shell --run  "kubectl explain $CRD >/dev/null 2>&1"; do echo -n .; sleep 1; done && echo "$CRD deployed"
 fi 
 
 
@@ -324,10 +302,10 @@ helm_deploy grsf-integration
 echo 
 echo ----
 echo "enable ssl"
-kubectl apply -f $GRPL_WORKDIR/files/clusterissuer.yaml
+nix-shell --run  "kubectl apply -f $GRPL_WORKDIR/files/clusterissuer.yaml"
 
 echo "check all crossplane packages are ready"
-for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i; done
+for i in $(nix-shell --run "kubectl get pkg -o name"); do nix-shell --run "kubectl wait --for=condition=Healthy $i"; done
 
 status_log $TYPE_SUCCESS "grsf-integration is Installed"
 
