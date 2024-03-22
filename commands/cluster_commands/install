@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-. "$GRPL_WORKDIR/utils/common"
 
 status_log $TYPE_INFO "Installation of grpl is in progress"
 
