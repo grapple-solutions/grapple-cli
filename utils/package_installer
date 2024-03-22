@@ -92,6 +92,8 @@ check_and_install() {
         echo "civo cli is required"
         echo "installing civo cli..."
         gum spin --title "civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
+        status_log "going to move /tmp/civo /usr/local/bin/civo this might take some time"
+        sudo mv /tmp/civo /usr/local/bin/civo
     fi
 
 
