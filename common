@@ -78,12 +78,13 @@ install_prerequisite(){
   fi
 
   # installing helm
-  if ! helm version >/dev/null 2>&1; then
+  if ! helm >/dev/null 2>&1; then
     echo "helm is a prerequisite for this script to run."
     echo "installing helm..."
     if [ $OS == "mac" ]; then 
       gum spin --title "a prerequisite helm is not installed, now installing helm" --show-output -- brew install helm
     elif [ $OS == "gnu" ]; then
+      sudo snap refresh >/dev/null 2>&1
       gum spin --title "a prerequisite helm is not installed, now installing helm" --show-output -- sudo snap install helm --classic
     else
       errMsg="Failed to install a prerequisite helm, OS ${OS} not supported at the moment"
@@ -93,12 +94,13 @@ install_prerequisite(){
     fi
   fi
 
-  if ! kubectl version >/dev/null 2>&1; then
+  if ! kubectl >/dev/null 2>&1; then
     echo "kubectl is a prerequisite for this script to run."
     echo "installing kubectl..."
     if [ $OS == "mac" ]; then 
       gum spin --title "a prerequisite kubectl is not installed, now installing kubectl" --show-output -- brew install kubectl
     elif [ $OS == "gnu" ]; then
+      sudo snap refresh >/dev/null 2>&1
       gum spin --title "a prerequisite kubectl is not installed, now installing kubectl" --show-output -- sudo snap install kubectl --classic
     else
       errMsg="Failed to install a prerequisite kubectl, OS ${OS} not supported at the moment"
@@ -136,4 +138,3 @@ prompt_for_input_with_validation() {
 
 install_prerequisite
 create_logs_dir
-
