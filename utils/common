@@ -1,0 +1,84 @@
+#!/bin/bash
+
+. "$GRPL_WORKDIR/utils/constants"
+. "$GRPL_WORKDIR/utils/package_installer"
+
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  OS=gnu
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  OS=mac
+elif [[ "$OSTYPE" == "cygwin" ]]; then
+  OS=posix
+elif [[ "$OSTYPE" == "msys" ]]; then
+  OS=lw
+elif [[ "$OSTYPE" == "freebsd"* ]]; then
+  OS=freebsd
+else
+  OS=unknown
+fi
+
+cli_log() {
+  script_name=${0##*/}
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  echo "== $script_name $timestamp $1"
+}
+
+exit_on_interrupt() {
+    echo; echo -e "${RED}Script interrupted by user. Exiting...${NC}" >&2
+    status_log $TYPE_ERROR "Script interrupted by user. Exiting..."
+    exit 130
+}
+
+
+# calling syntax : status_log <type> <message>
+# supported types : TYPE_INFO, TYPE_SUCCESS, TYPE_ERROR, TYPE_DEFAULT
+status_log() {
+
+  # first select color
+  log_color=""
+  if [ $1 == $TYPE_INFO ]; then log_color=$info_color
+  elif [ $1 == $TYPE_SUCCESS ]; then log_color=$success_color
+  elif [ $1 == $TYPE_ERROR ]; then log_color=$error_color
+  elif [ $1 == $TYPE_DEFAULT ]; then log_color=$reset_color
+  fi
+
+  gum log "$(printf "${log_color}${2}${reset_color}")"
+
+}
+
+# check and install all pre-requsite packages
+install_prerequisite(){
+
+  # please dont change the order of these package installation, we need gum to be installed first
+  check_and_install $_gum
+  check_and_install $_helm
+  check_and_install $_kubectl
+
+}
+
+# need to create log folder as its a pre-requsite
+create_logs_dir(){
+  if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
+    mkdir $GRPL_WORKDIR/logs 2>/dev/null | true
+  fi
+}
+
+prompt_for_input_with_validation() {
+    local prompt=$1
+    local placeholder=$2
+    local regex=$3
+    local error_message=$4
+    local default_value=$5  # Added parameter for default value
+    local input=""
+
+    while [[ ! $input =~ $regex ]]; do
+        input=$(gum input --prompt "$prompt" --placeholder "$placeholder" --value "$default_value") || exit_on_interrupt
+        if [[ ! $input =~ $regex ]]; then
+            echo -e "${RED}$error_message${NC}" >&2
+        fi
+    done
+    echo "$input"
+}
+
+install_prerequisite
+create_logs_dir

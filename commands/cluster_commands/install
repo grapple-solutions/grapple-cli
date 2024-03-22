@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-. "$GRPL_WORKDIR/common"
+. "$GRPL_WORKDIR/utils/common"
 
 status_log $TYPE_INFO "Installation of grpl is in progress"
 
@@ -53,11 +53,9 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
-  if ! civo version 2>&1; then
-    echo "civo cli is required"
-    echo "installing civo cli..."
-    gum spin --title "civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
-  fi
+
+  # first check if minikube is installed or not, if not? then install it
+  check_and_install $_civo
 
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
@@ -94,22 +92,7 @@ fi
 if [ "${TARGET_PLATFORM}" = $Minikube ]; then
 
   # first check if minikube is installed or not, if not? then install it
-  if ! minikube version 2>&1; then
-    echo "minikube cli is required"
-    echo "installing minikube cli..."
-    if [ "${OS}" == "mac" ]; then
-      gum spin --title "minikube is not installed, now installing minikube" --show-output --  brew install minikube
-    elif [ "${OS}" == "gnu" ]; then
-      gum spin --title "minikube is not installed, now installing minikube" --show-output --  wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-      chmod +x minikube-linux-amd64
-      sudo mv minikube-linux-amd64 /usr/local/bin/minikube
-    else
-      errMsg="Failed to install minikube, OS ${OS} not supported at the moment"
-      echo $errMsg
-      status_log $TYPE_ERROR $errMsg
-      exit 1
-    fi
-  fi
+  check_and_install $_minikube
 
   # check if minikube cluster is running or not, if not? then start it
   if ! minikube status | grep "host: Running"; then
