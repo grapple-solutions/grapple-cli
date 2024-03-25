@@ -3,13 +3,12 @@
 
 # available packages installations
 # package names
-_helm="helm"
-_kubectl="kubectl"
-_gum="gum"
-_minikube="minikube"
-_civo="civo"
-_kbcli="kbcli"
-_kubeblocks="kubeblocks"
+# helm
+# kubectl
+# gum="minikube"
+# civo
+# kbcli
+# kubeblocks
 
 
 check_and_install_snap() {
@@ -21,7 +20,7 @@ check_and_install_snap() {
         echo "installing snap..."
         sudo apt update
         sudo apt install snapd
-        snap --version | grep snapd >> "$GRPL_WORKDIR/"$GRPL_WORKDIR/version.txt""
+        snap --version | grep snapd >> "$GRPL_WORKDIR/version.txt"
     fi
 
 }
