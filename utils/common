@@ -50,9 +50,10 @@ status_log() {
 install_prerequisite(){
 
   # please dont change the order of these package installation, we need gum to be installed first
-  check_and_install $_gum
-  check_and_install $_helm
-  check_and_install $_kubectl
+  check_and_install_snap
+  check_and_install_gum
+  check_and_install_helm
+  check_and_install_kubectl
 
 }
 

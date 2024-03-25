@@ -55,7 +55,7 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   # first check if minikube is installed or not, if not? then install it
-  check_and_install $_civo
+  check_and_install_civo
 
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
@@ -92,7 +92,7 @@ fi
 if [ "${TARGET_PLATFORM}" = $Minikube ]; then
 
   # first check if minikube is installed or not, if not? then install it
-  check_and_install $_minikube
+  check_and_install_minikube
 
   # check if minikube cluster is running or not, if not? then start it
   if ! minikube status | grep "host: Running"; then

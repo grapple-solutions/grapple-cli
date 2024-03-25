@@ -12,7 +12,7 @@ _kbcli="kbcli"
 _kubeblocks="kubeblocks"
 
 
-check_and_install() {
+check_and_install_snap() {
 
     # if OS is gnu, we want to check and install snap
     # this package will be used to install other packages in future
@@ -21,21 +21,27 @@ check_and_install() {
         echo "installing snap..."
         sudo apt update
         sudo apt install snapd
+        snap --version | grep snapd >> "$GRPL_WORKDIR/"$GRPL_WORKDIR/version.txt""
     fi
 
+}
+
+check_and_install_gum() {
 
     # checks for checking and installing gum
-    if [ $1 == $_gum ] && ! gum --version >/dev/null 2>&1; then
+    if ! gum --version >/dev/null 2>&1; then
             echo "gum is a prerequisite for this script to run."
             echo "installing gum..."
         if [ "${OS}" == "mac" ]; then
             brew install gum
+            gum --version >> "$GRPL_WORKDIR/version.txt"
         elif [ "${OS}" == "gnu" ]; then 
             sudo mkdir -p /etc/apt/keyrings
             curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
             echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
             sudo apt update && sudo apt install gum
             sudo ln -s /usr/bin/gum /snap/bin/gum
+            gum --version >> "$GRPL_WORKDIR/version.txt"
         else
             errMsg="Failed to install a prerequisite gum, OS ${OS} not supported at the moment"
             echo $errMsg
@@ -44,18 +50,21 @@ check_and_install() {
         fi
     fi
 
+}
 
-
+check_and_install_helm() {
 
     # checks for checking and installing helm
-    if [ $1 == $_helm ] && ! helm >/dev/null 2>&1; then
+    if ! helm >/dev/null 2>&1; then
         echo "helm is a prerequisite for this script to run."
         echo "installing helm..."
         if [ $OS == "mac" ]; then 
             gum spin --title "a prerequisite helm is not installed, now installing helm" --show-output -- brew install helm
+            helm version >> "$GRPL_WORKDIR/version.txt"
         elif [ $OS == "gnu" ]; then
             sudo snap refresh >/dev/null 2>&1
             gum spin --title "a prerequisite helm is not installed, now installing helm" --show-output -- sudo snap install helm --classic
+            helm version >> "$GRPL_WORKDIR/version.txt"
         else
             errMsg="Failed to install a prerequisite helm, OS ${OS} not supported at the moment"
             echo $errMsg
@@ -64,19 +73,21 @@ check_and_install() {
         fi
     fi
 
+}
 
-
-
+check_and_install_kubectl(){
 
     # checks for checking and installing kubectl
-    if [ $1 == $_kubectl ] && ! kubectl >/dev/null 2>&1; then
+    if ! kubectl >/dev/null 2>&1; then
         echo "kubectl is a prerequisite for this script to run."
         echo "installing kubectl..."
         if [ $OS == "mac" ]; then 
             gum spin --title "a prerequisite kubectl is not installed, now installing kubectl" --show-output -- brew install kubectl
+            kubectl version >> "$GRPL_WORKDIR/version.txt"
         elif [ $OS == "gnu" ]; then
             sudo snap refresh >/dev/null 2>&1
             gum spin --title "a prerequisite kubectl is not installed, now installing kubectl" --show-output -- sudo snap install kubectl --classic
+            kubectl version >> "$GRPL_WORKDIR/version.txt"
         else
             errMsg="Failed to install a prerequisite kubectl, OS ${OS} not supported at the moment"
             echo $errMsg
@@ -85,28 +96,36 @@ check_and_install() {
         fi
     fi
 
+}
 
+check_and_install_civo() {
 
-    # checks for checking and installing kubectl
-    if [ $1 == $_civo ] && ! civo version 2>&1; then
+    # checks for checking and installing civo
+    if ! civo version 2>&1; then
         echo "civo cli is required"
         echo "installing civo cli..."
         gum spin --title "civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
         status_log "going to move /tmp/civo /usr/local/bin/civo this might take some time"
         sudo mv /tmp/civo /usr/local/bin/civo
+        civo version >> "$GRPL_WORKDIR/version.txt"
     fi
 
+}
 
-    # checks for checking and installing kubectl
-    if [ $1 == $_minikube ] && ! minikube version 2>&1; then
+check_and_install_minikube() {
+
+    # checks for checking and installing minikube
+    if ! minikube version 2>&1; then
         echo "minikube cli is required"
         echo "installing minikube cli..."
         if [ "${OS}" == "mac" ]; then
             gum spin --title "minikube is not installed, now installing minikube" --show-output --  brew install minikube
+            minikube version >> "$GRPL_WORKDIR/version.txt"
         elif [ "${OS}" == "gnu" ]; then
             gum spin --title "minikube is not installed, now installing minikube" --show-output --  wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
             chmod +x minikube-linux-amd64
             sudo mv minikube-linux-amd64 /usr/local/bin/minikube
+            minikube version >> "$GRPL_WORKDIR/version.txt"
         else
             errMsg="Failed to install minikube, OS ${OS} not supported at the moment"
             echo $errMsg
@@ -116,19 +135,25 @@ check_and_install() {
     fi
 
 
+}
 
+check_and_install_kbcli() {
 
     # checks for checking and installing kbcli
-    if [ $1 == $_kbcli ] && ! kbcli >/dev/null 2>&1; then
+    if ! kbcli >/dev/null 2>&1; then
         gum spin --title "a prerequisite kbcli is not installed, now installing kbcli" --show-output -- curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash 
         sleep 2
+        kbcli version | grep kbcli >> "$GRPL_WORKDIR/version.txt"
     fi
 
+}
 
-    # checks for checking and installing kbcli
-    if [ $1 == $_kubeblocks ] && ! kbcli cluster list 2>/dev/null || ! kbcli kubeblocks status; then
+check_and_install_kubeblocks() {
+
+    # checks for checking and installing kubeblocks
+    if ! kbcli cluster list 2>/dev/null || ! kbcli kubeblocks status; then
         gum spin --title "installing kubeblocks" --show-output -- kbcli kubeblocks install --set image.registry="docker.io"
+        kbcli version | grep KubeBlocks >> "$GRPL_WORKDIR/version.txt"
     fi
-
 
 }

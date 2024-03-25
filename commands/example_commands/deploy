@@ -74,9 +74,9 @@ fi
 
 if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; then
 
-  check_and_install $_kbcli
+  check_and_install_kbcli
 
-  check_and_install $_kubeblocks
+  check_and_install_kubeblocks
 
   echo 
   echo ----
