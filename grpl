@@ -30,7 +30,9 @@ if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
 fi
 
 # rmove version file
-rm $GRPL_WORKDIR/version.txt
+versionTitle="-------------------- Following are the version of Installed Packges required for grpl to run -----------------------------"
+echo $versionTitle > "$GRPL_WORKDIR/version.txt"
+
 
 # generating a uuid will use it later to supress stdout
 uuid=$(openssl rand -hex 16 | tr '[:lower:]' '[:upper:]')

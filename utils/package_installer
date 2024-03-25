@@ -11,6 +11,25 @@
 # kubeblocks
 
 
+display_package_version() {
+
+    # to check if version already exist in the file
+    if ! grep -q ${1} "$GRPL_WORKDIR/version.txt"; then 
+        echo "--------------------------------------------------------------------------------" >> "$GRPL_WORKDIR/version.txt"
+        echo ""  >> "$GRPL_WORKDIR/version.txt"
+        echo ""  >> "$GRPL_WORKDIR/version.txt"
+        echo "                                 ${1} Installed Version"  >> "$GRPL_WORKDIR/version.txt"
+        echo ""  >> "$GRPL_WORKDIR/version.txt"
+        command ${2} >> "$GRPL_WORKDIR/version.txt"
+        echo ""  >> "$GRPL_WORKDIR/version.txt"
+        echo ""  >> "$GRPL_WORKDIR/version.txt"
+        echo "--------------------------------------------------------------------------------" >> "$GRPL_WORKDIR/version.txt"
+        
+    fi 
+
+}
+
+
 check_and_install_snap() {
 
     # if OS is gnu, we want to check and install snap
@@ -47,7 +66,7 @@ check_and_install_gum() {
         fi
     fi
 
-    gum --version >> "$GRPL_WORKDIR/version.txt"
+    display_package_version "gum" "gum --version"
 
 }
 
@@ -70,7 +89,7 @@ check_and_install_helm() {
         fi
     fi
 
-    helm version >> "$GRPL_WORKDIR/version.txt"
+    display_package_version "helm" "helm version"
 
 }
 
@@ -93,8 +112,7 @@ check_and_install_kubectl(){
         fi
     fi
 
-    kubectl version >> "$GRPL_WORKDIR/version.txt"
-
+    display_package_version "kubectl" "kubectl version"
 
 }
 
@@ -108,8 +126,8 @@ check_and_install_civo() {
         status_log "going to move /tmp/civo /usr/local/bin/civo this might take some time"
         sudo mv /tmp/civo /usr/local/bin/civo
     fi
-
-    civo version >> "$GRPL_WORKDIR/version.txt"
+    
+    display_package_version "civo" "civo version"
 
 }
 
@@ -133,7 +151,7 @@ check_and_install_minikube() {
         fi
     fi
 
-    minikube version >> "$GRPL_WORKDIR/version.txt"
+    display_package_version "minikube" "minikube version"
 
 }
 
@@ -145,7 +163,7 @@ check_and_install_kbcli() {
         sleep 2
     fi
 
-    kbcli version | grep kbcli >> "$GRPL_WORKDIR/version.txt"
+    display_package_version "kbcli" "kbcli version | grep kbcli"
 
 }
 
@@ -156,6 +174,6 @@ check_and_install_kubeblocks() {
         gum spin --title "installing kubeblocks" --show-output -- kbcli kubeblocks install --set image.registry="docker.io"
     fi
     
-    kbcli version | grep KubeBlocks >> "$GRPL_WORKDIR/version.txt"
+    display_package_version "kubeblocks" "kbcli version | grep KubeBlocks"
 
 }
