@@ -14,7 +14,7 @@
 display_package_version() {
 
     # to check if version already exist in the file
-    if ! grep -q ${1} "$GRPL_WORKDIR/version.txt"; then 
+    if ! grep -q ${1} "$GRPL_WORKDIR/version.txt" >/dev/null 2>&1; then 
         echo "--------------------------------------------------------------------------------" >> "$GRPL_WORKDIR/version.txt"
         echo ""  >> "$GRPL_WORKDIR/version.txt"
         echo ""  >> "$GRPL_WORKDIR/version.txt"
@@ -24,7 +24,6 @@ display_package_version() {
         echo ""  >> "$GRPL_WORKDIR/version.txt"
         echo ""  >> "$GRPL_WORKDIR/version.txt"
         echo "--------------------------------------------------------------------------------" >> "$GRPL_WORKDIR/version.txt"
-        
     fi 
 
 }

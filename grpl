@@ -53,7 +53,7 @@ case "$1" in
     "$GRPL_WORKDIR/commands/example" $(echo $@ | sed 's,example,,g' | sed 's,e ,,') | tee -ia "$GRPL_WORKDIR/logs/example.log"  | grep $uuid
     ;;
   version|v)
-    "$GRPL_WORKDIR/commands/version" $(echo $@ | sed 's,version,,g' | sed 's,v ,,') | tee -ia "$GRPL_WORKDIR/logs/version.log"  | grep $uuid
+    "$GRPL_WORKDIR/commands/version" $(echo $@ | sed 's,version,,g' | sed 's,v ,,') | tee -ia "$GRPL_WORKDIR/logs/version.log"
     ;;
   upgrade|u)
     "$GRPL_WORKDIR/commands/upgrade" $(echo $@ | sed 's,upgrade,,g' | sed 's,u ,,') | tee -ia "$GRPL_WORKDIR/logs/upgrade.log"  | grep $uuid

@@ -1,10 +1,11 @@
 #!/bin/bash
 
 set -e
-. "$GRPL_WORKDIR/common"
+. "$GRPL_WORKDIR/utils/common"
 
 cli_version_help() {
   cli_name=${0##*/}
+
   echo "
 $cli_name
 the grapple cli
@@ -21,4 +22,23 @@ Commands:
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_version_help
 
+
+echo "--------------------------------------------------------------------------------"
+echo ""
+echo "" 
+echo "                                 grpl Installed Version"
+echo "" 
+echo "" 
+echo "--------------------------------------------------------------------------------"
+
+echo ""
 cat $GRPL_WORKDIR/VERSION
+
+echo ""
+echo ""
+versionTitle="--- Following are the versions of Installed Packages required for grpl to run --"
+echo $versionTitle
+cat $GRPL_WORKDIR/version.txt
+
+
+
