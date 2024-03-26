@@ -46,8 +46,6 @@ Variables:
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_install
 
-export BAGCLI_PROJECT_NAME=$1
-
 cli_log "cluster install BEGIN"
 status_log $TYPE_INFO "Installation of grpl is in progress"
 install_prerequisite

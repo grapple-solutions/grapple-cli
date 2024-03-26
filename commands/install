@@ -13,7 +13,6 @@ Usage:
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_install
 
-export BAGCLI_PROJECT_NAME=$1
 
 cli_log "install BEGIN"
 
