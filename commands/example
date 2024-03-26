@@ -17,7 +17,7 @@ Commands:
   status    status of example
   deploy    deploy an example
   *         Help
-"
+" >&2
   exit 0
 }
 

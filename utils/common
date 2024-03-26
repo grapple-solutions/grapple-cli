@@ -81,5 +81,4 @@ prompt_for_input_with_validation() {
     echo "$input"
 }
 
-install_prerequisite
 create_logs_dir

@@ -7,11 +7,11 @@ cli_help_install() {
 Command: install
 
 Usage: 
-  install tool_name"
+  install tool_name" >&2
   exit 0
 }
 
-[ ! -n "$1" ] && cli_help_install
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_install
 
 export BAGCLI_PROJECT_NAME=$1
 

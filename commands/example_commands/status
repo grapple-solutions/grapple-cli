@@ -7,7 +7,7 @@ cli_help_cluster_status() {
 Command: example status
 
 Usage: 
-  example status"
+  example status" >&2
   exit 0
 }
 

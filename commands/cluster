@@ -18,7 +18,7 @@ Commands:
   install    Cluster installation
   create     Cluster creation
   *          Help
-"
+" >&2
   exit 0
 }
 

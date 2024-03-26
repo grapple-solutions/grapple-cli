@@ -20,7 +20,7 @@ Usage:
 Variables:
   example     all / db / dbfile
   EDITION = "grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
-"
+" >&2
   exit 0
 }
 
@@ -28,6 +28,7 @@ Variables:
 
 
 cli_log "example deploy BEGIN"
+install_prerequisite
 
 
 EDITION=$(if [ "${EDITION}" != "" ]; then echo ${EDITION}; else gum choose "grpl-basic-all" "grpl-basic" "grpl-basic-db" "grpl-basic-dbfile"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed

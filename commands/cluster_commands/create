@@ -7,7 +7,7 @@ cli_help_cluster_create() {
 Command: cluster create
 
 Usage: 
-  cluster create"
+  cluster create" >&2
   exit 0
 }
 

@@ -3,9 +3,6 @@ set -e
 . "$GRPL_WORKDIR/utils/common"
 
 
-status_log $TYPE_INFO "Installation of grpl is in progress"
-
-
 NS=grpl-system
 awsregistry="p7h7z5g3"
 
@@ -38,7 +35,12 @@ Variables:
   CIVO_MASTER_IP = CIVO cluster master IP address
   CIVO_EMAIL_ADDRESS = email address of your CIVO account
 
-"
+" >&2
+# since we have restricted everything from stdout and sent it to log files
+# we won't be able to display the help menu with echo in terminal
+# so instead as a way around we'll use stderr to log the help menu on terminal
+# we could have used gum log but it didn't support \n
+# we whould have to write multiple log statements
   exit 0
 }
 
@@ -47,6 +49,8 @@ Variables:
 export BAGCLI_PROJECT_NAME=$1
 
 cli_log "cluster install BEGIN"
+status_log $TYPE_INFO "Installation of grpl is in progress"
+install_prerequisite
 
 # verify install target platform
 TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes; fi)
