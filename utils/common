@@ -81,4 +81,14 @@ prompt_for_input_with_validation() {
     echo "$input"
 }
 
+# Function to extract value from JSON
+extract_value_from_json() {
+    local json="$1"
+    local key="$2"
+    local regex="\"$key\": ?\"([^\"]*)\""
+    if [[ "$json" =~ $regex ]]; then
+        echo "${BASH_REMATCH[1]}"
+    fi 
+}
+
 create_logs_dir
