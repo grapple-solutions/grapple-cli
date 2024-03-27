@@ -19,6 +19,10 @@ dist/
 # Package files
 *.jar
 
+# skip version.txt and values-override.yaml
+values-override.yaml
+version.txt
+
 # Maven
 target/
 dist/

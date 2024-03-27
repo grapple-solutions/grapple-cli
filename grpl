@@ -29,7 +29,6 @@ if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
   mkdir $GRPL_WORKDIR/logs 2>/dev/null | true
 fi
 
-
 # generating a uuid will use it later to supress stdout
 uuid=$(openssl rand -hex 16 | tr '[:lower:]' '[:upper:]')
 
@@ -54,7 +53,7 @@ case "$1" in
     "$GRPL_WORKDIR/commands/example" $(echo $@ | sed 's,example,,g' | sed 's,e ,,') | tee -ia "$GRPL_WORKDIR/logs/example.log"  | grep $uuid
     ;;
   version|v)
-    "$GRPL_WORKDIR/commands/version" $(echo $@ | sed 's,version,,g' | sed 's,v ,,') | tee -ia "$GRPL_WORKDIR/logs/version.log"  | grep $uuid
+    "$GRPL_WORKDIR/commands/version" $(echo $@ | sed 's,version,,g' | sed 's,v ,,') | tee -ia "$GRPL_WORKDIR/logs/version.log"
     ;;
   upgrade|u)
     "$GRPL_WORKDIR/commands/upgrade" $(echo $@ | sed 's,upgrade,,g' | sed 's,u ,,') | tee -ia "$GRPL_WORKDIR/logs/upgrade.log"  | grep $uuid

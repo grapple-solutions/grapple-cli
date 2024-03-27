@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
-. "$GRPL_WORKDIR/common"
-
-status_log $TYPE_INFO "Installation of grpl is in progress"
+. "$GRPL_WORKDIR/utils/common"
 
 
 NS=grpl-system
@@ -37,15 +35,20 @@ Variables:
   CIVO_MASTER_IP = CIVO cluster master IP address
   CIVO_EMAIL_ADDRESS = email address of your CIVO account
 
-"
+" >&2
+# since we have restricted everything from stdout and sent it to log files
+# we won't be able to display the help menu with echo in terminal
+# so instead as a way around we'll use stderr to log the help menu on terminal
+# we could have used gum log but it didn't support \n
+# we whould have to write multiple log statements
   exit 0
 }
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_install
 
-export BAGCLI_PROJECT_NAME=$1
-
 cli_log "cluster install BEGIN"
+status_log $TYPE_INFO "Installation of grpl is in progress"
+install_prerequisite
 
 # verify install target platform
 TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes; fi)
@@ -53,11 +56,9 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
-  if ! civo version 2>&1; then
-    echo "civo cli is required"
-    echo "installing civo cli..."
-    gum spin --title "civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
-  fi
+
+  # first check if civo is installed or not, if not? then install it
+  check_and_install_civo
 
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
@@ -94,22 +95,7 @@ fi
 if [ "${TARGET_PLATFORM}" = $Minikube ]; then
 
   # first check if minikube is installed or not, if not? then install it
-  if ! minikube version 2>&1; then
-    echo "minikube cli is required"
-    echo "installing minikube cli..."
-    if [ "${OS}" == "mac" ]; then
-      gum spin --title "minikube is not installed, now installing minikube" --show-output --  brew install minikube
-    elif [ "${OS}" == "gnu" ]; then
-      gum spin --title "minikube is not installed, now installing minikube" --show-output --  wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-      chmod +x minikube-linux-amd64
-      sudo mv minikube-linux-amd64 /usr/local/bin/minikube
-    else
-      errMsg="Failed to install minikube, OS ${OS} not supported at the moment"
-      echo $errMsg
-      status_log $TYPE_ERROR $errMsg
-      exit 1
-    fi
-  fi
+  check_and_install_minikube
 
   # check if minikube cluster is running or not, if not? then start it
   if ! minikube status | grep "host: Running"; then

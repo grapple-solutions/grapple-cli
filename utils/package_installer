@@ -1,0 +1,181 @@
+#!/bin/bash
+
+
+# available packages installations
+# package names
+# helm
+# kubectl
+# gum="minikube"
+# civo
+# kbcli
+# kubeblocks
+
+
+display_package_version() {
+
+    # to check if version already exist in the file
+    if ! grep -q ${1} "$GRPL_WORKDIR/version.txt" >/dev/null 2>&1; then 
+        echo "
+--------------------------------------------------------------------------------
+
+
+                                 ${1} Installed Version
+
+        " >> "$GRPL_WORKDIR/version.txt"
+        command ${2} >> "$GRPL_WORKDIR/version.txt"
+        echo "
+        
+        
+--------------------------------------------------------------------------------" >> "$GRPL_WORKDIR/version.txt"
+    fi 
+
+}
+
+
+check_and_install_snap() {
+
+    # if OS is gnu, we want to check and install snap
+    # this package will be used to install other packages in future
+    if [ $OS == "gnu" ] && ! snap version >/dev/null 2>&1; then
+        echo "snap is a prerequisite package manager to install packages for linux"
+        echo "installing snap..."
+        sudo apt update
+        sudo apt install snapd
+        snap --version | grep snapd >> "$GRPL_WORKDIR/version.txt"
+    fi
+
+}
+
+check_and_install_gum() {
+
+    # checks for checking and installing gum
+    if ! gum --version >/dev/null 2>&1; then
+            echo "gum is a prerequisite for this script to run."
+            echo "installing gum..."
+        if [ "${OS}" == "mac" ]; then
+            brew install gum
+        elif [ "${OS}" == "gnu" ]; then 
+            sudo mkdir -p /etc/apt/keyrings
+            curl -fsSL https://repo.charm.sh/apt/gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/charm.gpg
+            echo "deb [signed-by=/etc/apt/keyrings/charm.gpg] https://repo.charm.sh/apt/ * *" | sudo tee /etc/apt/sources.list.d/charm.list
+            sudo apt update && sudo apt install gum
+            sudo ln -s /usr/bin/gum /snap/bin/gum
+        else
+            errMsg="Failed to install a prerequisite gum, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    display_package_version "gum" "gum --version"
+
+}
+
+check_and_install_helm() {
+
+    # checks for checking and installing helm
+    if ! helm >/dev/null 2>&1; then
+        echo "helm is a prerequisite for this script to run."
+        echo "installing helm..."
+        if [ $OS == "mac" ]; then 
+            gum spin --title "a prerequisite helm is not installed, now installing helm" --show-output -- brew install helm
+        elif [ $OS == "gnu" ]; then
+            sudo snap refresh >/dev/null 2>&1
+            gum spin --title "a prerequisite helm is not installed, now installing helm" --show-output -- sudo snap install helm --classic
+        else
+            errMsg="Failed to install a prerequisite helm, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    display_package_version "helm" "helm version"
+
+}
+
+check_and_install_kubectl(){
+
+    # checks for checking and installing kubectl
+    if ! kubectl >/dev/null 2>&1; then
+        echo "kubectl is a prerequisite for this script to run."
+        echo "installing kubectl..."
+        if [ $OS == "mac" ]; then 
+            gum spin --title "a prerequisite kubectl is not installed, now installing kubectl" --show-output -- brew install kubectl
+        elif [ $OS == "gnu" ]; then
+            sudo snap refresh >/dev/null 2>&1
+            gum spin --title "a prerequisite kubectl is not installed, now installing kubectl" --show-output -- sudo snap install kubectl --classic
+        else
+            errMsg="Failed to install a prerequisite kubectl, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    display_package_version "kubectl" "kubectl version"
+
+}
+
+check_and_install_civo() {
+
+    # checks for checking and installing civo
+    if ! civo version 2>&1; then
+        echo "civo cli is required"
+        echo "installing civo cli..."
+        gum spin --title "civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
+        status_log "going to move /tmp/civo /usr/local/bin/civo this might take some time"
+        sudo mv /tmp/civo /usr/local/bin/civo
+    fi
+    
+    display_package_version "civo" "civo version"
+
+}
+
+check_and_install_minikube() {
+
+    # checks for checking and installing minikube
+    if ! minikube version 2>&1; then
+        echo "minikube cli is required"
+        echo "installing minikube cli..."
+        if [ "${OS}" == "mac" ]; then
+            gum spin --title "minikube is not installed, now installing minikube" --show-output --  brew install minikube
+        elif [ "${OS}" == "gnu" ]; then
+            gum spin --title "minikube is not installed, now installing minikube" --show-output --  wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+            chmod +x minikube-linux-amd64
+            sudo mv minikube-linux-amd64 /usr/local/bin/minikube
+        else
+            errMsg="Failed to install minikube, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    display_package_version "minikube" "minikube version"
+
+}
+
+check_and_install_kbcli() {
+
+    # checks for checking and installing kbcli
+    if ! kbcli >/dev/null 2>&1; then
+        gum spin --title "a prerequisite kbcli is not installed, now installing kbcli" --show-output -- curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash 
+        sleep 2
+    fi
+
+    display_package_version "kbcli" "kbcli version | grep kbcli"
+
+}
+
+check_and_install_kubeblocks() {
+
+    # checks for checking and installing kubeblocks
+    if ! kbcli cluster list 2>/dev/null || ! kbcli kubeblocks status; then
+        gum spin --title "installing kubeblocks" --show-output -- kbcli kubeblocks install --set image.registry="docker.io"
+    fi
+    
+    display_package_version "kubeblocks" "kbcli version | grep KubeBlocks"
+
+}

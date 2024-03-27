@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
-. "$GRPL_WORKDIR/common"
+. "$GRPL_WORKDIR/utils/common"
 
 cli_help_cluster_status() {
   echo "
 Command: example status
 
 Usage: 
-  example status"
+  example status" >&2
   exit 0
 }
 

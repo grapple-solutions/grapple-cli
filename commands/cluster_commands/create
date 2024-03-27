@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
-. "$GRPL_WORKDIR/common"
+. "$GRPL_WORKDIR/utils/common"
 
 cli_help_cluster_create() {
   echo "
 Command: cluster create
 
 Usage: 
-  cluster create"
+  cluster create" >&2
   exit 0
 }
 

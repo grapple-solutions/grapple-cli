@@ -1,19 +1,18 @@
 #!/bin/bash
 set -e
-. "$GRPL_WORKDIR/common"
+. "$GRPL_WORKDIR/utils/common"
 
 cli_help_install() {
   echo "
 Command: install
 
 Usage: 
-  install tool_name"
+  install tool_name" >&2
   exit 0
 }
 
-[ ! -n "$1" ] && cli_help_install
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_install
 
-export BAGCLI_PROJECT_NAME=$1
 
 cli_log "install BEGIN"
 
