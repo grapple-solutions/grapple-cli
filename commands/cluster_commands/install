@@ -57,7 +57,7 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
-  # first check if minikube is installed or not, if not? then install it
+  # first check if civo is installed or not, if not? then install it
   check_and_install_civo
 
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
