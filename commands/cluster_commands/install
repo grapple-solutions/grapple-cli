@@ -51,77 +51,6 @@ Variables:
 }
 
 
-
-extract_input_params_from_cli() {
-
-  # Check if the number of arguments is even
-  if (( $# % 2 != 0 )); then
-    status_log $TYPE_ERROR "Error: Value of one of the arguments is missing, please run \'grpl c i h\' to get more info on how to pass agruments from cli"
-    exit 1
-  fi
-
-  # Loop through arguments in pairs
-  while [[ $# -gt 0 ]]; do
-
-      arg1=$1
-      shift
-      arg2=$1
-      shift
-
-      if [[ $arg1 == "--TARGET_PLATFORM" ]];then
-        TARGET_PLATFORM=$arg2
-      elif [[ $arg1 == "--GRAPPLE_VERSION" ]];then
-        GRAPPLE_VERSION=$arg2
-      elif [[ $arg1 == "--AUTO_CONFIRM" ]];then
-        AUTO_CONFIRM=$arg2
-      elif [[ $arg1 == "--KUBE_CONTEXT" ]];then
-        KUBE_CONTEXT=$arg2
-      elif [[ $arg1 == "--CIVO_REGION" ]];then
-        CIVO_REGION=$arg2
-      elif [[ $arg1 == "--CIVO_CLUSTER" ]];then
-        CIVO_CLUSTER=$arg2
-      elif [[ $arg1 == "--CIVO_CLUSTER_ID" ]];then
-        CIVO_CLUSTER_ID=$arg2
-      elif [[ $arg1 == "--CIVO_MASTER_IP" ]];then
-        CIVO_MASTER_IP=$arg2
-      elif [[ $arg1 == "--CIVO_EMAIL_ADDRESS" ]];then
-        CIVO_EMAIL_ADDRESS=$arg2
-      else
-        status_log $TYPE_ERROR "$arg1 is not a valid argument, please run \'grpl c i h\'  to get more info on how to pass agruments from cli"
-        exit 1
-      fi
-
-  done
-
-}
-
-
-extract_input_params_from_file() {
-
-  # Check if the input file has a JSON extension
-  if [[ "$1" != *.json ]]; then
-      status_log $TYPE_ERROR "Error: Input file is not a JSON file, please run \'grpl c i h\'  to get more info on how to pass agruments from cli"
-      exit 1
-  fi
-
-
-  json=$(<${1})
-
-  # Parse JSON to get configs
-  TARGET_PLATFORM=$(extract_value_from_json "$json"  'TARGET_PLATFORM')
-  GRAPPLE_VERSION=$(extract_value_from_json "$json" 'GRAPPLE_VERSION')
-  AUTO_CONFIRM=$(extract_value_from_json "$json"  'AUTO_CONFIRM')
-  KUBE_CONTEXT=$(extract_value_from_json "$json"  'KUBE_CONTEXT')
-  CIVO_REGION=$(extract_value_from_json "$json"  'CIVO_REGION')
-  CIVO_CLUSTER=$(extract_value_from_json "$json"  'CIVO_CLUSTER')
-  CIVO_CLUSTER_ID=$(extract_value_from_json "$json"  'CIVO_CLUSTER_ID')
-  CIVO_MASTER_IP=$(extract_value_from_json "$json"  'CIVO_MASTER_IP')
-  CIVO_EMAIL_ADDRESS=$(extract_value_from_json "$json"  'CIVO_EMAIL_ADDRESS')
-
-}
-
-
-
 # --------------------------------- CODE ------------------------------------------
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_install
@@ -131,18 +60,30 @@ NS=grpl-system
 awsregistry="p7h7z5g3"
 
 cli_log "cluster install BEGIN"
-status_log $TYPE_INFO "Installation of grpl is in progress"
 install_prerequisite
+status_log $TYPE_INFO "Installation of grpl is in progress"
 
 
+# valid arguments array
+valid_args=(
+    "TARGET_PLATFORM"
+    "GRAPPLE_VERSION"
+    "AUTO_CONFIRM"
+    "KUBE_CONTEXT"
+    "CIVO_REGION"
+    "CIVO_CLUSTER"
+    "CIVO_CLUSTER_ID"
+    "CIVO_MASTER_IP"
+    "CIVO_EMAIL_ADDRESS"
+  )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-[ "$1" = "--params" ] && extract_input_params_from_cli $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--params ,,')
+[ "$1" = "--params" ] && extract_input_params_from_cli $valid_args $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--params ,,')
 
 
 # check if values are already passed form terminal through a file
 # if yes? then store then in the respective vars
-[ "$1" = "--configfile" ] && extract_input_params_from_file $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--configfile ,,')
+[ "$1" = "--configfile" ] && extract_input_params_from_file $valid_args $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--configfile ,,')
 
 
 
