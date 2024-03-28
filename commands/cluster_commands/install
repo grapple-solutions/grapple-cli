@@ -14,8 +14,8 @@ Usage:
   cluster install
 
 Usage with params from cli: 
-  cluster install --params --<variable-name> <variable value>
-  e.g cluster install --params --GRAPPLE_VERSION 0.2.1
+  cluster install --params --<variable-name>=<variable value>
+  e.g cluster install --params --GRAPPLE_VERSION=0.2.1
 
 Usage with params from configfile: 
   cluster install --configfile <file-name>.json
