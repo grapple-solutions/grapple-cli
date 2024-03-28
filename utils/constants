@@ -27,3 +27,7 @@ non_empty_regex=".+"
 # exist on interupt message colors
 RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# input params type
+cli_params="--params"
+config_file_params="--configfile"
