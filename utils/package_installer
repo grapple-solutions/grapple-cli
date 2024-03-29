@@ -114,8 +114,6 @@ check_and_install_kubectl(){
         fi
     fi
 
-    display_package_version "kubectl" "kubectl version"
-
 }
 
 check_and_install_civo() {
