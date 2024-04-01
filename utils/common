@@ -66,6 +66,15 @@ create_logs_dir(){
 
 create_logs_dir
 
+# need to create tmp folder as its a pre-requsite
+create_tmp_dir(){
+  if ! ls $GRPL_WORKDIR | grep 'tmp' >/dev/null 2>&1; then
+    mkdir $GRPL_WORKDIR/tmp 2>/dev/null | true
+  fi
+}
+
+create_tmp_dir
+
 prompt_for_input_with_validation() {
     local prompt=$1
     local placeholder=$2
