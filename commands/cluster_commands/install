@@ -256,8 +256,8 @@ helm_deploy() {
 
     echo "Deploying $i with version $version"
 
-    # helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
-    output=$(gum spin --title "Installing ${i} component" --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml)
+    # helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./tmp/values-override.yaml
+    output=$(gum spin --title "Installing ${i} component" --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./tmp/values-override.yaml)
     if [[ "$output" == *"access denied"* ]]; then
       output=$(helm registry logout public.ecr.aws/${awsregistry} 2>&1)
       if [[ "$output" == "Removing login credentials for public.ecr.aws/${awsregistry}" ]]; then
