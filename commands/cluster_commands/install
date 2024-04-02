@@ -188,7 +188,7 @@ echo "installing grapple version: ${GRAPPLE_VERSION}"
 # VERSION=$(prompt_for_input_with_validation "Enter version of the grapple solution framework: " "Semver version is expected. Default value if empty: 0.2.0" "$non_empty_regex" "Version cannot be empty." "0.2.0") || exit $?
 
 # The script then proceeds to dynamically generate values-override.yaml with user inputs
-cat <<EOF > ./values-override.yaml
+cat <<EOF > /tmp/values-override.yaml
 # Default values for grsf-init.
 
 clusterdomain: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
@@ -211,7 +211,7 @@ config:
 # Additional configurations omitted for brevity
 EOF
 
-cat ./values-override.yaml
+cat /tmp/values-override.yaml
 
 # Use gum to confirm before proceeding
 if [ "${AUTO_CONFIRM}" != "true" ]; then
@@ -248,8 +248,7 @@ helm_deploy() {
 
     echo "Deploying $i with version $version"
 
-    # helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml
-    output=$(gum spin --title "Installing ${i} component" --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f ./values-override.yaml)
+    output=$(gum spin --title "Installing ${i} component" --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml)
     if [[ "$output" == *"access denied"* ]]; then
       output=$(helm registry logout public.ecr.aws/${awsregistry} 2>&1)
       if [[ "$output" == "Removing login credentials for public.ecr.aws/${awsregistry}" ]]; then
@@ -355,5 +354,8 @@ for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i;
 status_log $TYPE_SUCCESS "grsf-integration is Installed"
 
 cli_log "cluster install END"
+
+
+rm /tmp/values-override.yaml
 
 status_log $TYPE_SUCCESS "Successfuly Installed grpl"
