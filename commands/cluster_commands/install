@@ -16,6 +16,9 @@ Usage:
 Usage with params from cli: 
   cluster install --params --<variable-name>=<variable value>
   e.g cluster install --params --GRAPPLE_VERSION=0.2.1
+  OR
+  cluster install --params --<variable-name> <variable value>
+  e.g cluster install --params --GRAPPLE_VERSION 0.2.1
 
 Usage with params from configfile: 
   cluster install --configfile <file-name>.json
@@ -78,13 +81,11 @@ valid_args=(
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-[ "$1" = "--params" ] && extract_input_params_from_cli $valid_args $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--params ,,')
-
+[ "$1" = "$cli_params" ] && extract_input_params_from_cli $valid_args "grpl c i h" $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--params ,,')
 
 # check if values are already passed form terminal through a file
 # if yes? then store then in the respective vars
-[ "$1" = "--configfile" ] && extract_input_params_from_file $valid_args $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--configfile ,,')
-
+[ "$1" = "$config_file_params" ] && extract_input_params_from_file $valid_args "grpl c i h" $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--configfile ,,')
 
 
 # verify install target platform
@@ -96,6 +97,12 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   # first check if civo is installed or not, if not? then install it
   check_and_install_civo
+
+  if grep '"apikeys":{}' ~/.civo.json; then
+    CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
+    civo apikey add grapple $CIVO_API_KEY
+    civo apikey current grapple
+  fi
 
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
