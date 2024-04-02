@@ -95,14 +95,17 @@ extract_value_from_json() {
 
 extract_input_params_from_file() {
 
+  help_menu_cmd=$2
+  config_file_name=$3
+  
   # Check if the input file has a JSON extension
-  if [[ "$2" != *.json ]]; then
-      status_log $TYPE_ERROR "Error: Input file is not a JSON file, please run \'grpl c i h\'  to get more info on how to pass agruments from cli"
-      exit 1
+  if [[ "$config_file_name" != *.json ]]; then
+    status_log $TYPE_ERROR "Error: Input file is not a JSON file, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+    exit 1
   fi
 
 
-  json=$(<${2})
+  json=$(<${config_file_name})
 
   valid_args=$1
   for val in "${valid_args[@]}"; do
@@ -116,6 +119,8 @@ extract_input_params_from_cli() {
 
   valid_args=$1
   shift
+  help_menu_cmd=$1
+  shift
   # Loop through arguments
   while [[ $# -gt 0 ]]; do
 
@@ -128,8 +133,8 @@ extract_input_params_from_cli() {
       if [[ " ${valid_args[@]} " =~ " $key " ]]; then
           export $config_param
       else
-          status_log $TYPE_ERROR "$key is not a valid argument, please run \'grpl c i h\'  to get more info on how to pass agruments from cli"
-          exit 1
+          status_log $TYPE_ERROR "Error: One of the argument is not valid, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+          return 1
       fi
 
   done
