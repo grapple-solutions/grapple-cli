@@ -114,8 +114,6 @@ check_and_install_kubectl(){
         fi
     fi
 
-    display_package_version "kubectl" "kubectl version"
-
 }
 
 check_and_install_civo() {
@@ -125,7 +123,7 @@ check_and_install_civo() {
         echo "civo cli is required"
         echo "installing civo cli..."
         gum spin --title "civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
-        status_log "going to move /tmp/civo /usr/local/bin/civo this might take some time"
+        status_log $TYPE_INFO "going to move /tmp/civo /usr/local/bin/civo this might take some time"
         sudo mv /tmp/civo /usr/local/bin/civo
     fi
     

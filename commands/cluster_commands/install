@@ -97,6 +97,12 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   # first check if civo is installed or not, if not? then install it
   check_and_install_civo
 
+  if grep '"apikeys":{}' ~/.civo.json; then
+    CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
+    civo apikey add grapple $CIVO_API_KEY
+    civo apikey current grapple
+  fi
+
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
 
