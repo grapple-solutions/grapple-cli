@@ -5,7 +5,9 @@ set -e
 
 cli_version_help() {
   cli_name=${0##*/}
-
+  if ! grep -q "grpl" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    extract_grapple_cli_version
+  fi
   echo "
 $cli_name
 the grapple cli
@@ -23,28 +25,16 @@ Commands:
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_version_help
 
 
-echo "
---------------------------------------------------------------------------------
-
-
-                                 grpl Installed Version
-
-
---------------------------------------------------------------------------------
-
-
-"
-cat $GRPL_WORKDIR/VERSION
-
-if cat $GRPL_WORKDIR/version.txt >/dev/null 2>&1; then
-  echo "
-
-
-  --- Following are the versions of Installed Packages required for grpl to run --
-  "
-  cat $GRPL_WORKDIR/version.txt
+if ! grep -q "grpl" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+  extract_grapple_cli_version
 fi
 
+  echo "
+version
+the grapple cli
+Version: $(cat $GRPL_WORKDIR/VERSION)
+https://grapple-solutions.com/
+"
 
 
 
