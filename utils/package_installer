@@ -222,7 +222,7 @@ extract_gum_cli_version(){
         gum_output=$(gum -v 2>/dev/null)
 
         # Extract version number using grep
-        gum_version=$(echo "$gum_output" | grep -o 'v[0-9][0-9.]*')
+        gum_version=$(echo "$gum_output" | grep -o '[0-9][0-9.]*')
 
         # Output the latest version
         echo "      $gum_version - gum" >> "$GRPL_WORKDIR/VERSION"
