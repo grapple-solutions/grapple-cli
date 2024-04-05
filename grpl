@@ -3,8 +3,13 @@ set -e
 export GRPL_WORKDIR=$(cd $(dirname $0) && pwd)
 export FULL_COMMAND="$0 $@"
 
+. "$GRPL_WORKDIR/utils/package_installer"
+
 cli_help() {
   cli_name=${0##*/}
+  if ! grep -q "grpl" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    extract_grapple_cli_version
+  fi
   echo "
 $cli_name
 the grapple cli
