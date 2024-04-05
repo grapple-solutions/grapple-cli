@@ -122,6 +122,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
   echo "selected civo cluster: ${CIVO_CLUSTER}"
   gum spin --title "switching to ${CIVO_CLUSTER}" --show-output -- civo k8s config ${CIVO_CLUSTER} --save --switch
+  extract_kubectl_cli_version
 
   # if a CIVO cluster was selected, pre-set the configuration
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
@@ -161,7 +162,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
 
   # siwtch to minikube
   kubectl config use-context minikube
-
+  extract_kubectl_cli_version
 
   if ! minikube addons list | grep enabled | grep ingress >/dev/null 2>&1; then
     if [ "${AUTO_CONFIRM}" != "true" ]; then
