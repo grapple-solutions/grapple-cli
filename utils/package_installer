@@ -160,24 +160,22 @@ check_and_install_kubeblocks() {
 
 extract_grapple_cli_version(){
 
-    if ! grep -q "grpl" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
-        # GitHub repository information
-        owner="grapple-solutions"
-        repo="grapple-cli"
+    # GitHub repository information
+    owner="grapple-solutions"
+    repo="grapple-cli"
 
-        # Fetch latest release tag using GitHub API
-        latest_tag=$(curl -s "https://api.github.com/repos/$owner/$repo/releases/latest" | grep -o '"tag_name": ".*"' | cut -d '"' -f 4)
+    # Fetch latest release tag using GitHub API
+    latest_tag=$(curl -s "https://api.github.com/repos/$owner/$repo/releases/latest" | grep -o '"tag_name": ".*"' | cut -d '"' -f 4)
 
-        grpl_version="$latest_tag - grpl cli version"
-        output="$grpl_version"
-        if ls $GRPL_WORKDIR | grep 'VERSION' >/dev/null 2>&1; then
-            file_contents=$(<"$GRPL_WORKDIR/VERSION")
-            output="$grpl_version"$'\n'"$file_contents"
-        fi
-
-        # Echo the string followed by the original contents and redirect it back to the file
-        echo "$output" > "$GRPL_WORKDIR/VERSION"
+    grpl_version="$latest_tag - grpl cli version"
+    output="$grpl_version"
+    if ls $GRPL_WORKDIR | grep 'VERSION' >/dev/null 2>&1; then
+        file_contents=$(<"$GRPL_WORKDIR/VERSION")
+        output="$grpl_version"$'\n'"$file_contents"
     fi
+
+    # Echo the string followed by the original contents and redirect it back to the file
+    echo "$output" > "$GRPL_WORKDIR/VERSION"
 
 }
 
