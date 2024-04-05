@@ -49,7 +49,7 @@ status_log() {
 # check and install all pre-requsite packages
 install_prerequisite(){
 
-  status_log $TYPE_INFO "Check and Installing pre-requsite packages if any, this may take a while"
+  echo "Check and Installing pre-requsite packages if any, this may take a while"  >&2
   # please dont change the order of these package installation, we need gum to be installed first
   check_and_install_snap
   check_and_install_gum
