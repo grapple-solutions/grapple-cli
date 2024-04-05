@@ -143,9 +143,9 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
   check_and_install_minikube
 
   # check if minikube cluster is running or not, if not? then start it
-  if ! minikube status | grep "host: Running"; then
+  if minikube status | grep "host: Running"; then
       echo "Minikube is not running. Starting Minikube..."
-      if gum spin --title "minikube is not running, now starting minikube" --show-output -- minikube start | grep "Unable to pick a default driver"; then
+      if ! gum spin --title "minikube is not running, now starting minikube" --show-output -- minikube start; then
         status_log $TYPE_ERROR "Error: minikube failed to start becasue docker or any driver service is not running. Details are listed below"
         minikube start >&2
       fi
