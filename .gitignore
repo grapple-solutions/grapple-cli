@@ -19,9 +19,6 @@ dist/
 # Package files
 *.jar
 
-# skip version.txt
-version.txt
-
 # Maven
 target/
 dist/

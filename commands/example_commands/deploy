@@ -51,10 +51,18 @@ if [ "${EDITION}" = "grpl-basic-dbfile" ] || [ "${EDITION}" = "grpl-basic-all" ]
   echo "deploy test case: dbfile"
 
   echo "check xrds are available"
+  status_log $TYPE_INFO "wait for grapi to be deployed"
   CRD=grapi && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+  status_log $TYPE_SUCCESS "grapi is deployed"
+  status_log $TYPE_INFO "wait for compositegrappleapis to be deployed"
   CRD=compositegrappleapis && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+  status_log $TYPE_SUCCESS "compositegrappleapis is deployed"
+  status_log $TYPE_INFO "wait for composition/grapi.grsf.grpl.io to be deployed"
   CRD=composition/grapi.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+  status_log $TYPE_SUCCESS "composition/grapi.grsf.grpl.io is deployed"
+  status_log $TYPE_INFO "wait for composition/muim.grsf.grpl.io to be deployed"
   CRD=composition/muim.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+  status_log $TYPE_SUCCESS "composition/muim.grsf.grpl.io is deployed"
 
   gum spin --title "Deploying ${EDITION}" -- helm upgrade --install ${TESTNS} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNS} -f $GRPL_WORKDIR/files/test.yaml ${MINIKUBE_PATCH} --create-namespace 
   
