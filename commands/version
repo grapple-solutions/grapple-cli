@@ -5,9 +5,6 @@ set -e
 
 cli_version_help() {
   cli_name=${0##*/}
-  if ! grep -q "grpl" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
-    extract_grapple_cli_version
-  fi
   echo "
 $cli_name
 the grapple cli
@@ -24,15 +21,15 @@ Commands:
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_version_help
 
-
-if ! grep -q "grpl" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
-  extract_grapple_cli_version
-fi
-
   echo "
 version
 the grapple cli
 Version: $(cat $GRPL_WORKDIR/VERSION)
+"
+if ls $GRPL_WORKDIR | grep 'dependency_versions' >/dev/null 2>&1; then
+  echo "$(cat $GRPL_WORKDIR/dependency_versions)"
+fi
+echo "
 https://grapple-solutions.com/
 "
 

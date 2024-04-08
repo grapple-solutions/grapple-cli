@@ -20,7 +20,7 @@ check_and_install_snap() {
         echo "installing snap..."
         sudo apt update
         sudo apt install snapd
-        snap --version | grep snapd >> "$GRPL_WORKDIR/VERSION"
+        snap --version | grep snapd >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }
@@ -157,34 +157,9 @@ check_and_install_kubeblocks() {
 }
 
 
-
-extract_grapple_cli_version(){
-
-    if ! grep -q "grpl" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
-        # GitHub repository information
-        owner="grapple-solutions"
-        repo="grapple-cli"
-
-        # Fetch latest release tag using GitHub API
-        latest_tag=$(curl -s "https://api.github.com/repos/$owner/$repo/releases/latest" | grep -o '"tag_name": ".*"' | cut -d '"' -f 4)
-
-        grpl_version="$latest_tag - grpl cli version"
-        output="$grpl_version"
-        if ls $GRPL_WORKDIR | grep 'VERSION' >/dev/null 2>&1; then
-            file_contents=$(<"$GRPL_WORKDIR/VERSION")
-            output="$grpl_version"$'\n'"$file_contents"
-        fi
-
-        # Echo the string followed by the original contents and redirect it back to the file
-        echo "$output" > "$GRPL_WORKDIR/VERSION"
-    fi
-
-}
-
-
 extract_helm_cli_version(){
 
-    if ! grep -q "helm" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    if ! grep -q "helm" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
 
         # Store the output of 'helm version' in a variable
         helm_output=$(helm version 2>/dev/null)
@@ -193,14 +168,14 @@ extract_helm_cli_version(){
         helm_version=$(echo "$helm_output" | sed -n 's/version.BuildInfo{Version:"\([^"]*\).*/\1/p')
 
         # Output the latest version
-        echo "      $helm_version - helm" >> "$GRPL_WORKDIR/VERSION"
+        echo "      $helm_version - helm" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }
 
 extract_kubectl_cli_version(){
 
-    if ! grep -q "kubectl" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    if ! grep -q "kubectl" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
 
         # Store the output of 'kubectl version' in a variable
         kubectl_output=$(kubectl version 2>/dev/null)
@@ -209,14 +184,14 @@ extract_kubectl_cli_version(){
         kubectl_client_version=$(echo "$kubectl_output" | awk '/Client Version:/{print $NF}')
 
         # Output the latest version
-        echo "      $kubectl_client_version - kubectl" >> "$GRPL_WORKDIR/VERSION"
+        echo "      $kubectl_client_version - kubectl" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }
 
 extract_gum_cli_version(){
 
-    if ! grep -q "gum" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    if ! grep -q "gum" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
 
         # Store the output of 'gum -v' in a variable
         gum_output=$(gum -v 2>/dev/null)
@@ -225,14 +200,14 @@ extract_gum_cli_version(){
         gum_version=$(echo "$gum_output" | grep -o '[0-9][0-9.]*')
 
         # Output the latest version
-        echo "      $gum_version - gum" >> "$GRPL_WORKDIR/VERSION"
+        echo "      v$gum_version - gum" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }
 
 extract_civo_cli_version(){
 
-    if ! grep -q "civo" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    if ! grep -q "civo" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
 
         # Store the output of civo version in a variable
         civo_output=$(civo version 2>/dev/null)
@@ -241,7 +216,7 @@ extract_civo_cli_version(){
         civo_version=$(echo "$civo_output" | grep -o 'Civo CLI v[0-9.]*' | awk '{print $3}')
 
         # Output the latest version
-        echo "      $civo_version - civo" >> "$GRPL_WORKDIR/VERSION"
+        echo "      $civo_version - civo" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }
@@ -249,7 +224,7 @@ extract_civo_cli_version(){
 
 extract_minikube_cli_version(){
 
-    if ! grep -q "minikube" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    if ! grep -q "minikube" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
 
         # Run minikube version command and capture its output
         minikube_output=$(minikube version 2>/dev/null)
@@ -258,7 +233,7 @@ extract_minikube_cli_version(){
         minikube_version=$(echo "$minikube_output" | grep -o 'minikube version: v[0-9.]*' | awk '{print $3}')
 
         # Output the latest version
-        echo "      $minikube_version - minikube" >> "$GRPL_WORKDIR/VERSION"
+        echo "      $minikube_version - minikube" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }
@@ -266,7 +241,7 @@ extract_minikube_cli_version(){
 
 extract_kbcli_cli_version(){
 
-    if ! grep -q "kbcli" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    if ! grep -q "kbcli" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
 
         # Run kbcli version command and capture its output
         kbcli_output=$(kbcli version 2>/dev/null)
@@ -275,14 +250,14 @@ extract_kbcli_cli_version(){
         kbcli_version=$(echo "$kbcli_output" | grep -o 'kbcli: [0-9.]*' | awk '{print $2}')
 
         # Output the latest version
-        echo "      v$kbcli_version - kbcli" >> "$GRPL_WORKDIR/VERSION"
+        echo "      v$kbcli_version - kbcli" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }
 
 extract_kubeblocks_cli_version(){
 
-    if ! grep -q "kubeblocks" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    if ! grep -q "kubeblocks" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
 
         # Run kbcli version command and capture its output
         output=$(kbcli version 2>/dev/null)
@@ -291,7 +266,7 @@ extract_kubeblocks_cli_version(){
         kubeblocks_version=$(echo "$output" | grep -o 'KubeBlocks: [0-9.]*' | awk '{print $2}')
 
         # Output the latest version
-        echo "      v$kubeblocks_version - kubeblocks" >> "$GRPL_WORKDIR/VERSION"
+        echo "      v$kubeblocks_version - kubeblocks" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }
