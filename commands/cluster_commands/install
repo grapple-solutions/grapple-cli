@@ -151,16 +151,20 @@ fi
 
 if [ "${TARGET_PLATFORM}" = $Minikube ]; then
 
+  status_log $TYPE_INFO "going to install and run minikube"
   # first check if minikube is installed or not, if not? then install it
   check_and_install_minikube
 
   # check if minikube cluster is running or not, if not? then start it
   if ! minikube status | grep "host: Running"; then
       echo "Minikube is not running. Starting Minikube..."
-      gum spin --title "minikube is not running, now starting minikube" --show-output -- minikube start
+      if ! gum spin --title "minikube is not running, now starting minikube" --show-output -- minikube start; then
+        status_log $TYPE_ERROR "Error: minikube failed to start becasue docker or any driver service is not running. Details are listed below"
+        minikube start >&2
+      fi
   fi
 
-  # siwtch to minikube
+  # switch to minikube
   kubectl config use-context minikube
   extract_kubectl_cli_version
 
@@ -169,10 +173,12 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
       gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     fi
     echo "enabling ingress addons for minikube"
+    status_log $TYPE_INFO "enabling ingress addons for minikube"
     minikube addons enable ingress
     minikube addons enable ingress-dns
   fi 
 
+  status_log $TYPE_INFO "testing domain, this may take upto 5mins"
   if ! grep -r $(minikube ip) /etc/resolver/ >/dev/null 2>&1; then
     echo "domain test
     nameserver $(minikube ip)
@@ -180,11 +186,17 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
     timeout 5" > /tmp/minikube-test
 
     if [ "${AUTO_CONFIRM}" != "true" ]; then
-      status_log $TYPE_DEFAULT "please run the following commands before clicking on 'confirm':"
-      gum style \
-        --foreground 212 --border-foreground 212 --border double \
-        --align center --width 100 --margin "1 2" --padding "2 4" \
-        'sudo cp /tmp/minikube-test /etc/resolver/minikube-test' >&2
+      status_log $TYPE_INFO "please run the following commands before clicking on 'confirm':"
+    else
+      status_log $TYPE_INFO "going to run following command"
+    fi
+  
+    gum style \
+      --foreground 212 --border-foreground 212 --border double \
+      --align center --width 100 --margin "1 2" --padding "2 4" \
+      'sudo cp /tmp/minikube-test /etc/resolver/minikube-test' >&2
+
+    if [ "${AUTO_CONFIRM}" != "true" ]; then
       gum confirm "Proceed with ingress configuration?" || (echo "grapple cannot be installed without dns / ingress configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     else
       sudo cp /tmp/minikube-test /etc/resolver/minikube-test
@@ -271,7 +283,7 @@ helm_deploy() {
 
     echo "Deploying $i with version $version"
 
-    output=$(gum spin --title "Installing ${i} component" --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml)
+  if ! output=$(gum spin --title "Installing ${i} component" --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml); then
     if [[ "$output" == *"access denied"* ]]; then
       output=$(helm registry logout public.ecr.aws/${awsregistry} 2>&1)
       if [[ "$output" == "Removing login credentials for public.ecr.aws/${awsregistry}" ]]; then
@@ -286,7 +298,12 @@ helm_deploy() {
           exit 1
         fi
       fi
+    else 
+      echo "${i} Failed to Installed"
+      status_log $TYPE_ERROR "${i} Failed to Installed"
+      exit 1
     fi
+  fi
 
 }
 
