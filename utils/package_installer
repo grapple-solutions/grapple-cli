@@ -200,7 +200,7 @@ extract_gum_cli_version(){
         gum_version=$(echo "$gum_output" | grep -o '[0-9][0-9.]*')
 
         # Output the latest version
-        echo "      $gum_version - gum" >> "$GRPL_WORKDIR/dependency_versions"
+        echo "      v$gum_version - gum" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }
