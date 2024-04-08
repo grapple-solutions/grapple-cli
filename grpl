@@ -31,34 +31,21 @@ if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
   mkdir $GRPL_WORKDIR/logs 2>/dev/null | true
 fi
 
-# generating a uuid will use it later to supress stdout
-uuid=$(openssl rand -hex 16 | tr '[:lower:]' '[:upper:]')
-
-# Problem statement : storing all stdouts into a log files, and nothing should be displayed on terminal
-# In following commands "   | grep $uuid " part is used to suppress the stdout
-# if we suppress logs using >/dev/null then "tee -ia "$GRPL_WORKDIR/logs/install.log" also doesn't produce any output
-# its because we have nulled the stdout and tee just replicates the stdout.
-# Another solution was to create a log func that just receives the commands and execute it and send its output to a log file while suppressing the logs
-# e.g file_log() { eval "$1" >> "$2" 2>&1 }
-#  file_log "kubectl get pods" cluster.log 
-#  file_log "kubectl get pods" cluster_install.log 
-#  so we had to run everything twice to save logs on 2 file or at least copy logs from one file to another everytime
-#  Thats why I though approach 1 is better, becase in that case we won't have to create any extra funtions we can utilize tee
 case "$1" in
   install|i)
-    "$GRPL_WORKDIR/commands/install" $(echo $@ | sed 's,install,,g' | sed 's,i ,,') | tee -ia "$GRPL_WORKDIR/logs/install.log"  | grep $uuid
+    "$GRPL_WORKDIR/commands/install" $(echo $@ | sed 's,install,,g' | sed 's,i ,,') | tee -ia "$GRPL_WORKDIR/logs/install.log" >/dev/null
     ;;
   cluster|c)
-    "$GRPL_WORKDIR/commands/cluster" $(echo $@ | sed 's,cluster,,g' | sed 's,c ,,') | tee -ia "$GRPL_WORKDIR/logs/cluster.log"  | grep $uuid
+    "$GRPL_WORKDIR/commands/cluster" $(echo $@ | sed 's,cluster,,g' | sed 's,c ,,') | tee -ia "$GRPL_WORKDIR/logs/cluster.log" >/dev/null
     ;;
   example|e)
-    "$GRPL_WORKDIR/commands/example" $(echo $@ | sed 's,example,,g' | sed 's,e ,,') | tee -ia "$GRPL_WORKDIR/logs/example.log"  | grep $uuid
+    "$GRPL_WORKDIR/commands/example" $(echo $@ | sed 's,example,,g' | sed 's,e ,,') | tee -ia "$GRPL_WORKDIR/logs/example.log" >/dev/null
     ;;
   version|v)
     "$GRPL_WORKDIR/commands/version" $(echo $@ | sed 's,version,,g' | sed 's,v ,,') | tee -ia "$GRPL_WORKDIR/logs/version.log"
     ;;
   upgrade|u)
-    "$GRPL_WORKDIR/commands/upgrade" $(echo $@ | sed 's,upgrade,,g' | sed 's,u ,,') | tee -ia "$GRPL_WORKDIR/logs/upgrade.log"  | grep $uuid
+    "$GRPL_WORKDIR/commands/upgrade" $(echo $@ | sed 's,upgrade,,g' | sed 's,u ,,') | tee -ia "$GRPL_WORKDIR/logs/upgrade.log" >/dev/null
     ;;
   *)
     cli_help
