@@ -25,7 +25,11 @@ Commands:
 version
 the grapple cli
 Version: $(cat $GRPL_WORKDIR/VERSION)
-$(cat $GRPL_WORKDIR/dependency_versions)
+"
+if ls $GRPL_WORKDIR | grep 'dependency_versions' >/dev/null 2>&1; then
+  echo "$(cat $GRPL_WORKDIR/dependency_versions)"
+fi
+echo "
 https://grapple-solutions.com/
 "
 
