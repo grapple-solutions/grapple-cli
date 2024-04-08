@@ -151,6 +151,7 @@ fi
 
 if [ "${TARGET_PLATFORM}" = $Minikube ]; then
 
+  status_log $TYPE_INFO "going to install and run minikube"
   # first check if minikube is installed or not, if not? then install it
   check_and_install_minikube
 
@@ -172,10 +173,12 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
       gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     fi
     echo "enabling ingress addons for minikube"
+    status_log $TYPE_INFO "enabling ingress addons for minikube"
     minikube addons enable ingress
     minikube addons enable ingress-dns
   fi 
 
+  status_log $TYPE_INFO "testing domain, this may take upto 5mins"
   if ! grep -r $(minikube ip) /etc/resolver/ >/dev/null 2>&1; then
     echo "domain test
     nameserver $(minikube ip)
@@ -183,11 +186,17 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
     timeout 5" > /tmp/minikube-test
 
     if [ "${AUTO_CONFIRM}" != "true" ]; then
-      status_log $TYPE_DEFAULT "please run the following commands before clicking on 'confirm':"
-      gum style \
-        --foreground 212 --border-foreground 212 --border double \
-        --align center --width 100 --margin "1 2" --padding "2 4" \
-        'sudo cp /tmp/minikube-test /etc/resolver/minikube-test' >&2
+      status_log $TYPE_INFO "please run the following commands before clicking on 'confirm':"
+    else
+      status_log $TYPE_INFO "going to run following command"
+    fi
+  
+    gum style \
+      --foreground 212 --border-foreground 212 --border double \
+      --align center --width 100 --margin "1 2" --padding "2 4" \
+      'sudo cp /tmp/minikube-test /etc/resolver/minikube-test' >&2
+
+    if [ "${AUTO_CONFIRM}" != "true" ]; then
       gum confirm "Proceed with ingress configuration?" || (echo "grapple cannot be installed without dns / ingress configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     else
       sudo cp /tmp/minikube-test /etc/resolver/minikube-test
