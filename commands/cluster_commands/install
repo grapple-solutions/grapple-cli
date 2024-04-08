@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
+
 . "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
 
 # --------------------------------- Functions ------------------------------------------
 
@@ -89,6 +91,10 @@ valid_args=(
 
 
 # verify install target platform
+# if TARGET_PLATFORM is provided using CLI then we need to check if valid TARGET_PLATFORM was provided or not
+if [ "${TARGET_PLATFORM}" != "" ]; then 
+  is_correct_target_platform_provided $TARGET_PLATFORM 
+fi
 TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
@@ -104,9 +110,15 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
     civo apikey current grapple
   fi
 
+  if [ "${CIVO_REGION}" != "" ]; then 
+    is_correct_civo_region_provided $CIVO_REGION 
+  fi
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
 
+  if [ "${CIVO_CLUSTER}" != "" ]; then 
+    is_correct_civo_cluster_provided $CIVO_CLUSTER 
+  fi
   CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
   echo "selected civo cluster: ${CIVO_CLUSTER}"
   gum spin --title "switching to ${CIVO_CLUSTER}" --show-output -- civo k8s config ${CIVO_CLUSTER} --save --switch
@@ -193,6 +205,9 @@ if [ "${TARGET_PLATFORM}" != $Minikube ]; then
   echo "installing dns: ${GRAPPLE_DNS}"
 fi
 
+if [ "${GRAPPLE_VERSION}" != "" ]; then 
+  is_correct_grapple_version_provided $GRAPPLE_VERSION 
+fi 
 GRAPPLE_VERSION=$(if [ "${GRAPPLE_VERSION}" != "" ]; then echo ${GRAPPLE_VERSION}; else gum choose "0.2.1" "0.2.0"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
 echo "installing grapple version: ${GRAPPLE_VERSION}"
 

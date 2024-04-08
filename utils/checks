@@ -1,0 +1,76 @@
+#!/bin/bash
+
+. "$GRPL_WORKDIR/utils/constants"
+
+is_correct_target_platform_provided() {
+
+    target_platform=$1
+    if [[ $target_platform != $Minikube && $target_platform != $CIVO && $target_platform != $Kubernetes ]]; then
+        errMsg="Error: Invalid TARGET_PLATFORM provided : $target_platform. Please provide one of the following 1)$Minikube 2)$CIVO 3)$Kubernetes"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}
+
+is_correct_civo_region_provided() {
+
+    output=$(gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code) 
+    region=$1
+
+
+    # Declare an empty array
+    regions_array=()
+    while IFS= read -r line; do
+        regions_array+=("$line")
+    done <<< "$output"
+
+    if [[ " ${regions_array[@]} " =~ " $region " ]]; then
+        return 0
+    else
+        errMsg="Error: Invalid CIVO_REGION provided : $region"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}
+
+is_correct_civo_cluster_provided() {
+
+    output=$(gum spin --title "fetching civo clusters"  --show-output -- civo k8s ls -o custom -f name)
+    cluster=$1
+
+    # Declare an empty array
+    cluster_array=()
+    while IFS= read -r line; do
+        cluster_array+=("$line")
+    done <<< "$output"
+
+    if [[ " ${cluster_array[@]} " =~ " $cluster " ]]; then
+        return 0
+    else
+        errMsg="Error: Invalid CIVO_CLUSTER provided : $cluster"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}
+
+is_correct_grapple_version_provided() {
+
+    versions=("0.2.1" "0.2.0")
+    selected_version=$1
+
+    if [[ " ${versions[@]} " =~ " $selected_version " ]]; then
+        return 0
+    else
+        errMsg="Error: Invalid GRAPPLE_VERSION provided : $selected_version,  Please provide one of the following 1) 0.2.1 2) 0.2.0"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}
