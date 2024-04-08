@@ -131,9 +131,18 @@ extract_input_params_from_cli() {
       if [[ "$arg1" = *=* ]]; then
           
           config_param="${arg1#--}"
-          IFS='=' read -r key value <<< $config_param
+          declare -a parts=($(echo "$config_param" | tr '=' ' '))
+          key="${parts[0]}"
           # Check if the argument is valid
-          if [[ " ${valid_args[@]} " =~ " $key " ]]; then
+          valid=false
+          for valid_arg in "${valid_args[@]}"; do
+              if [[ "$key" == "$valid_arg" ]]; then
+                  valid=true
+                  break
+              fi
+          done
+
+          if  $valid; then
               export $config_param
           else
               status_log $TYPE_ERROR "Error: One of the argument is not valid, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
