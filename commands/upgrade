@@ -25,7 +25,7 @@ Commands:
 current="$(cat $GRPL_WORKDIR/VERSION)"
 new=$(brew outdated --json grapple-cli | grep -o '"current_version": "[^"]*"' | sed 's/"current_version": "//;s/"$//')
 
-if [ "$current" == "$new" ]; then 
+if [ "$new" == "" ]; then 
   status_log $TYPE_INFO "grapple-cli $current already installed"
   echo "grapple-cli $current already installed"
   exit 0
