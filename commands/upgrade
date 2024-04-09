@@ -23,19 +23,19 @@ Commands:
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_upgrade_help
 
 current="$(cat $GRPL_WORKDIR/VERSION)"
-# new=$(brew outdated --json grapple-cli | grep -o '"current_version": "[^"]*"' | sed 's/"current_version": "//;s/"$//')
+new=$(brew outdated --json grapple-cli | grep -o '"current_version": "[^"]*"' | sed 's/"current_version": "//;s/"$//')
 
-# if [ "$new" == "" ]; then 
-#   status_log $TYPE_INFO "grapple-cli $current already installed"
-#   echo "grapple-cli $current already installed"
-#   exit 0
-# fi
+if [ "$new" == "" ]; then 
+  status_log $TYPE_INFO "grapple-cli $current already installed"
+  echo "grapple-cli $current already installed"
+  exit 0
+fi
 
-# if gum spin --title "Upgrading grapple-cli" --show-output -- brew upgrade grapple-cli; then
-  echo "$current" > "$GRPL_WORKDIR/VERSION"
-# fi
+if gum spin --title "Upgrading grapple-cli" --show-output -- brew upgrade grapple-cli; then
+  echo $new > "$GRPL_WORKDIR/VERSION"
+fi
 
 
 
-status_log $TYPE_INFO "grapple-cli is upgraded to $current"
-echo "ran upgrade, grapple-cli is upgraded to $current"
+status_log $TYPE_INFO "grapple-cli is upgraded to $new"
+echo "ran upgrade, grapple-cli is upgraded to $new"
