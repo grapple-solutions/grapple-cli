@@ -36,8 +36,14 @@ if [ "$installed_version" == "$stable_version" ]; then
   exit 0
 fi
 
-echo "$stable_version" > "$GRPL_WORKDIR/VERSION"
+if ! gum spin --title "Upgrading grapple-cli" --show-output -- brew upgrade grapple-cli; then 
+  errMsg="Failed to upgrade grappgle-cli"
+  status_log $TYPE_INFO $errMsg
+  echo $errMsg
+  exit 1
+fi
 
+echo "$stable_version" > "$GRPL_WORKDIR/VERSION"
 
 status_log $TYPE_INFO "grapple-cli is upgraded to $stable_version"
 echo "ran upgrade, grapple-cli is upgraded to $stable_version"

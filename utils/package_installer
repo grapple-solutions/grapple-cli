@@ -282,7 +282,7 @@ extract_grapple_cli_version(){
         grpl_version=$(echo "$output" | grep -o '"version": "[^"]*' | sed 's/"version": "//')
 
         # Output the latest version
-        echo "      v$kubeblocks_version - grpl" >> "$GRPL_WORKDIR/VERSION"
+        echo "$grpl_version - grpl" > "$GRPL_WORKDIR/VERSION"
     fi
 
 }

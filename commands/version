@@ -36,7 +36,7 @@ fi
   echo "
 version
 the grapple cli
-Version: $installed_version
+Version: $installed_version - grpl
 "
 if ls $GRPL_WORKDIR | grep 'dependency_versions' >/dev/null 2>&1; then
   echo "$(cat $GRPL_WORKDIR/dependency_versions)"
