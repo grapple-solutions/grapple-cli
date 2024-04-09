@@ -36,6 +36,8 @@ if [ "$installed_version" == "$stable_version" ]; then
   exit 0
 fi
 
+echo "$stable_version" > "$GRPL_WORKDIR/VERSION"
+
 
 status_log $TYPE_INFO "grapple-cli is upgraded to $stable_version"
 echo "ran upgrade, grapple-cli is upgraded to $stable_version"
