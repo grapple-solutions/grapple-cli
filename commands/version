@@ -21,6 +21,13 @@ Commands:
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_version_help
 
+  current="$(cat $GRPL_WORKDIR/VERSION)"
+  new=$(brew outdated --json grapple-cli | grep -o '"current_version": "[^"]*"' | sed 's/"current_version": "//;s/"$//')
+
+if $current != $new; then
+  echo "
+  New version $new is available, run 'grpl upgrade' to upgrade to new version"
+fi
   echo "
 version
 the grapple cli
