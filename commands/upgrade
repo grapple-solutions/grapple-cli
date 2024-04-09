@@ -48,4 +48,4 @@ status_log $TYPE_INFO "grapple-cli is upgraded to $stable_version"
 echo "ran upgrade, grapple-cli is upgraded to $stable_version"
 
 
-echo "$stable_version" > "$GRPL_WORKDIR/VERSION" 2>/dev/null
+echo "$stable_version" > "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1
