@@ -5,6 +5,9 @@ set -e
 
 cli_version_help() {
   cli_name=${0##*/}
+  if ! grep -q "grpl" "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    extract_grapple_cli_version
+  fi
   echo "
 $cli_name
 the grapple cli
@@ -21,16 +24,19 @@ Commands:
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_version_help
 
-  current="$(cat $GRPL_WORKDIR/VERSION)"
-  new=$(brew outdated --json grapple-cli 2>/dev/null | grep -o '"current_version": "[^"]*"' | sed 's/"current_version": "//;s/"$//')
-if [[ "$new" != "" && "$current" != "$new" ]]; then
+info=$(brew info --json grapple-cli)
+
+installed_version=$(echo "$info" | grep -o '"version": "[^"]*' | sed 's/"version": "//')
+stable_version=$(echo "$info" | grep -o '"stable": "[^"]*' | sed 's/"stable": "//')
+  
+if [[ "$installed_version" != "$stable_version" ]]; then
   echo "
-New version $new is available, run 'grpl upgrade' to upgrade to new version"
+New version $stable_version is available, run 'grpl upgrade' to upgrade to new version"
 fi
   echo "
 version
 the grapple cli
-Version: $(cat $GRPL_WORKDIR/VERSION)
+Version: $installed_version
 "
 if ls $GRPL_WORKDIR | grep 'dependency_versions' >/dev/null 2>&1; then
   echo "$(cat $GRPL_WORKDIR/dependency_versions)"
