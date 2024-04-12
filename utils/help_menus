@@ -1,6 +1,12 @@
 #!/bin/bash
 
+. "$GRPL_WORKDIR/utils/common"
+
 grpl_cluster_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
     
     type=$0
     cli_name="cluster"

@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -e
-. "$GRPL_WORKDIR/utils/common"
 . "$GRPL_WORKDIR/utils/help_menus"
 
 cli_help() {
