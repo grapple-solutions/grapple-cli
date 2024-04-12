@@ -2,9 +2,13 @@
 
 set -e
 . "$GRPL_WORKDIR/utils/common"
+install_prerequisite
 
 cli_upgrade_help() {
   cli_name=${0##*/}
+  if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    extract_grapple_cli_version
+  fi
   echo "
 $cli_name
 the grapple cli
@@ -21,4 +25,32 @@ Commands:
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_upgrade_help
 
-echo "run upgrade"
+info=$(brew info --json grapple-cli)
+
+installed_version=$(echo "$info" | grep -o '"version": "[^"]*' | sed 's/"version": "//')
+stable_version=$(echo "$info" | grep -o '"stable": "[^"]*' | sed 's/"stable": "//')
+  
+if [ "$installed_version" == "$stable_version" ]; then 
+  status_log $TYPE_INFO "grapple-cli $stable_version already installed"
+  echo "grapple-cli $stable_version already installed"
+  exit 0
+fi
+
+if ! gum spin --title "Upgrading grapple-cli" --show-output -- brew upgrade grapple-cli; then 
+  errMsg="Failed to upgrade grappgle-cli"
+  status_log $TYPE_INFO $errMsg
+  echo $errMsg
+  exit 1
+fi
+
+
+status_log $TYPE_INFO "grapple-cli is upgraded to $stable_version"
+echo "ran upgrade, grapple-cli is upgraded to $stable_version"
+
+if grep -q "$installed_version" <<< "$GRPL_WORKDIR"; then
+  old_file_path="$GRPL_WORKDIR/VERSION"
+  new_file_path="${old_file_path//$installed_version/$stable_version}"
+  echo "$stable_version" > "$new_file_path"
+else
+    "$stable_version" > "$GRPL_WORKDIR/VERSION"
+fi

@@ -5,6 +5,9 @@ set -e
 
 cli_help() {
   cli_name=${0##*/}
+  if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+    extract_grapple_cli_version
+  fi
   echo "
 $cli_name
 the grapple cli
