@@ -49,7 +49,7 @@ echo "ran upgrade, grapple-cli is upgraded to $stable_version"
 
 if grep -q "$installed_version" <<< "$GRPL_WORKDIR"; then
   old_file_path="$GRPL_WORKDIR/VERSION"
-  new_file_path="${$old_file_path//$installed_version/$stable_version}"
+  new_file_path="${old_file_path//$installed_version/$stable_version}"
   echo "$stable_version" > "$new_file_path"
 else
     "$stable_version" > "$GRPL_WORKDIR/VERSION"
