@@ -1,0 +1,41 @@
+#!/bin/bash
+
+grpl_cluster_cli_help() {
+    
+    type=$0
+    cli_name="cluster"
+    if [ "$type" == "web-doc" ]; then
+        cli_name="--cluster"
+    fi
+    menu="
+$cli_name
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+
+Usage: cluster [command]
+
+Commands:
+
+    s or status     Cluster status
+    i or install    Cluster installation
+    c or create     Cluster creation
+    *          Help
+    
+Examples:    
+
+    grpl c s    or    grpl cluster status
+    grpl c i    or    grpl cluster install      
+    grpl c c    or    grpl cluster create  
+
+"
+    if [ "$type" == "doc" ]; then
+        echo "$menu" > "$GRPL_WORKDIR/cluster-help-menu.adoc"
+        asciidoctor "$GRPL_WORKDIR/cluster-help-menu.adoc"
+    else
+        echo "$menu"  >&2
+    fi
+}

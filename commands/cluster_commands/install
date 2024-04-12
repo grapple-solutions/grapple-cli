@@ -65,7 +65,6 @@ NS=grpl-system
 awsregistry="p7h7z5g3"
 
 cli_log "cluster install BEGIN"
-install_prerequisite
 status_log $TYPE_INFO "Installation of grpl is in progress"
 
 

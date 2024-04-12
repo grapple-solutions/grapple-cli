@@ -2,28 +2,19 @@
 
 set -e
 . "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/help_menus"
 
 cli_help() {
-  cli_name=${0##*/}
-  if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
-    extract_grapple_cli_version
-  fi
-  echo "
-$cli_name
-the grapple cli
-Version: $(cat $GRPL_WORKDIR/VERSION)
-https://grapple-solutions.com/
-
-Usage: $cli_name [command]
-
-Commands:
-  status     Cluster status
-  install    Cluster installation
-  create     Cluster creation
-  *          Help
-" >&2
+  grpl_cluster_cli_help
   exit 0
 }
+
+generate_web_doc() {
+  grpl_cluster_cli_help "web-doc"
+  exit 0
+}
+
+install_prerequisite
 
 case "$1" in
   status|s)
@@ -34,6 +25,9 @@ case "$1" in
     ;;
   create|c)
     "$GRPL_WORKDIR/commands/cluster_commands/create" $(echo $@ | sed 's,create,,g' | sed 's,c ,,') | tee -ia "$GRPL_WORKDIR/logs/cluster_create.log"
+    ;;
+  doc)
+    generate_web_doc
     ;;
   *)
     cli_help
