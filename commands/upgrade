@@ -2,28 +2,15 @@
 
 set -e
 . "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/help_menus"
 install_prerequisite
 
-cli_upgrade_help() {
-  cli_name=${0##*/}
-  if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
-    extract_grapple_cli_version
-  fi
-  echo "
-$cli_name
-the grapple cli
-Version: $(cat $GRPL_WORKDIR/VERSION)
-https://grapple-solutions.com/
-
-Usage: $cli_name [command]
-
-Commands:
-  *         Help
-" >&2
+cli_help() {
+  grpl_upgrade_cli_help
   exit 0
 }
 
-[ "$1" = "help" ] || [ "$1" = "h" ] && cli_upgrade_help
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 info=$(brew info --json grapple-cli)
 

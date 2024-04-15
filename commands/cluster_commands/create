@@ -1,17 +1,13 @@
 #!/bin/bash
 set -e
-. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/help_menus"
 
-cli_help_cluster_create() {
-  echo "
-Command: cluster create
-
-Usage: 
-  cluster create" >&2
+cli_help() {
+  grpl_cluster_create_cli_help
   exit 0
 }
 
-[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_create
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 cli_log "cluster create BEGIN"
 

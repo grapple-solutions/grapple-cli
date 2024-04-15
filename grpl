@@ -4,26 +4,10 @@ export GRPL_WORKDIR=$(cd $(dirname $0) && pwd)
 export FULL_COMMAND="$0 $@"
 
 . "$GRPL_WORKDIR/utils/package_installer"
+. "$GRPL_WORKDIR/utils/help_menus"
 
 cli_help() {
-  cli_name=${0##*/}
-  if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
-    extract_grapple_cli_version
-  fi
-  echo "
-$cli_name
-the grapple cli
-Version: $(cat $GRPL_WORKDIR/VERSION)
-https://grapple-solutions.com/
-
-Usage: $cli_name [command]
-
-Commands:
-  install    Installation
-  cluster    Cluster commands
-  example    example commands
-  *          Help
-"
+  grpl_cli_help
   exit 0
 }
 
