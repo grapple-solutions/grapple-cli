@@ -59,9 +59,9 @@ grpl_cluster_cli_help() {
     fi
 
     type=$1
-    cli_name="cluster"
+    cli_name="grpl cluster"
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="= cluster"
+        cli_name="= grpl cluster"
     fi
     menu="
 $cli_name
@@ -72,7 +72,7 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
 
-Usage: cluster [command]
+Usage: grpl cluster [command]
 
 Commands:
 
@@ -104,9 +104,9 @@ grpl_example_cli_help() {
     fi
 
     type=$1
-    cli_name="example"
+    cli_name="grpl example"
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="= example"
+        cli_name="= grpl example"
     fi
     menu="
 $cli_name
@@ -117,7 +117,7 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
 
-Usage: example [command]
+Usage: grpl example [command]
 
 Commands:
 
@@ -148,9 +148,9 @@ grpl_install_cli_help() {
     fi
 
     type=$1
-    cli_name="install"
+    cli_name="grpl install"
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="= install"
+        cli_name="= grpl install"
     fi
     menu="
 $cli_name
@@ -161,7 +161,7 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
 
-Usage: install [command]
+Usage: grpl install [command]
 
 " 
     if [ "$type" == $WEB_DOC ]; then
@@ -181,9 +181,9 @@ grpl_example_cli_help() {
     fi
 
     type=$1
-    cli_name="upgrade"
+    cli_name="grpl upgrade"
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="= upgrade"
+        cli_name="= grpl upgrade"
     fi
     menu="
 $cli_name
@@ -194,7 +194,7 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
 
-Usage: upgrade [command]
+Usage: grpl upgrade [command]
 
 Commands:
 
@@ -224,9 +224,9 @@ grpl_version_cli_help() {
     fi
 
     type=$1
-    cli_name="version"
+    cli_name="grpl version"
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="= version"
+        cli_name="= grpl version"
     fi
     menu="
 $cli_name
@@ -237,7 +237,7 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
 
-Usage: version [command]
+Usage: grpl version [command]
 
 Commands:
 
@@ -258,3 +258,252 @@ Examples:
         echo "$menu"  >&2
     fi
 }
+
+
+
+grpl_cluster_create_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl cluster create"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="= grpl cluster create"
+    fi
+    menu="
+$cli_name
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+
+Usage: grpl create [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to create cluster
+    
+Examples:    
+
+    grpl c c h    or    grpl cluster create help
+    grpl c c *    or    grpl cluster create *
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        echo "$menu" > "$GRPL_WORKDIR/cluster-create-help-menu.adoc"
+        asciidoctor "$GRPL_WORKDIR/cluster-create-help-menu.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/cluster-create-help-menu.html to view the doc"
+    else
+        echo "$menu"  >&2
+    fi
+}
+
+
+grpl_cluster_install_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl cluster install"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="= grpl cluster install"
+    fi
+    menu="
+$cli_name
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+
+Usage: 
+  grpl cluster install
+
+Usage with params from cli: 
+  grpl cluster install --params --<variable-name>=<variable value>
+  e.g cluster install --params --GRAPPLE_VERSION=0.2.1
+  OR
+  cluster install --params --<variable-name> <variable value>
+  e.g grpl cluster install --params --GRAPPLE_VERSION 0.2.1
+
+Usage with params from configfile: 
+  grpl cluster install --configfile <file-name>.json
+  e.g grpl cluster install --configfile grpl-config.json
+
+Command: grpl cluster install
+
+Variables:
+  TARGET_PLATFORM=CIVO / Kubernetes / minikube
+
+  # general configurations
+  GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.1')
+  AUTO_CONFIRM = false / true
+
+  # kubernetes related configurations
+  KUBE_CONTEXT = kubernetes context
+
+  # minikube related configurations
+  # no additional configurations
+
+  # CIVO related configurations
+  CIVO_REGION = Available CIVO regions (e.g. FRA1)
+  CIVO_CLUSTER = CIVO cluster
+  CIVO_CLUSTER_ID = CIVO cluster ID
+  CIVO_MASTER_IP = CIVO cluster master IP address
+  CIVO_EMAIL_ADDRESS = email address of your CIVO account
+
+" 
+
+    if [ "$type" == $WEB_DOC ]; then
+        echo "$menu" > "$GRPL_WORKDIR/cluster-install-help-menu.adoc"
+        asciidoctor "$GRPL_WORKDIR/cluster-install-help-menu.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/cluster-install-help-menu.html to view the doc"
+    else
+        echo "$menu"  >&2
+    fi
+}
+
+
+grpl_cluster_status_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl cluster status"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="= grpl cluster status"
+    fi
+    menu="
+$cli_name
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+
+Usage: grpl cluster status [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to get cluster status
+    
+Examples:    
+
+    grpl c s h    or    grpl cluster status help
+    grpl c s *    or    grpl cluster status *
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        echo "$menu" > "$GRPL_WORKDIR/cluster-status-help-menu.adoc"
+        asciidoctor "$GRPL_WORKDIR/cluster-status-help-menu.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/cluster-status-help-menu.html to view the doc"
+    else
+        echo "$menu"  >&2
+    fi
+}
+
+
+
+grpl_example_deploy_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl cluster status"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="= grpl cluster status"
+    fi
+    menu="
+$cli_name
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+
+Usage: grpl example deploy [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to get deploy example test-cases
+    
+Examples:    
+
+    grpl e d h    or    grpl example deploy help
+    grpl e d *    or    grpl example deploy *
+
+Variables:
+  example     all / db / dbfile
+  EDITION = "grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
+" 
+
+    if [ "$type" == $WEB_DOC ]; then
+        echo "$menu" > "$GRPL_WORKDIR/cluster-status-help-menu.adoc"
+        asciidoctor "$GRPL_WORKDIR/cluster-status-help-menu.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/cluster-status-help-menu.html to view the doc"
+    else
+        echo "$menu"  >&2
+    fi
+}
+
+
+
+grpl_example_status_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl example status"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="= grpl example status"
+    fi
+    menu="
+$cli_name
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+
+Usage: grpl example status [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to get example status
+    
+Examples:    
+
+    grpl e s h    or    grpl example status help
+    grpl e s *    or    grpl example status *
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        echo "$menu" > "$GRPL_WORKDIR/example-status-help-menu.adoc"
+        asciidoctor "$GRPL_WORKDIR/example-status-help-menu.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/example-status-help-menu.html to view the doc"
+    else
+        echo "$menu"  >&2
+    fi
+}
+
+
