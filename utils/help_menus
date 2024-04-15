@@ -2,6 +2,40 @@
 
 . "$GRPL_WORKDIR/utils/common"
 
+generate_web_doc() {
+
+    grpl_cli_help $WEB_DOC
+    grpl_cluster_cli_help $WEB_DOC
+    grpl_example_cli_help $WEB_DOC
+    grpl_install_cli_help $WEB_DOC
+    grpl_upgrade_cli_help $WEB_DOC
+    grpl_version_cli_help $WEB_DOC
+     doc="
+= grpl cli Documentation
+:toc: 
+
+== Introduction
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/[grapple solution^]
+
+
+$grpl_doc
+$grpl_cluster_doc
+$grpl_example_doc
+$grpl_install_doc
+$grpl_upgrade_doc
+$grpl_version_doc
+"
+echo "$doc" > "$GRPL_WORKDIR/grpl-web-doc.adoc"
+        asciidoctor "$GRPL_WORKDIR/grpl-web-doc.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/grpl-web-doc.html to view the grpl documentation"
+        
+}
+
 grpl_cli_help() {
 
     if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
@@ -10,19 +44,24 @@ grpl_cli_help() {
 
     type=$1
     cli_name="grpl"
-    if [ "$type" == $WEB_DOC ]; then
-        cli_name="= grpl"
-    fi
-    menu="
-$cli_name
-
+    meta="
 the grapple cli
 
 Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl"
+        meta=""
+    fi
 
-Usage: grpl [command]
+    grpl_doc="
+$cli_name
+$meta
+Usage: 
+
+    grpl [command]
 
 Commands:
 
@@ -43,11 +82,9 @@ Examples:
 
 "
     if [ "$type" == $WEB_DOC ]; then
-        echo "$menu" > "$GRPL_WORKDIR/grpl-help-menu.adoc"
-        asciidoctor "$GRPL_WORKDIR/grpl-help-menu.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/grpl-help-menu.html to view the doc"
+        return 0
     else
-        echo "$menu"  >&2
+        echo "$grpl_doc"  >&2
     fi
 }
 
@@ -60,19 +97,25 @@ grpl_cluster_cli_help() {
 
     type=$1
     cli_name="grpl cluster"
-    if [ "$type" == $WEB_DOC ]; then
-        cli_name="= grpl cluster"
-    fi
-    menu="
-$cli_name
-
+    meta="
 the grapple cli
 
 Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl cluster"
+        meta=""
+    fi
 
-Usage: grpl cluster [command]
+    grpl_cluster_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl cluster [command]
 
 Commands:
 
@@ -89,11 +132,9 @@ Examples:
 
 "
     if [ "$type" == $WEB_DOC ]; then
-        echo "$menu" > "$GRPL_WORKDIR/cluster-help-menu.adoc"
-        asciidoctor "$GRPL_WORKDIR/cluster-help-menu.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/cluster-help-menu.html to view the doc"
+        return 0
     else
-        echo "$menu"  >&2
+        echo "$grpl_cluster_doc"  >&2
     fi
 }
 
@@ -105,19 +146,25 @@ grpl_example_cli_help() {
 
     type=$1
     cli_name="grpl example"
-    if [ "$type" == $WEB_DOC ]; then
-        cli_name="= grpl example"
-    fi
-    menu="
-$cli_name
-
+    meta="
 the grapple cli
 
 Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl example"
+        meta=""
+    fi
 
-Usage: grpl example [command]
+    grpl_example_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl example [command]
 
 Commands:
 
@@ -132,11 +179,9 @@ Examples:
 
 " 
     if [ "$type" == $WEB_DOC ]; then
-        echo "$menu" > "$GRPL_WORKDIR/example-help-menu.adoc"
-        asciidoctor "$GRPL_WORKDIR/example-help-menu.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/example-help-menu.html to view the doc"
+        return 0
     else
-        echo "$menu"  >&2
+        echo "$grpl_example_doc"  >&2
     fi
 }
 
@@ -149,27 +194,31 @@ grpl_install_cli_help() {
 
     type=$1
     cli_name="grpl install"
-    if [ "$type" == $WEB_DOC ]; then
-        cli_name="= grpl install"
-    fi
-    menu="
-$cli_name
-
+    meta="
 the grapple cli
 
 Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl install"
+        meta=""
+    fi
 
-Usage: grpl install [command]
+    grpl_install_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl install [command]
 
 " 
     if [ "$type" == $WEB_DOC ]; then
-        echo "$menu" > "$GRPL_WORKDIR/install-help-menu.adoc"
-        asciidoctor "$GRPL_WORKDIR/install-help-menu.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/install-help-menu.html to view the doc"
+        return 0
     else
-        echo "$menu"  >&2
+        echo "$grpl_install_doc"  >&2
     fi
 }
 
@@ -182,19 +231,25 @@ grpl_upgrade_cli_help() {
 
     type=$1
     cli_name="grpl upgrade"
-    if [ "$type" == $WEB_DOC ]; then
-        cli_name="= grpl upgrade"
-    fi
-    menu="
-$cli_name
-
+    meta="
 the grapple cli
 
 Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl upgrade"
+        meta=""
+    fi
 
-Usage: grpl upgrade [command]
+    grpl_upgrade_doc="
+$cli_name
+$meta
+
+Usage: 
+    
+    grpl upgrade [command]
 
 Commands:
 
@@ -208,11 +263,9 @@ Examples:
 
 " 
     if [ "$type" == $WEB_DOC ]; then
-        echo "$menu" > "$GRPL_WORKDIR/upgrade-help-menu.adoc"
-        asciidoctor "$GRPL_WORKDIR/upgrade-help-menu.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/upgrade-help-menu.html to view the doc"
+        return 0
     else
-        echo "$menu"  >&2
+        echo "$grpl_upgrade_doc"  >&2
     fi
 }
 
@@ -225,19 +278,25 @@ grpl_version_cli_help() {
 
     type=$1
     cli_name="grpl version"
-    if [ "$type" == $WEB_DOC ]; then
-        cli_name="= grpl version"
-    fi
-    menu="
-$cli_name
-
+    meta="
 the grapple cli
 
 Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl version"
+        meta=""
+    fi
 
-Usage: grpl version [command]
+    grpl_version_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl version [command]
 
 Commands:
 
@@ -251,11 +310,9 @@ Examples:
 
 " 
     if [ "$type" == $WEB_DOC ]; then
-        echo "$menu" > "$GRPL_WORKDIR/version-help-menu.adoc"
-        asciidoctor "$GRPL_WORKDIR/version-help-menu.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/version-help-menu.html to view the doc"
+        return 0
     else
-        echo "$menu"  >&2
+        echo "$grpl_version_doc"  >&2
     fi
 }
 
@@ -270,7 +327,7 @@ grpl_cluster_create_cli_help() {
     type=$1
     cli_name="grpl cluster create"
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="= grpl cluster create"
+        cli_name="== grpl cluster create"
     fi
     menu="
 $cli_name
@@ -313,7 +370,7 @@ grpl_cluster_install_cli_help() {
     type=$1
     cli_name="grpl cluster install"
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="= grpl cluster install"
+        cli_name="== grpl cluster install"
     fi
     menu="
 $cli_name
@@ -381,7 +438,7 @@ grpl_cluster_status_cli_help() {
     type=$1
     cli_name="grpl cluster status"
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="= grpl cluster status"
+        cli_name="== grpl cluster status"
     fi
     menu="
 $cli_name
@@ -425,7 +482,7 @@ grpl_example_deploy_cli_help() {
     type=$1
     cli_name="grpl cluster status"
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="= grpl cluster status"
+        cli_name="== grpl cluster status"
     fi
     menu="
 $cli_name
@@ -473,7 +530,7 @@ grpl_example_status_cli_help() {
     type=$1
     cli_name="grpl example status"
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="= grpl example status"
+        cli_name="== grpl example status"
     fi
     menu="
 $cli_name

@@ -18,6 +18,7 @@ if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
   mkdir $GRPL_WORKDIR/logs 2>/dev/null | true
 fi
 
+
 case "$1" in
   install|i)
     "$GRPL_WORKDIR/commands/install" $(echo $@ | sed 's,install,,g' | sed 's,i ,,') | tee -ia "$GRPL_WORKDIR/logs/install.log" >/dev/null
@@ -33,6 +34,9 @@ case "$1" in
     ;;
   upgrade|u)
     "$GRPL_WORKDIR/commands/upgrade" $(echo $@ | sed 's,upgrade,,g' | sed 's,u ,,') | tee -ia "$GRPL_WORKDIR/logs/upgrade.log" >/dev/null
+    ;;
+  doc)
+    generate_web_doc
     ;;
   *)
     cli_help
