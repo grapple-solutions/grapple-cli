@@ -7,11 +7,11 @@ grpl_cluster_cli_help() {
     if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
       extract_grapple_cli_version
     fi
-    
-    type=$0
+
+    type=$1
     cli_name="cluster"
     if [ "$type" == "web-doc" ]; then
-        cli_name="--cluster"
+        cli_name="= cluster"
     fi
     menu="
 $cli_name
@@ -38,9 +38,10 @@ Examples:
     grpl c c    or    grpl cluster create  
 
 "
-    if [ "$type" == "doc" ]; then
+    if [ "$type" == "web-doc" ]; then
         echo "$menu" > "$GRPL_WORKDIR/cluster-help-menu.adoc"
         asciidoctor "$GRPL_WORKDIR/cluster-help-menu.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/cluster-help-menu.html to view the doc"
     else
         echo "$menu"  >&2
     fi
