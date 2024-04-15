@@ -179,7 +179,8 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
   fi 
 
   status_log $TYPE_INFO "testing domain, this may take upto 5mins"
-  if ! grep -r $(minikube ip) /etc/resolver/ >/dev/null 2>&1; then
+  if ! grep -r $(minikube ip) /etc/resolver/minikube-test >/dev/null 2>&1; then
+
     echo "domain test
     nameserver $(minikube ip)
     search_order 1
