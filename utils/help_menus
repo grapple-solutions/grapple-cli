@@ -2,6 +2,56 @@
 
 . "$GRPL_WORKDIR/utils/common"
 
+grpl_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="= grpl"
+    fi
+    menu="
+$cli_name
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+
+Usage: grpl [command]
+
+Commands:
+
+    i or install     Installation
+    c or cluster     Cluster commands
+    e or example     Example commands
+    v or version     List version
+    u or upgrade     Upgrade grpl
+    *                Help menu
+    
+Examples:    
+
+    grpl i <commands>    or    grpl install <commands>
+    grpl c <commands>    or    grpl cluster <commands>     
+    grpl e <commands>    or    grpl example <commands>     
+    grpl v <commands>    or    grpl version <commands>     
+    grpl u <commands>    or    grpl upgrade <commands> 
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        echo "$menu" > "$GRPL_WORKDIR/grpl-help-menu.adoc"
+        asciidoctor "$GRPL_WORKDIR/grpl-help-menu.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/grpl-help-menu.html to view the doc"
+    else
+        echo "$menu"  >&2
+    fi
+}
+
+
 grpl_cluster_cli_help() {
 
     if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
@@ -10,7 +60,7 @@ grpl_cluster_cli_help() {
 
     type=$1
     cli_name="cluster"
-    if [ "$type" == "web-doc" ]; then
+    if [ "$type" == $WEB_DOC ]; then
         cli_name="= cluster"
     fi
     menu="
@@ -29,7 +79,7 @@ Commands:
     s or status     Cluster status
     i or install    Cluster installation
     c or create     Cluster creation
-    *          Help
+    *               Help menu
     
 Examples:    
 
@@ -38,10 +88,172 @@ Examples:
     grpl c c    or    grpl cluster create  
 
 "
-    if [ "$type" == "web-doc" ]; then
+    if [ "$type" == $WEB_DOC ]; then
         echo "$menu" > "$GRPL_WORKDIR/cluster-help-menu.adoc"
         asciidoctor "$GRPL_WORKDIR/cluster-help-menu.adoc"
         status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/cluster-help-menu.html to view the doc"
+    else
+        echo "$menu"  >&2
+    fi
+}
+
+grpl_example_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="example"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="= example"
+    fi
+    menu="
+$cli_name
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+
+Usage: example [command]
+
+Commands:
+
+    s or status     status of example
+    d or deploy     deploy an example
+    *               Help menu
+    
+Examples:    
+
+    grpl e s    or    grpl example status
+    grpl e d    or    grpl example deploy
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        echo "$menu" > "$GRPL_WORKDIR/example-help-menu.adoc"
+        asciidoctor "$GRPL_WORKDIR/example-help-menu.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/example-help-menu.html to view the doc"
+    else
+        echo "$menu"  >&2
+    fi
+}
+
+
+grpl_install_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="install"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="= install"
+    fi
+    menu="
+$cli_name
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+
+Usage: install [command]
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        echo "$menu" > "$GRPL_WORKDIR/install-help-menu.adoc"
+        asciidoctor "$GRPL_WORKDIR/install-help-menu.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/install-help-menu.html to view the doc"
+    else
+        echo "$menu"  >&2
+    fi
+}
+
+
+grpl_example_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="upgrade"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="= upgrade"
+    fi
+    menu="
+$cli_name
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+
+Usage: upgrade [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to upgrade
+    
+Examples:    
+
+    grpl u h    or    grpl upgrade help
+    grpl u *    or    grpl upgrade *
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        echo "$menu" > "$GRPL_WORKDIR/upgrade-help-menu.adoc"
+        asciidoctor "$GRPL_WORKDIR/upgrade-help-menu.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/upgrade-help-menu.html to view the doc"
+    else
+        echo "$menu"  >&2
+    fi
+}
+
+
+grpl_version_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="version"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="= version"
+    fi
+    menu="
+$cli_name
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+
+Usage: version [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to get version details
+    
+Examples:    
+
+    grpl v h    or    grpl version help
+    grpl v *    or    grpl version *
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        echo "$menu" > "$GRPL_WORKDIR/version-help-menu.adoc"
+        asciidoctor "$GRPL_WORKDIR/version-help-menu.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/version-help-menu.html to view the doc"
     else
         echo "$menu"  >&2
     fi

@@ -31,3 +31,6 @@ NC='\033[0m' # No Color
 # input params type
 cli_params="--params"
 config_file_params="--configfile"
+
+# help menu types
+WEB_DOC="web-doc"
