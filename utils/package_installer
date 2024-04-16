@@ -156,6 +156,36 @@ check_and_install_kubeblocks() {
     
 }
 
+check_and_install_asciidoc() {
+
+    # checks for checking and installing minikube
+    if ! asciidoctor --version  >/dev/null 2>&1; then
+        echo "asciidoctor cli is required"
+        echo "installing asciidoctor cli..."
+        if [ "${OS}" == "mac" ]; then
+            gum spin --title "asciidoctor is not installed, now installing asciidoctor" --show-output -- brew install asciidoctor
+        elif [ "${OS}" == "gnu" ]; then
+            status_log $TYPE_INFO "going to refresh snap"
+            sudo snap refresh 2>&1
+            gum spin --title "ruby is not installed, now installing ruby" --show-output -- sudo snap install ruby --classic
+            gum spin --title "asciidoctor is not installed, now installing asciidoctor" --show-output -- gem install asciidoctor
+            exe_file_path=$(gem which asciidoctor)
+            extracted_version=$(echo "$string" | awk -F '/' '{print $6}')
+            asciidoc_template_path="~/.gem/gems/{}/bin"
+            asciidoc_path=$(echo "$asciidoc_template_path" | sed 's/{}/asciidoctor-2.0.22/')
+            export PATH="$asciidoc_path:$PATH"
+        else
+            errMsg="Failed to install asciidoctor, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    # extract_minikube_cli_version
+
+}
+
 
 extract_helm_cli_version(){
 
@@ -286,3 +316,4 @@ extract_grapple_cli_version(){
     fi
 
 }
+

@@ -36,7 +36,7 @@ case "$1" in
     "$GRPL_WORKDIR/commands/upgrade" $(echo $@ | sed 's,upgrade,,g' | sed 's,u ,,') | tee -ia "$GRPL_WORKDIR/logs/upgrade.log" >/dev/null
     ;;
   doc)
-    generate_web_doc
+    generate_web_doc | tee -ia "$GRPL_WORKDIR/logs/doc.log" >/dev/null
     ;;
   *)
     cli_help

@@ -3,6 +3,13 @@
 . "$GRPL_WORKDIR/utils/common"
 
 generate_web_doc() {
+    
+    install_prerequisite
+    check_and_install_asciidoc
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
 
     grpl_cli_help $WEB_DOC
     grpl_cluster_cli_help $WEB_DOC
