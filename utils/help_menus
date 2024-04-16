@@ -1,0 +1,663 @@
+#!/bin/bash
+
+. "$GRPL_WORKDIR/utils/common"
+
+generate_web_doc() {
+
+    install_prerequisite
+    check_and_install_asciidoc
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    grpl_cli_help $WEB_DOC
+    grpl_cluster_cli_help $WEB_DOC
+    grpl_example_cli_help $WEB_DOC
+    grpl_install_cli_help $WEB_DOC
+    grpl_upgrade_cli_help $WEB_DOC
+    grpl_version_cli_help $WEB_DOC
+    grpl_cluster_create_cli_help $WEB_DOC
+    grpl_cluster_install_cli_help $WEB_DOC
+    grpl_cluster_status_cli_help $WEB_DOC
+    grpl_example_deploy_cli_help $WEB_DOC
+    grpl_example_status_cli_help $WEB_DOC
+     doc="
+= grpl cli Documentation
+:toc: 
+
+== Introduction
+
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/[grapple solution^]
+
+
+$grpl_cli_doc
+$grpl_cluster_doc
+$grpl_example_doc
+$grpl_install_doc
+$grpl_upgrade_doc
+$grpl_version_doc
+$grpl_cluster_create_doc
+$grpl_cluster_install_doc
+$grpl_cluster_status_doc
+$grpl_example_deploy_doc
+$grpl_example_status_doc
+"
+echo "$doc" > "$GRPL_WORKDIR/grpl-web-doc.adoc"
+        asciidoctor "$GRPL_WORKDIR/grpl-web-doc.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/grpl-web-doc.html to view the grpl documentation"
+        
+}
+
+grpl_web_doc_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl doc"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl doc"
+        meta=""
+    fi
+
+    grpl_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl doc [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to generate web documentation
+    
+Examples:
+
+    grpl d h    or    grpl doc help
+    grpl d *    or    grpl doc *
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_doc"  >&2
+    fi
+}
+
+
+
+
+grpl_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl"
+        meta=""
+    fi
+
+    grpl_cli_doc="
+$cli_name
+$meta
+Usage: 
+
+    grpl [command]
+
+Commands:
+
+    i or install     Installation
+    c or cluster     Cluster commands
+    e or example     Example commands
+    v or version     List version
+    u or upgrade     Upgrade grpl
+    *                Help menu
+    
+Examples:    
+
+    grpl i [commands]    or    grpl install [commands]
+    grpl c [commands]    or    grpl cluster [commands]     
+    grpl e [commands]    or    grpl example [commands]     
+    grpl v [commands]    or    grpl version [commands]     
+    grpl u [commands]    or    grpl upgrade [commands] 
+    grpl *
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_cli_doc"  >&2
+    fi
+}
+
+
+grpl_cluster_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl cluster"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl cluster"
+        meta=""
+    fi
+
+    grpl_cluster_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl cluster [command]
+
+Commands:
+
+    s or status     Cluster status
+    i or install    Cluster installation
+    c or create     Cluster creation
+    *               Help menu
+    
+Examples:    
+
+    grpl c s    or    grpl cluster status
+    grpl c i    or    grpl cluster install      
+    grpl c c    or    grpl cluster create  
+    grpl c *    or    grpl cluster *
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_cluster_doc"  >&2
+    fi
+}
+
+grpl_example_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl example"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl example"
+        meta=""
+    fi
+
+    grpl_example_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl example [command]
+
+Commands:
+
+    s or status     status of example
+    d or deploy     deploy an example
+    *               Help menu
+    
+Examples:    
+
+    grpl e s    or    grpl example status
+    grpl e d    or    grpl example deploy
+    grpl e *    or    grpl example *
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_example_doc"  >&2
+    fi
+}
+
+
+grpl_install_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl install"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl install"
+        meta=""
+    fi
+
+    grpl_install_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl install [command]
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_install_doc"  >&2
+    fi
+}
+
+
+grpl_upgrade_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl upgrade"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl upgrade"
+        meta=""
+    fi
+
+    grpl_upgrade_doc="
+$cli_name
+$meta
+
+Usage: 
+    
+    grpl upgrade [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to upgrade
+    
+Examples:    
+
+    grpl u h    or    grpl upgrade help
+    grpl u *    or    grpl upgrade *
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_upgrade_doc"  >&2
+    fi
+}
+
+
+grpl_version_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl version"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl version"
+        meta=""
+    fi
+
+    grpl_version_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl version [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to get version details
+    
+Examples:    
+
+    grpl v h    or    grpl version help
+    grpl v *    or    grpl version *
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_version_doc"  >&2
+    fi
+}
+
+
+
+grpl_cluster_create_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl cluster create"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl cluster create"
+        meta=""
+    fi
+
+    grpl_cluster_create_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl cluster create [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to create cluster
+    
+Examples:    
+
+    grpl c c h    or    grpl cluster create help
+    grpl c c *    or    grpl cluster create *
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_cluster_create_doc"  >&2
+    fi
+}
+
+
+grpl_cluster_install_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl cluster install"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl cluster install"
+        meta=""
+    fi
+
+    grpl_cluster_install_doc="
+$cli_name
+$meta
+
+Usage: 
+
+  grpl cluster install [command]
+
+Usage with params from cli: 
+
+  grpl cluster install --params --<variable-name>=<variable value>
+  e.g grpl cluster install --params --GRAPPLE_VERSION=0.2.1
+  OR
+  grpl cluster install --params --<variable-name> <variable value>
+  e.g grpl cluster install --params --GRAPPLE_VERSION 0.2.1
+
+Usage with params from configfile: 
+
+  grpl cluster install --configfile <file-name>.json
+  e.g grpl cluster install --configfile grpl-config.json
+
+Commands:
+
+    h or help     Help menu
+    *             to install cluster
+    
+Examples:    
+
+    grpl c i h    or    grpl cluster install help
+    grpl c i *    or    grpl cluster install *
+
+
+Variables:
+
+  TARGET_PLATFORM=CIVO / Kubernetes / minikube
+  # general configurations
+  GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.0' or '0.2.1')
+  AUTO_CONFIRM = 'false' / 'true'
+  # kubernetes related configurations
+  KUBE_CONTEXT = kubernetes context
+  # minikube related configurations
+  # no additional configurations
+  # CIVO related configurations
+  CIVO_REGION = Available CIVO regions (e.g. FRA1)
+  CIVO_CLUSTER = CIVO cluster
+  CIVO_CLUSTER_ID = CIVO cluster ID
+  CIVO_MASTER_IP = CIVO cluster master IP address
+  CIVO_EMAIL_ADDRESS = email address of your CIVO account
+
+" 
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_cluster_install_doc"  >&2
+    fi
+}
+
+
+grpl_cluster_status_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl cluster status"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl cluster status"
+        meta=""
+    fi
+
+    grpl_cluster_status_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl cluster status [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to get cluster status
+    
+Examples:    
+
+    grpl c s h    or    grpl cluster status help
+    grpl c s *    or    grpl cluster status *
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_cluster_status_doc"  >&2
+    fi
+}
+
+
+
+grpl_example_deploy_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl example deploy"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl example deploy"
+        meta=""
+    fi
+
+    grpl_example_deploy_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl example deploy [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to get deploy example test-cases
+    
+Examples:    
+
+    grpl e d h    or    grpl example deploy help
+    grpl e d *    or    grpl example deploy *
+
+Variables:
+
+  example   all / db / dbfile
+  EDITION = "grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
+" 
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_example_deploy_doc"  >&2
+    fi
+}
+
+
+
+grpl_example_status_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl example status"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl example status"
+        meta=""
+    fi
+
+    grpl_example_status_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl example status [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to get example status
+    
+Examples:    
+
+    grpl e s h    or    grpl example status help
+    grpl e s *    or    grpl example status *
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_example_status_doc"  >&2
+    fi
+}
+
+

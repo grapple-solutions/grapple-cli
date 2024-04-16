@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 . "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/help_menus"
 
 # NS=$(prompt_for_input_with_validation "Enter namespace: " "grapple-demo-namspace" "$non_empty_regex" "Namespace cannot be empty.") || exit $?
 # TESTNS=$(prompt_for_input_with_validation "Enter namespace for test case: " "grapple-test-demo-namspace: " "$non_empty_regex" "Namespace for test case cannot be empty.") || exit $?
@@ -10,21 +11,12 @@ TESTNS=grpl-dbfile
 TESTNSDB=grpl-db
 awsregistry="p7h7z5g3"
 
-cli_help_cluster_deploy() {
-  echo "
-Command: grpl example deploy
-
-Usage: 
-  example deploy
-
-Variables:
-  example     all / db / dbfile
-  EDITION = "grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
-" >&2
+cli_help() {
+  grpl_example_status_cli_help
   exit 0
 }
 
-[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_deploy
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 
 cli_log "example deploy BEGIN"

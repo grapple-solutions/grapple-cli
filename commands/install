@@ -1,17 +1,14 @@
 #!/bin/bash
 set -e
 . "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/help_menus"
 
-cli_help_install() {
-  echo "
-Command: install
-
-Usage: 
-  install tool_name" >&2
+cli_help() {
+  grpl_install_cli_help
   exit 0
 }
 
-[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_install
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 
 cli_log "install BEGIN"

@@ -3,69 +3,24 @@ set -e
 
 . "$GRPL_WORKDIR/utils/common"
 . "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/utils/help_menus"
 
 # --------------------------------- Functions ------------------------------------------
 
-
-
-cli_help_cluster_install() {
-  echo "
-Command: grpl cluster install
-
-Usage: 
-  cluster install
-
-Usage with params from cli: 
-  cluster install --params --<variable-name>=<variable value>
-  e.g cluster install --params --GRAPPLE_VERSION=0.2.1
-  OR
-  cluster install --params --<variable-name> <variable value>
-  e.g cluster install --params --GRAPPLE_VERSION 0.2.1
-
-Usage with params from configfile: 
-  cluster install --configfile <file-name>.json
-  e.g cluster install --configfile grpl-config.json
-
-Variables:
-  TARGET_PLATFORM=CIVO / Kubernetes / minikube
-
-  # general configurations
-  GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.1')
-  AUTO_CONFIRM = false / true
-
-  # kubernetes related configurations
-  KUBE_CONTEXT = kubernetes context
-
-  # minikube related configurations
-  # no additional configurations
-
-  # CIVO related configurations
-  CIVO_REGION = Available CIVO regions (e.g. FRA1)
-  CIVO_CLUSTER = CIVO cluster
-  CIVO_CLUSTER_ID = CIVO cluster ID
-  CIVO_MASTER_IP = CIVO cluster master IP address
-  CIVO_EMAIL_ADDRESS = email address of your CIVO account
-
-" >&2
-# since we have restricted everything from stdout and sent it to log files
-# we won't be able to display the help menu with echo in terminal
-# so instead as a way around we'll use stderr to log the help menu on terminal
-# we could have used gum log but it didn't support \n
-# we whould have to write multiple log statements
+cli_help() {
+  grpl_cluster_install_cli_help
   exit 0
 }
 
-
 # --------------------------------- CODE ------------------------------------------
 
-[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help_cluster_install
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 
 NS=grpl-system
 awsregistry="p7h7z5g3"
 
 cli_log "cluster install BEGIN"
-install_prerequisite
 status_log $TYPE_INFO "Installation of grpl is in progress"
 
 

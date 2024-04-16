@@ -3,14 +3,11 @@ set -e
 . "$GRPL_WORKDIR/utils/help_menus"
 
 cli_help() {
-  grpl_cluster_create_cli_help
+  grpl_cluster_status_cli_help
   exit 0
 }
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
-cli_log "cluster create BEGIN"
 
-
-
-cli_log "cluster create END"
+generate_web_doc
