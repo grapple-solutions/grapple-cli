@@ -3,7 +3,7 @@
 . "$GRPL_WORKDIR/utils/common"
 
 generate_web_doc() {
-    
+
     install_prerequisite
     check_and_install_asciidoc
 
@@ -35,7 +35,7 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 https://grapple-solutions.com/[grapple solution^]
 
 
-$grpl_doc
+$grpl_cli_doc
 $grpl_cluster_doc
 $grpl_example_doc
 $grpl_install_doc
@@ -52,6 +52,55 @@ echo "$doc" > "$GRPL_WORKDIR/grpl-web-doc.adoc"
         status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/grpl-web-doc.html to view the grpl documentation"
         
 }
+
+grpl_web_doc_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl doc"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl doc"
+        meta=""
+    fi
+
+    grpl_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl doc [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to generate web documentation
+    
+Examples:
+
+    grpl d h    or    grpl doc help
+    grpl d *    or    grpl doc *
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_doc"  >&2
+    fi
+}
+
+
+
 
 grpl_cli_help() {
 
@@ -73,7 +122,7 @@ https://grapple-solutions.com/
         meta=""
     fi
 
-    grpl_doc="
+    grpl_cli_doc="
 $cli_name
 $meta
 Usage: 
@@ -91,18 +140,18 @@ Commands:
     
 Examples:    
 
-    grpl i <commands>    or    grpl install <commands>
-    grpl c <commands>    or    grpl cluster <commands>     
-    grpl e <commands>    or    grpl example <commands>     
-    grpl v <commands>    or    grpl version <commands>     
-    grpl u <commands>    or    grpl upgrade <commands> 
+    grpl i [commands]    or    grpl install [commands]
+    grpl c [commands]    or    grpl cluster [commands]     
+    grpl e [commands]    or    grpl example [commands]     
+    grpl v [commands]    or    grpl version [commands]     
+    grpl u [commands]    or    grpl upgrade [commands] 
     grpl *
 
 "
     if [ "$type" == $WEB_DOC ]; then
         return 0
     else
-        echo "$grpl_doc"  >&2
+        echo "$grpl_cli_doc"  >&2
     fi
 }
 
