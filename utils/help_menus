@@ -10,6 +10,11 @@ generate_web_doc() {
     grpl_install_cli_help $WEB_DOC
     grpl_upgrade_cli_help $WEB_DOC
     grpl_version_cli_help $WEB_DOC
+    grpl_cluster_create_cli_help $WEB_DOC
+    grpl_cluster_install_cli_help $WEB_DOC
+    grpl_cluster_status_cli_help $WEB_DOC
+    grpl_example_deploy_cli_help $WEB_DOC
+    grpl_example_status_cli_help $WEB_DOC
      doc="
 = grpl cli Documentation
 :toc: 
@@ -29,6 +34,11 @@ $grpl_example_doc
 $grpl_install_doc
 $grpl_upgrade_doc
 $grpl_version_doc
+$grpl_cluster_create_doc
+$grpl_cluster_install_doc
+$grpl_cluster_status_doc
+$grpl_example_deploy_doc
+$grpl_example_status_doc
 "
 echo "$doc" > "$GRPL_WORKDIR/grpl-web-doc.adoc"
         asciidoctor "$GRPL_WORKDIR/grpl-web-doc.adoc"
@@ -79,6 +89,7 @@ Examples:
     grpl e <commands>    or    grpl example <commands>     
     grpl v <commands>    or    grpl version <commands>     
     grpl u <commands>    or    grpl upgrade <commands> 
+    grpl *
 
 "
     if [ "$type" == $WEB_DOC ]; then
@@ -129,6 +140,7 @@ Examples:
     grpl c s    or    grpl cluster status
     grpl c i    or    grpl cluster install      
     grpl c c    or    grpl cluster create  
+    grpl c *    or    grpl cluster *
 
 "
     if [ "$type" == $WEB_DOC ]; then
@@ -176,6 +188,7 @@ Examples:
 
     grpl e s    or    grpl example status
     grpl e d    or    grpl example deploy
+    grpl e *    or    grpl example *
 
 " 
     if [ "$type" == $WEB_DOC ]; then
@@ -326,19 +339,25 @@ grpl_cluster_create_cli_help() {
 
     type=$1
     cli_name="grpl cluster create"
-    if [ "$type" == $WEB_DOC ]; then
-        cli_name="== grpl cluster create"
-    fi
-    menu="
-$cli_name
-
+    meta="
 the grapple cli
 
 Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl cluster create"
+        meta=""
+    fi
 
-Usage: grpl create [command]
+    grpl_cluster_create_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl cluster create [command]
 
 Commands:
 
@@ -352,11 +371,9 @@ Examples:
 "
 
     if [ "$type" == $WEB_DOC ]; then
-        echo "$menu" > "$GRPL_WORKDIR/cluster-create-help-menu.adoc"
-        asciidoctor "$GRPL_WORKDIR/cluster-create-help-menu.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/cluster-create-help-menu.html to view the doc"
+        return 0
     else
-        echo "$menu"  >&2
+        echo "$grpl_cluster_create_doc"  >&2
     fi
 }
 
@@ -369,47 +386,60 @@ grpl_cluster_install_cli_help() {
 
     type=$1
     cli_name="grpl cluster install"
-    if [ "$type" == $WEB_DOC ]; then
-        cli_name="== grpl cluster install"
-    fi
-    menu="
-$cli_name
-
+    meta="
 the grapple cli
 
 Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl cluster install"
+        meta=""
+    fi
+
+    grpl_cluster_install_doc="
+$cli_name
+$meta
 
 Usage: 
-  grpl cluster install
+
+  grpl cluster install [command]
 
 Usage with params from cli: 
+
   grpl cluster install --params --<variable-name>=<variable value>
-  e.g cluster install --params --GRAPPLE_VERSION=0.2.1
+  e.g grpl cluster install --params --GRAPPLE_VERSION=0.2.1
   OR
-  cluster install --params --<variable-name> <variable value>
+  grpl cluster install --params --<variable-name> <variable value>
   e.g grpl cluster install --params --GRAPPLE_VERSION 0.2.1
 
 Usage with params from configfile: 
+
   grpl cluster install --configfile <file-name>.json
   e.g grpl cluster install --configfile grpl-config.json
 
-Command: grpl cluster install
+Commands:
+
+    h or help     Help menu
+    *             to install cluster
+    
+Examples:    
+
+    grpl c i h    or    grpl cluster install help
+    grpl c i *    or    grpl cluster install *
+
 
 Variables:
+
   TARGET_PLATFORM=CIVO / Kubernetes / minikube
-
   # general configurations
-  GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.1')
-  AUTO_CONFIRM = false / true
-
+  GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.0' or '0.2.1')
+  AUTO_CONFIRM = 'false' / 'true'
   # kubernetes related configurations
   KUBE_CONTEXT = kubernetes context
-
   # minikube related configurations
   # no additional configurations
-
   # CIVO related configurations
   CIVO_REGION = Available CIVO regions (e.g. FRA1)
   CIVO_CLUSTER = CIVO cluster
@@ -420,11 +450,9 @@ Variables:
 " 
 
     if [ "$type" == $WEB_DOC ]; then
-        echo "$menu" > "$GRPL_WORKDIR/cluster-install-help-menu.adoc"
-        asciidoctor "$GRPL_WORKDIR/cluster-install-help-menu.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/cluster-install-help-menu.html to view the doc"
+        return 0
     else
-        echo "$menu"  >&2
+        echo "$grpl_cluster_install_doc"  >&2
     fi
 }
 
@@ -437,19 +465,25 @@ grpl_cluster_status_cli_help() {
 
     type=$1
     cli_name="grpl cluster status"
-    if [ "$type" == $WEB_DOC ]; then
-        cli_name="== grpl cluster status"
-    fi
-    menu="
-$cli_name
-
+    meta="
 the grapple cli
 
 Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl cluster status"
+        meta=""
+    fi
 
-Usage: grpl cluster status [command]
+    grpl_cluster_status_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl cluster status [command]
 
 Commands:
 
@@ -463,11 +497,9 @@ Examples:
 "
 
     if [ "$type" == $WEB_DOC ]; then
-        echo "$menu" > "$GRPL_WORKDIR/cluster-status-help-menu.adoc"
-        asciidoctor "$GRPL_WORKDIR/cluster-status-help-menu.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/cluster-status-help-menu.html to view the doc"
+        return 0
     else
-        echo "$menu"  >&2
+        echo "$grpl_cluster_status_doc"  >&2
     fi
 }
 
@@ -480,20 +512,26 @@ grpl_example_deploy_cli_help() {
     fi
 
     type=$1
-    cli_name="grpl cluster status"
-    if [ "$type" == $WEB_DOC ]; then
-        cli_name="== grpl cluster status"
-    fi
-    menu="
-$cli_name
-
+    cli_name="grpl example deploy"
+    meta="
 the grapple cli
 
 Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl example deploy"
+        meta=""
+    fi
 
-Usage: grpl example deploy [command]
+    grpl_example_deploy_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl example deploy [command]
 
 Commands:
 
@@ -506,16 +544,15 @@ Examples:
     grpl e d *    or    grpl example deploy *
 
 Variables:
-  example     all / db / dbfile
+
+  example   all / db / dbfile
   EDITION = "grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
 " 
 
     if [ "$type" == $WEB_DOC ]; then
-        echo "$menu" > "$GRPL_WORKDIR/cluster-status-help-menu.adoc"
-        asciidoctor "$GRPL_WORKDIR/cluster-status-help-menu.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/cluster-status-help-menu.html to view the doc"
+        return 0
     else
-        echo "$menu"  >&2
+        echo "$grpl_example_deploy_doc"  >&2
     fi
 }
 
@@ -529,19 +566,25 @@ grpl_example_status_cli_help() {
 
     type=$1
     cli_name="grpl example status"
-    if [ "$type" == $WEB_DOC ]; then
-        cli_name="== grpl example status"
-    fi
-    menu="
-$cli_name
-
+    meta="
 the grapple cli
 
 Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl example status"
+        meta=""
+    fi
 
-Usage: grpl example status [command]
+    grpl_example_status_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl example status [command]
 
 Commands:
 
@@ -555,11 +598,9 @@ Examples:
 "
 
     if [ "$type" == $WEB_DOC ]; then
-        echo "$menu" > "$GRPL_WORKDIR/example-status-help-menu.adoc"
-        asciidoctor "$GRPL_WORKDIR/example-status-help-menu.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/example-status-help-menu.html to view the doc"
+        return 0
     else
-        echo "$menu"  >&2
+        echo "$grpl_example_status_doc"  >&2
     fi
 }
 
