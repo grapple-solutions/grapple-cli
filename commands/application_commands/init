@@ -47,11 +47,7 @@ if ! ls $GRPL_WORKDIR | grep 'grapple-template' >/dev/null 2>&1; then
   gum spin --title "cloning grapple template" --show-output -- git -C "$GRPL_WORKDIR" clone "https://github.com/grapple-solutions/grapple-template.git" 
 fi
 
-if [ "$OS" == "mac" ]; then
-  sed -i '' "s/grapple-template/$PROJECT_NAME/g" "$GRPL_WORKDIR/grapple-template/README.md"
-else
-  sed -i "s/grapple-template/$PROJECT_NAME/g" "$GRPL_WORKDIR/grapple-template/README.md"
-fi
+awk -v repl="$PROJECT_NAME" '{gsub("grapple-template", repl)}1' "$GRPL_WORKDIR/grapple-template/README.md" > temp && mv temp "$GRPL_WORKDIR/grapple-template/README.md"
 
 cli_log "application init COMPLETED"
 status_log $TYPE_SUCCESS "application initialization is complete"
