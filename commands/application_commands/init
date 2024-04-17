@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+. "$GRPL_WORKDIR/utils/help_menus"
+
+cli_help() {
+  grpl_application_init_cli_help
+  exit 0
+}
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+

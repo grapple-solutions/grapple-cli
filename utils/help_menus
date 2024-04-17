@@ -17,6 +17,8 @@ generate_web_doc() {
     grpl_install_cli_help $WEB_DOC
     grpl_upgrade_cli_help $WEB_DOC
     grpl_version_cli_help $WEB_DOC
+    grpl_application_cli_help $WEB_DOC
+    grpl_application_init_cli_help $WEB_DOC
     grpl_cluster_create_cli_help $WEB_DOC
     grpl_cluster_install_cli_help $WEB_DOC
     grpl_cluster_status_cli_help $WEB_DOC
@@ -36,16 +38,18 @@ https://grapple-solutions.com/[grapple solution^]
 
 
 $grpl_cli_doc
+$grpl_application_doc
+$grpl_application_init_doc
 $grpl_cluster_doc
-$grpl_example_doc
-$grpl_install_doc
-$grpl_upgrade_doc
-$grpl_version_doc
 $grpl_cluster_create_doc
 $grpl_cluster_install_doc
 $grpl_cluster_status_doc
+$grpl_example_doc
 $grpl_example_deploy_doc
 $grpl_example_status_doc
+$grpl_install_doc
+$grpl_upgrade_doc
+$grpl_version_doc
 "
 echo "$doc" > "$GRPL_WORKDIR/grpl-web-doc.adoc"
         asciidoctor "$GRPL_WORKDIR/grpl-web-doc.adoc"
@@ -131,12 +135,13 @@ Usage:
 
 Commands:
 
-    i or install     Installation
-    c or cluster     Cluster commands
-    e or example     Example commands
-    v or version     List version
-    u or upgrade     Upgrade grpl
-    *                Help menu
+    i or install                Installation
+    c or cluster                Cluster commands
+    e or example                Example commands
+    v or version                List version
+    u or upgrade                Upgrade grpl
+    a or app or application     Initalize grpl application
+    *                           Help menu
     
 Examples:    
 
@@ -144,7 +149,8 @@ Examples:
     grpl c [commands]    or    grpl cluster [commands]     
     grpl e [commands]    or    grpl example [commands]     
     grpl v [commands]    or    grpl version [commands]     
-    grpl u [commands]    or    grpl upgrade [commands] 
+    grpl u [commands]    or    grpl upgrade [commands]  
+    grpl a [commands]    or    grpl app     [commands]    or    grpl application [commands] 
     grpl *
 
 "
@@ -152,6 +158,52 @@ Examples:
         return 0
     else
         echo "$grpl_cli_doc"  >&2
+    fi
+}
+
+grpl_application_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl application"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl application"
+        meta=""
+    fi
+
+    grpl_application_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl application [command]
+
+Commands:
+
+    i or init       initalize new grpl application
+    *               Help menu
+    
+Examples:    
+
+    grpl a i    or    grpl app init    or    grpl application init
+    grpl a *    or    grpl app *       or    grpl application *
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_application_doc"  >&2
     fi
 }
 
@@ -403,7 +455,7 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 https://grapple-solutions.com/
 "
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="== grpl cluster create"
+        cli_name="=== grpl cluster create"
         meta=""
     fi
 
@@ -450,7 +502,7 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 https://grapple-solutions.com/
 "
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="== grpl cluster install"
+        cli_name="=== grpl cluster install"
         meta=""
     fi
 
@@ -529,7 +581,7 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 https://grapple-solutions.com/
 "
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="== grpl cluster status"
+        cli_name="=== grpl cluster status"
         meta=""
     fi
 
@@ -577,7 +629,7 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 https://grapple-solutions.com/
 "
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="== grpl example deploy"
+        cli_name="=== grpl example deploy"
         meta=""
     fi
 
@@ -630,7 +682,7 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 https://grapple-solutions.com/
 "
     if [ "$type" == $WEB_DOC ]; then
-        cli_name="== grpl example status"
+        cli_name="=== grpl example status"
         meta=""
     fi
 
@@ -661,3 +713,49 @@ Examples:
 }
 
 
+
+grpl_application_init_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl application init"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="=== grpl application init"
+        meta=""
+    fi
+
+    grpl_application_init_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl application init [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to initalize a grpl application
+    
+Examples:    
+
+    grpl a i h    or    grpl app init help    or    grpl application init help
+    grpl a i *    or    grpl app init *       or    grpl application init *
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_application_init_doc"  >&2
+    fi
+}
