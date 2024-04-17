@@ -36,7 +36,7 @@ case "$1" in
     "$GRPL_WORKDIR/commands/upgrade" $(echo $@ | sed 's,upgrade,,g' | sed 's,u ,,') | tee -ia "$GRPL_WORKDIR/logs/upgrade.log" >/dev/null
     ;;
   application|app|a)
-    "$GRPL_WORKDIR/commands/application" $(echo $@ | sed 's,application,,g' | sed 's,app,,g' | sed 's,a ,,') | tee -ia "$GRPL_WORKDIR/logs/application.log" >/dev/null
+    "$GRPL_WORKDIR/commands/application" $(echo $@ | sed 's,application,,g' | sed 's,app,,g' | sed 's,a ,,') | tee -ia "$GRPL_WORKDIR/logs/application.log" #>/dev/null
     ;;
   doc|d)
     "$GRPL_WORKDIR/commands/doc" $(echo $@ | sed 's,doc,,g' | sed 's,d ,,') | tee -ia "$GRPL_WORKDIR/logs/doc.log" >/dev/null
