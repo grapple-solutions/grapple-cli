@@ -94,6 +94,10 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   CIVO_MASTER_IP=$(if [ "${CIVO_MASTER_IP}" != "" ]; then echo ${CIVO_MASTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
   echo "selected civo master ip: ${CIVO_MASTER_IP}"
 
+  #check if input from params is valid or not
+  if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then 
+    is_value_correct_wrt_regex $CIVO_EMAIL_ADDRESS $email_regex "Invalid email address format. Please try again"
+  fi
   CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
   echo "selected civo email address: ${CIVO_EMAIL_ADDRESS}"
 

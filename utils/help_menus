@@ -140,7 +140,7 @@ Commands:
     e or example                Example commands
     v or version                List version
     u or upgrade                Upgrade grpl
-    a or app or application     Initalize grpl application
+    a or app or application     Initialize grpl application
     *                           Help menu
     
 Examples:    
@@ -191,7 +191,7 @@ Usage:
 
 Commands:
 
-    i or init       initalize new grpl application
+    i or init       Initialize new grpl application
     *               Help menu
     
 Examples:    
@@ -745,12 +745,17 @@ Usage:
 Commands:
 
     h or help     Help menu
-    *             to initalize a grpl application
+    *             to Initialize a grpl application
     
 Examples:    
 
     grpl a i h    or    grpl app init help    or    grpl application init help
     grpl a i *    or    grpl app init *       or    grpl application init *
+
+Variables:
+
+    PROJECT_NAME = Name of the project
+    RESOURCE_TEMPLATE = Resource of the template
 "
 
     if [ "$type" == $WEB_DOC ]; then

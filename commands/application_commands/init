@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 . "$GRPL_WORKDIR/utils/help_menus"
+. "$GRPL_WORKDIR/utils/checks"
 
 cli_help() {
   grpl_application_init_cli_help
@@ -9,4 +10,44 @@ cli_help() {
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
+install_prerequisite
 
+cli_log "application init BEGIN"
+status_log $TYPE_INFO "application initialization is in progress"
+
+# -------------------- first check for input params -----------------------
+
+# valid arguments array
+valid_args=(
+    "PROJECT_NAME"
+    "RESOURCE_TEMPLATE"
+  )
+
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+[ "$1" = "$cli_params" ] && extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--params ,,')
+
+# check if values are already passed form terminal through a file
+# if yes? then store then in the respective vars
+[ "$1" = "$config_file_params" ] && extract_input_params_from_file $valid_args "grpl a i h" $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--configfile ,,')
+
+#check if input from params is valid or not
+if [ "${PROJECT_NAME}" != "" ]; then 
+  is_value_correct_wrt_regex $PROJECT_NAME $alphaNum_plus_hyphen_and_underscope_regex "Project name can only contain alpha numaric characters, '-'and '_' as special characters"
+fi
+PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
+echo "project name: ${PROJECT_NAME}"
+
+# ----------------------- params code ended ---------------------------
+
+
+if ! ls $GRPL_WORKDIR | grep 'grapple-template' >/dev/null 2>&1; then
+  # clone the grapple-template repo
+  check_and_install_git
+  gum spin --title "cloning grapple template" --show-output -- git clone https://github.com/grapple-solutions/grapple-template.git
+fi
+
+sed -i "s/grapple-template/$PROJECT_NAME/g" "grapple-template/README.md"
+
+cli_log "application init COMPLETED"
+status_log $TYPE_SUCCESS "application initialization is complete"
