@@ -44,7 +44,7 @@ echo "project name: ${PROJECT_NAME}"
 if ! ls $GRPL_WORKDIR | grep 'grapple-template' >/dev/null 2>&1; then
   # clone the grapple-template repo
   check_and_install_git
-  gum spin --title "cloning grapple template" --show-output -- git clone https://github.com/grapple-solutions/grapple-template.git
+  gum spin --title "cloning grapple template" --show-output -- git clone https://github.com/grapple-solutions/grapple-template.git "$GRPL_WORKDIR"
 fi
 
 sed -i "s/grapple-template/$PROJECT_NAME/g" "grapple-template/README.md"

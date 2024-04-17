@@ -543,17 +543,17 @@ Variables:
   TARGET_PLATFORM=CIVO / Kubernetes / minikube
   # general configurations
   GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.0' or '0.2.1')
-  AUTO_CONFIRM = 'false' / 'true'
+  AUTO_CONFIRM='false' / 'true'
   # kubernetes related configurations
-  KUBE_CONTEXT = kubernetes context
+  KUBE_CONTEXT=kubernetes context
   # minikube related configurations
   # no additional configurations
   # CIVO related configurations
-  CIVO_REGION = Available CIVO regions (e.g. FRA1)
-  CIVO_CLUSTER = CIVO cluster
-  CIVO_CLUSTER_ID = CIVO cluster ID
-  CIVO_MASTER_IP = CIVO cluster master IP address
-  CIVO_EMAIL_ADDRESS = email address of your CIVO account
+  CIVO_REGION=Available CIVO regions (e.g. FRA1)
+  CIVO_CLUSTER=CIVO cluster
+  CIVO_CLUSTER_ID=CIVO cluster ID
+  CIVO_MASTER_IP=CIVO cluster master IP address
+  CIVO_EMAIL_ADDRESS=email address of your CIVO account
 
 " 
 
@@ -654,7 +654,7 @@ Examples:
 Variables:
 
   example   all / db / dbfile
-  EDITION = "grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
+  EDITION="grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
 " 
 
     if [ "$type" == $WEB_DOC ]; then
@@ -754,8 +754,8 @@ Examples:
 
 Variables:
 
-    PROJECT_NAME = Name of the project
-    RESOURCE_TEMPLATE = Resource of the template
+    PROJECT_NAME=Name of the project
+    RESOURCE_TEMPLATE=Resource of the template
 "
 
     if [ "$type" == $WEB_DOC ]; then
