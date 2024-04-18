@@ -74,3 +74,14 @@ is_correct_grapple_version_provided() {
     fi
 
 }
+
+is_value_correct_wrt_regex() {
+
+    local value=$1
+    local regex=$2
+    local errMsg=$3
+    if [[ ! $value =~ $regex ]]; then
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+}

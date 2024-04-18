@@ -182,10 +182,31 @@ check_and_install_asciidoc() {
         fi
     fi
 
-    # extract_minikube_cli_version
-
 }
 
+check_and_install_git() {
+
+    # checks for checking and installing minikube
+    if ! git version  >/dev/null 2>&1; then
+        echo "git cli is required"
+        echo "installing git cli..."
+        if [ "${OS}" == "mac" ]; then
+            gum spin --title "git is not installed, now installing git" --show-output -- brew install git
+        elif [ "${OS}" == "gnu" ]; then
+            status_log $TYPE_INFO "going to update apt"
+            sudo apt update 2>&1
+            gum spin --title "git is not installed, now installing git" --show-output -- sudo apt install git
+        else
+            errMsg="Failed to install git, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    extract_git_cli_version
+    
+}
 
 extract_helm_cli_version(){
 
@@ -317,3 +338,27 @@ extract_grapple_cli_version(){
 
 }
 
+
+extract_git_cli_version(){
+
+    if ! grep -q "git" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
+
+        # Run git version command and store the output
+        git_version=$(git version)
+
+        # Extract version number using regular expression
+        regex="git version ([0-9]+\.[0-9]+\.[0-9]+)"
+        version_number=""
+        if [[ $git_version =~ $regex ]]; then
+            version_number=${BASH_REMATCH[1]}
+            echo "Git version number: $version_number"
+        else
+            echo "Failed to extract version number from git version output."
+            return 0
+        fi
+
+        # Output the latest version
+        echo "      v$version_number - git" >> "$GRPL_WORKDIR/dependency_versions"
+    fi
+
+}
