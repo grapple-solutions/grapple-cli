@@ -25,7 +25,6 @@ grpl_dns_regex="^[[:alnum:]-]{3,}$"
 non_empty_regex=".+" 
 alphaNum_plus_hyphen_and_underscope_regex="^[a-zA-Z0-9_-]+$"
 
-
 # exist on interupt message colors
 RED='\033[0;31m'
 NC='\033[0m' # No Color
