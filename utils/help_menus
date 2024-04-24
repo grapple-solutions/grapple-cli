@@ -24,6 +24,8 @@ generate_web_doc() {
     grpl_cluster_status_cli_help $WEB_DOC
     grpl_example_deploy_cli_help $WEB_DOC
     grpl_example_status_cli_help $WEB_DOC
+    grpl_resource_cli_help $WEB_DOC
+    grpl_resource_deploy_cli_help $WEB_DOC
      doc="
 = grpl cli Documentation
 :toc: 
@@ -47,6 +49,8 @@ $grpl_cluster_status_doc
 $grpl_example_doc
 $grpl_example_deploy_doc
 $grpl_example_status_doc
+$grpl_resource_doc
+$grpl_resource_deploy_doc
 $grpl_install_doc
 $grpl_upgrade_doc
 $grpl_version_doc
@@ -762,5 +766,100 @@ Variables:
         return 0
     else
         echo "$grpl_application_init_doc"  >&2
+    fi
+}
+
+
+grpl_resource_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl resource"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl resource"
+        meta=""
+    fi
+
+    grpl_resource_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl resource [command]
+
+Commands:
+
+    d or deploy     to deploy a grpl template
+    r or render     to render a grpl template
+    *               Help menu
+    
+Examples:    
+
+    grpl r d    or    grpl resource deploy
+    grpl r r    or    grpl resource render
+    grpl r *    or    grpl resource *     
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_resource_doc"  >&2
+    fi
+}
+
+grpl_resource_deploy_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl resource deploy"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="=== grpl resource deploy"
+        meta=""
+    fi
+
+    grpl_resource_deploy_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl resource deploy [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to deploy grpl template
+    
+Examples:    
+
+    grpl r d h    or    grpl resource deploy help
+    grpl r d *    or    grpl resource deploy *
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_resource_deploy_doc"  >&2
     fi
 }

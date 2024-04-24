@@ -75,6 +75,38 @@ is_correct_grapple_version_provided() {
 
 }
 
+is_correct_grapple_applicationsets_provided() {
+
+    templates=($DB_FILE $DB_MYSQL $DB_MYSQL_DISCOVERY_BASED $DB_POSTGRES $DB_POSTGRES_DISCOVERY_BASED)
+    selected_template=$1
+
+    if [[ " ${templates[@]} " =~ " $selected_template " ]]; then
+        return 0
+    else
+        errMsg="Error: Invalid GRAS_TEMPLATE provided : $selected_template,  Please correct template name"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}
+
+is_correct_db_type_provided() {
+
+    db_types=($INTERNAL_DB $EXTERNAL_DB)
+    selected_db_type=$1
+
+    if [[ " ${db_types[@]} " =~ " $selected_db_type " ]]; then
+        return 0
+    else
+        errMsg="Error: Invalid DB_TYPE provided : $selected_db_type,  Please correct db type"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}
+
 is_value_correct_wrt_regex() {
 
     local value=$1

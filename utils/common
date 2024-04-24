@@ -43,6 +43,7 @@ status_log() {
   fi
 
   gum log "$(printf "${log_color}${2}${reset_color}")"
+  echo ${2}
 
 }
 

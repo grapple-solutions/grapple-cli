@@ -1,0 +1,247 @@
+#!/bin/bash
+set -e
+. "$GRPL_WORKDIR/utils/help_menus"
+. "$GRPL_WORKDIR/utils/checks"
+
+cli_help() {
+  grpl_resource_deploy_cli_help
+  exit 0
+}
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+install_prerequisite
+
+cli_log "resource deploy BEGIN"
+status_log $TYPE_DEFAULT "resource deploy is in progress"
+NS=grpl-system
+DB_FILE_NS=grpl-dbfile
+DB_NS=grpl-db
+awsregistry="p7h7z5g3"
+
+
+
+
+# ----------------------- functions code ---------------------------
+
+transform_model_input_to_yaml() {
+
+    check_and_install_jq
+    check_and_install_yq
+
+    local Models=$1
+    # Convert the JSON-like string to valid JSON by replacing single quotes with double quotes
+    json_string="${Models//\'/\"}"
+
+    # Initialize an array to store the models
+    local models=()
+    models_name=()
+    # Split the input string by pipe symbol (|)
+    IFS='|' read -ra models_data <<< "$json_string"
+
+
+    # Iterate over each model data
+    for model_data in "${models_data[@]}"; do
+        # Extract the model name and its properties
+        IFS=':' read -r model_name properties <<< "$model_data"
+        
+        # Parse the properties JSON and format it as YAML
+        yaml_properties=$(echo "$properties" | jq -r '. | {spec: {name: .name, base: .base, properties: (.properties | map_values(with_entries(select(.value != null))))}}' | yq eval -P)
+
+        # Add the model name and its properties to the array
+        models+=("$yaml_properties")
+        models_name+=("$model_name")
+    done
+    
+    model_parsed_data=""
+    x=0
+    for model in "${models[@]}"; do
+
+        model_with_tab=$(echo "$model" | awk '{print "    " $0}')
+
+        model_parsed_data="$model_parsed_data
+  - name: \"${models_name[$x]}\"
+$model_with_tab"
+
+        x=$x+1
+
+    done
+}
+
+
+take_relation_input() {
+   
+    
+    local models=("$@")
+    RELATIONS=""
+    while true; do
+
+        local relation_type=$(gum choose --header "Please select the relation type" $BELONGS_TO $HAS_MANY $HAS_MANY_THROUGH $HAS_ONE $REFRENCES_MANY) || exit $?
+        status_log $TYPE_DEFAULT  "relation model template: ${relation_type}"
+
+        local source_model=$(gum choose --header "Please select source model" "${models[@]}") || exit $?
+        status_log $TYPE_DEFAULT  "source model: ${source_model}"
+
+        local target_model=$(gum choose --header "Please select target model" "${models[@]}") || exit $?
+        status_log $TYPE_DEFAULT  "destination model: ${target_model}"
+
+        local foreign_key=$(prompt_for_input_with_validation "Foreign key name to define on the source model: " "Please enter foreign key" "$non_empty_regex" "please select valid foreign key") || exit $?
+        status_log $TYPE_DEFAULT  "foreign_key: ${foreign_key}"
+
+        local relation_name=$(prompt_for_input_with_validation "Relation name: " "Please enter relation name" "$non_empty_regex" "please select valid relation name") || exit $?
+        status_log $TYPE_DEFAULT  "relation_name: ${relation_name}"
+
+        local register_inclusion_resolver=$(gum choose --header "Allow Customers queries to include data from related Employees instances?" "Yes" "No") || exit $?
+        status_log $TYPE_DEFAULT  "register_inclusion_resolver: ${register_inclusion_resolver}"
+        
+        if [ "$register_inclusion_resolver" == "Yes" ]; then
+            register_inclusion_resolver=true
+        else
+            register_inclusion_resolver=false
+        fi
+
+        RELATIONS="$RELATIONS
+  - name: \"$relation_name\"
+    spec:
+      relationName: \"$relation_name\"
+      sourceModel: \"$source_model\"
+      destinationModel: \"$target_model\"
+      foreignKeyName: \"$foreign_key\"
+      relationType: \"$relation_type\"
+      registerInclusionResolver: $register_inclusion_resolver
+      "
+
+        status_log $TYPE_INFO "Do you want to add another rule?"
+        local another_rule=$(gum choose "Yes" "No") || exit $?
+        
+        if [ "$another_rule" == "No" ]; then
+            return 0
+        fi
+
+    done
+    
+}
+
+deploy_db_file_template() {
+
+    if [ "$(kubectl config current-context)" = "minikube" ]; then
+        echo "patching for minikube..."
+        MINIKUBE_PATCH=" --set gras.ssl=false --set grapi.ssl=false --set gruim.ssl=false "
+    else
+        MINIKUBE_PATCH=""
+    fi
+
+    echo "check xrds are available"
+    status_log $TYPE_INFO "wait for grapi to be deployed"
+    CRD=grapi && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+    status_log $TYPE_SUCCESS "grapi is deployed"
+    status_log $TYPE_INFO "wait for compositegrappleapis to be deployed"
+    CRD=compositegrappleapis && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+    status_log $TYPE_SUCCESS "compositegrappleapis is deployed"
+    status_log $TYPE_INFO "wait for composition/grapi.grsf.grpl.io to be deployed"
+    CRD=composition/grapi.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+    status_log $TYPE_SUCCESS "composition/grapi.grsf.grpl.io is deployed"
+    status_log $TYPE_INFO "wait for composition/muim.grsf.grpl.io to be deployed"
+    CRD=composition/muim.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+    status_log $TYPE_SUCCESS "composition/muim.grsf.grpl.io is deployed"
+
+    gum spin --title "Deploying db-file-template" -- helm upgrade --install ${DB_FILE_NS} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${DB_FILE_NS} -f /tmp/db-file.yaml ${MINIKUBE_PATCH} --create-namespace 
+    status_log $TYPE_SUCCESS "grpl db-file template is deployed"
+
+}
+
+
+
+# ----------------------- functions code ended ---------------------
+
+# ------------------------------------------------------------------
+
+# ---------------- first check for input params --------------------
+
+# valid arguments array
+valid_args=(
+    "GRAS_NAME"
+    "GRAS_TEMPLATE"
+    "DB_TYPE"
+    "MODELS"
+  )
+
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+[ "$1" = "$cli_params" ] && extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--params ,,')
+
+# check if values are already passed form terminal through a file
+# if yes? then store then in the respective vars
+[ "$1" = "$config_file_params" ] && extract_input_params_from_file $valid_args "grpl r d h" $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--configfile ,,')
+
+#check if input from params is valid or not
+if [ "${GRAS_NAME}" != "" ]; then 
+  is_value_correct_wrt_regex $GRAS_NAME $alphaNum_plus_hyphen_and_underscope_regex "gras name can only contain alpha numaric characters, '-'and '_' as special characters"
+fi
+GRAS_NAME=$(if [ "${GRAS_NAME}" != "" ]; then echo ${GRAS_NAME}; else prompt_for_input_with_validation "Enter GRAS_NAME: " "Provide gras name" "$alphaNum_plus_hyphen_and_underscope_regex" "gras name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
+status_log $TYPE_DEFAULT "GRAS_NAME: ${GRAS_NAME}"
+
+#check if input from params is valid or not
+if [ "${GRAS_TEMPLATE}" != "" ]; then 
+  is_correct_grapple_applicationsets_provided $GRAS_TEMPLATE 
+fi
+GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL $DB_MYSQL_DISCOVERY_BASED $DB_POSTGRES $DB_POSTGRES_DISCOVERY_BASED; fi) || exit $?
+status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
+
+
+# ----------------------- params code ended ---------------------------
+
+
+if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
+
+    template_file_dest="/tmp/db-file.yaml"
+    cp "$GRPL_WORKDIR/template-files/db-file.yaml" $template_file_dest
+
+    #input models
+    # MODELS=$(if [ "${MODELS}" != "" ]; then echo ${MODELS}; else prompt_for_input_with_validation "Enter MODELS: " "Provide models" "$non_empty_regex" "please provide valid models"; fi) || exit $?
+    # echo "models: ${MODELS}"
+    # MODELS='customers:{"base":"Entity","name":"customers","properties":{"addressLine1":{"type":"string"},"addressLine2":{"type":"string"},"city":{"type":"string"},"contactFirstName":{"type":"string"},"contactLastName":{"type":"string"},"country":{"type":"string"},"creditLimit":{"type":"number"},"customerName":{"type":"string"},"id":{"generated":true,"defaultFn":"uuid","id":true,"required":true,"type":"string"},"generatedValue":{"generated":true,"defaultFn":999,"id":false,"required":true,"type":"number"},"phone":{"type":"string"},"postalCode":{"type":"string"},"state":{"type":"string"}}}|employees:{"base":"Entity","name":"employees","properties":{"country":{"type":"string"},"creditLimit":{"type":"number"},"email":{"type":"string"},"extension":{"type":"string"},"firstName":{"type":"string"},"id":{"generated":true,"defaultFn":"uuid","id":true,"required":true,"type":"string"},"jobTitle":{"type":"string"},"lastName":{"type":"string"},"officesId":{"type":"string"},"postalCode":{"type":"string"},"reportsTo":{"type":"number"},"state":{"type":"string"},"createdAt":{"generated":true,"defaultFn":"now"}}}'
+    transform_model_input_to_yaml $MODELS
+    awk -v repl="$model_parsed_data" '{gsub("{{models}}", repl)}1' "$template_file_dest" > temp && mv temp "$template_file_dest"
+
+
+    # input data source url
+    DATA_SOURCE=$(if [ "${DATA_SOURCE}" != "" ]; then echo ${DATA_SOURCE}; else prompt_for_input_with_validation "Enter DATA_SOURCE: " "Provide data source url" "$url_validation_regex" "please provide valid datasource url"; fi) || exit $?
+    status_log $TYPE_DEFAULT "DATA_SOURCE: ${DATA_SOURCE}"
+    awk -v repl="$DATA_SOURCE" '{gsub("{{data_source_url}}", repl)}1' "$template_file_dest" > temp && mv temp "$template_file_dest"
+
+    DB_FILE_PATH=$(if [ "${DB_FILE_PATH}" != "" ]; then echo ${DB_FILE_PATH}; else prompt_for_input_with_validation "Enter DB_FILE_PATH: " "Provide file path where you want to store data" "$abs_path_regex" "please provide correct absolute file path"; fi) || exit $?
+    status_log $TYPE_DEFAULT "DB_FILE_PATH: ${DB_FILE_PATH}"
+    awk -v repl="$DB_FILE_PATH" '{gsub("{{db_file}}", repl)}1' "$template_file_dest" > temp && mv temp "$template_file_dest"
+
+    take_relation_input "${models_name[@]}"
+    awk -v repl="$RELATIONS" '{gsub("{{relations}}", repl)}1' "$template_file_dest" > temp && mv temp "$template_file_dest"
+
+    status_log $TYPE_DEFAULT "Do you want enable gruim?"
+    ENABLE_GRUIM=$(if [ "${ENABLE_GRUIM}" != "" ]; then echo ${ENABLE_GRUIM}; else  gum choose "Yes" "No"; fi) || exit $?
+    status_log $TYPE_DEFAULT "ENABLE_GRUIM: ${ENABLE_GRUIM}"
+    
+    if [ "$ENABLE_GRUIM" == "Yes" ]; then
+        awk -v repl="$GRUIM" '{gsub("{{grum_ui}}", repl)}1' "$template_file_dest" > temp && mv temp "$template_file_dest"
+    else
+        awk -v repl="" '{gsub("{{grum_ui}}", repl)}1' "$template_file_dest" > temp && mv temp "$template_file_dest"
+    fi
+
+
+    # at this point our template manifest is ready at /temp/db-file/yaml
+    # we'll deploy it now
+    deploy_db_file_template
+
+    # now remove the tmp file
+    rm $template_file_dest
+    
+    exit 1
+fi
+
+
+#check if input from params is valid or not
+if [ "${DB_TYPE}" != "" ]; then 
+  is_correct_grapple_applicationsets_provided $DB_TYPE 
+fi
+DB_TYPE=$(if [ "${DB_TYPE}" != "" ]; then echo ${DB_TYPE}; else gum choose  --header "Please select the database type you want" $INTERNAL_DB $EXTERNAL_DB; fi) || exit $?
+status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
