@@ -186,7 +186,7 @@ check_and_install_asciidoc() {
 
 check_and_install_git() {
 
-    # checks for checking and installing minikube
+    # checks for checking and installing git
     if ! git version  >/dev/null 2>&1; then
         echo "git cli is required"
         echo "installing git cli..."
@@ -207,6 +207,70 @@ check_and_install_git() {
     extract_git_cli_version
     
 }
+
+check_and_install_jq() {
+
+    # checks for checking and installing jq
+    if ! jq --version  >/dev/null 2>&1; then
+        echo "jq cli is required"
+        echo "installing jq cli..."
+        if [ "${OS}" == "mac" ]; then
+            gum spin --title "jq is not installed, now installing jq" --show-output -- brew install jq
+        elif [ "${OS}" == "gnu" ]; then
+            status_log $TYPE_INFO "going to refresh snap"
+            sudo snap refresh >/dev/null 2>&1
+            gum spin --title "jq is not installed, now installing jq" --show-output -- sudo snap install jq
+        else
+            errMsg="Failed to install jq, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    extract_jq_cli_version
+    
+}
+
+check_and_install_yq() {
+
+    # checks for checking and installing yq
+    if ! yq --version  >/dev/null 2>&1; then
+        echo "yq cli is required"
+        echo "installing yq cli..."
+        if [ "${OS}" == "mac" ]; then
+            gum spin --title "yq is not installed, now installing yq" --show-output -- brew install yq
+        elif [ "${OS}" == "gnu" ]; then
+            status_log $TYPE_INFO "going to refresh snap"
+            sudo snap refresh >/dev/null 2>&1
+            gum spin --title "yq is not installed, now installing yq" --show-output -- sudo snap install yq
+        else
+            errMsg="Failed to install yq, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    extract_yq_cli_version
+    
+}
+
+check_and_install_gettext() {
+
+    if [ "${OS}" != "mac" ]; then
+        return 0
+    fi
+    # checks for checking and installing git
+    if ! gettext --version  >/dev/null 2>&1; then
+        echo "gettext cli is required"
+        echo "installing gettext cli..."
+        gum spin --title "gettext is not installed, now installing gettext" --show-output -- brew install gettext
+        gum spin --title "linking gettext" --show-output -- brew link --force gettext
+    fi
+    
+}
+
 
 extract_helm_cli_version(){
 
@@ -359,6 +423,34 @@ extract_git_cli_version(){
 
         # Output the latest version
         echo "      v$version_number - git" >> "$GRPL_WORKDIR/dependency_versions"
+    fi
+
+}
+
+extract_jq_cli_version(){
+
+    if ! grep -q "jq" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
+
+        # Get jq version
+        jq_version=$(jq --version | awk -F'[- ]' '{print $2}')
+
+        # Output the latest version
+        echo "      v$jq_version - jq" >> "$GRPL_WORKDIR/dependency_versions"
+    fi
+
+}
+
+
+
+extract_yq_cli_version(){
+
+    if ! grep -q "yq" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
+
+        # Get yq version
+        yq_version=$(yq --version | awk '{print $NF}')
+
+        # Output the latest version
+        echo "       $yq_version - yq" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }

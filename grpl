@@ -41,6 +41,9 @@ case "$1" in
   doc|d)
     "$GRPL_WORKDIR/commands/doc" $(echo $@ | sed 's,doc,,g' | sed 's,d ,,') | tee -ia "$GRPL_WORKDIR/logs/doc.log" >/dev/null
     ;;
+  resource|r)
+    "$GRPL_WORKDIR/commands/resource" $(echo $@ | sed 's,resource,,g' | sed 's,r ,,') | tee -ia "$GRPL_WORKDIR/logs/resource.log" >/dev/null
+    ;;
   *)
     cli_help
     ;;

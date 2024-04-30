@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+. "$GRPL_WORKDIR/utils/help_menus"
+
+cli_help() {
+  grpl_resource_cli_help
+  exit 0
+}
+
+case "$1" in
+  deploy|d)
+    "$GRPL_WORKDIR/commands/resource_commands/deploy" $(echo $@ | sed 's,deploy,,g' | sed 's,d ,,') | tee -ia "$GRPL_WORKDIR/logs/resource_deploy.log"
+    ;;
+  render|r)
+    "$GRPL_WORKDIR/commands/resource_commands/render" $(echo $@ | sed 's,render,,g' | sed 's,r ,,') | tee -ia "$GRPL_WORKDIR/logs/resource_render.log"
+    ;;
+  *)
+    cli_help
+    ;;
+esac
