@@ -117,3 +117,36 @@ is_value_correct_wrt_regex() {
         exit 1
     fi
 }
+
+
+is_correct_kubectl_context_provided() {
+
+    output=$(kubectl config get-contexts -o name)
+    if [ -z "$output" ]; then
+        errMsg="Error: kubectl doesn't have any contexts"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+    context=$1
+    if [ "${context}" == "" ]; then 
+        return 0
+    fi
+
+    # Declare an empty array
+    context_array=()
+    while IFS= read -r line; do
+        context_array+=("$line")
+    done <<< "$output"
+
+    if [[ " ${context_array[@]} " =~ " $context " ]]; then
+        return 0
+    else
+        errMsg="Error: Invalid KUBECTL_CONTEXT provided : $context"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}

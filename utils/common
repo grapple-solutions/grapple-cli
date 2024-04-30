@@ -86,6 +86,24 @@ prompt_for_input_with_validation() {
     echo "$input"
 }
 
+prompt_for_explicit_input_with_validation() {
+    local prompt=$1
+    local placeholder=$2
+    local regex=$3
+    local error_message=$4
+    local default_value=$5  # Added parameter for default value
+    local input=""
+
+    input=$(gum input --prompt "$prompt" --placeholder "$placeholder" --value "$default_value") || exit_on_interrupt
+    while [[ ! $input =~ $regex ]]; do
+        input=$(gum input --prompt "$prompt" --placeholder "$placeholder" --value "$default_value") || exit_on_interrupt
+        if [[ ! $input =~ $regex ]]; then
+            echo -e "${RED}$error_message${NC}" >&2
+        fi
+    done
+    echo "$input"
+}
+
 # Function to extract value from JSON
 extract_value_from_json() {
     local json="$1"

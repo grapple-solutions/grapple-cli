@@ -10,7 +10,7 @@ grapi:
     spec:
       name: init-db
       image: busybox:1.28
-      command: ['sh', '-c', "if ! test -f {{db_file}}; then wget -O {{db_file}} {{data_source_url}}; chmod 777 {{db_file}}; fi"]
+      command: ['sh', '-c', "if ! test -f $db_file; then wget -O $db_file $testdata_url; chmod 777 $db_file; fi"]
   volumes:
   - name: data
     emptyDir: {}
@@ -25,15 +25,14 @@ grapi:
       memory:
         connector: "memory"
         name: "db"
-        file: "{{db_file}}"
+        file: "$db_file"
         localStorage: "db"
   models:
-{{models}}
-  relations:
-  {{relations}}
+$models
+  $relations
   restcruds:
   - name: "restcrud"
     spec:
       datasource: "db"
 
-{{grum_ui}}
+$grum_ui
