@@ -206,6 +206,7 @@ status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
 
     template_file_dest="/tmp/db-file.yaml"
+    tmp_file_dest="/tmp/temp_file"
     cp "$GRPL_WORKDIR/template-files/db-file.yaml" $template_file_dest
 
     # input models
@@ -241,14 +242,15 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
         export grum_ui=""
     fi
 
-    envsubst < "$template_file_dest" > temp_file && mv temp_file "$template_file_dest"
+    check_and_install_gettext
+    envsubst < "$template_file_dest" > "$tmp_file_dest" && mv "$tmp_file_dest" "$template_file_dest"
 
     # at this point our template manifest is ready at /temp/db-file/yaml
     # we'll deploy it now
     deploy_db_file_template
 
     # now remove the tmp file
-    # rm $template_file_dest
+    rm $template_file_dest
     
     exit 1
 fi

@@ -256,6 +256,22 @@ check_and_install_yq() {
     
 }
 
+check_and_install_gettext() {
+
+    if [ "${OS}" != "mac" ]; then
+        return 0
+    fi
+    # checks for checking and installing git
+    if ! gettext --version  >/dev/null 2>&1; then
+        echo "gettext cli is required"
+        echo "installing gettext cli..."
+        gum spin --title "gettext is not installed, now installing gettext" --show-output -- brew install gettext
+        gum spin --title "linking gettext" --show-output -- brew link --force gettext
+    fi
+    
+}
+
+
 extract_helm_cli_version(){
 
     if ! grep -q "helm" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
