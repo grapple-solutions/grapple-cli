@@ -150,3 +150,35 @@ is_correct_kubectl_context_provided() {
     fi
 
 }
+
+is_correct_kubectl_namespace_provided() {
+
+    output=$(kubectl get namespaces -o name | awk -F'/' '{print $2}')
+    if [ -z "$output" ]; then
+        errMsg="Error: kubectl doesn't have any namespace"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+    namespace=$1
+    if [ "${namespace}" == "" ]; then 
+        return 0
+    fi
+
+    # Declare an empty array
+    namespace_array=()
+    while IFS= read -r line; do
+        namespace_array+=("$line")
+    done <<< "$output"
+
+    if [[ " ${namespace_array[@]} " =~ " $namespace " ]]; then
+        return 0
+    else
+        errMsg="Error: Invalid GRAS_NS provided : $namespace"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}

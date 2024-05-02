@@ -138,13 +138,16 @@ deploy_db_file_template() {
         MINIKUBE_PATCH=""
     fi
 
-    # Check if the namespace exists
-    if ! kubectl get namespace "$GRAS_NAME" >/dev/null 2>&1; then
-        gum spin --title "creating $GRAS_NAME namespace" -- kubectl create namespace $GRAS_NAME
-    fi
+    is_correct_kubectl_context_provided $GRAS_NS
+    namespaces=$(kubectl get namespaces -o name | awk -F'/' '{print $2}')
+    current_ns="default"
+    GRAS_NS=$(if [ "${GRAS_NS}" != "" ]; then echo ${GRAS_NS}; else gum choose  --header "Please select kubectl namespace you want to use, default value is '$current_ns'" $namespaces --selected=$current_ns ; fi) || exit $?
 
-    gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${GRAS_NAME} -f /tmp/db-file.yaml ${MINIKUBE_PATCH}
+    gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${GRAS_NS} -f /tmp/db-file.yaml ${MINIKUBE_PATCH}
     
+    status_log $TYPE_INFO "wait for $GRAS_NAME to be ready" 
+    CRD="gras" && echo "wait for $CRD to be deployed:" && until kubectl get $CRD -n $GRAS_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+    status_log $TYPE_SUCCESS "$CRD deployed"
     status_log $TYPE_SUCCESS "grpl db-file template is deployed"
 
 }
@@ -162,11 +165,13 @@ valid_args=(
     "KUBECTL_CONTEXT"
     "GRAS_NAME"
     "GRAS_TEMPLATE"
-    "DATA_SOURCE"
+    "SOURCE_DATA"
     "DB_FILE_PATH"
     "DB_TYPE"
     "ENABLE_GRUIM"
     "MODELS"
+    "RELATIONS"
+    "GRAS_NS"
   )
 
 # check if values are already passed form terminal
@@ -207,9 +212,10 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
 
     template_file_dest="/tmp/db-file.yaml"
     tmp_file_dest="/tmp/temp_file"
+    db_file_default_value=/data/db.json
     cp "$GRPL_WORKDIR/template-files/db-file.yaml" $template_file_dest
 
-    # input models
+    # input model
     # MODELS=$(if [ "${MODELS}" != "" ]; then echo ${MODELS}; else prompt_for_input_with_validation "Enter MODELS: " "Provide models" "$non_empty_regex" "please provide valid models"; fi) || exit $?
     # echo "models: ${MODELS}"
     # the input model should look like this
@@ -218,19 +224,24 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     export models=$model_parsed_data
 
     # input data source url
-    DATA_SOURCE=$(if [ "${DATA_SOURCE}" != "" ]; then echo ${DATA_SOURCE}; else prompt_for_explicit_input_with_validation "Enter DATA_SOURCE: " "Provide data source url" "$url_validation_regex" "please provide valid datasource url"; fi) || exit $?
-    status_log $TYPE_DEFAULT "DATA_SOURCE: ${DATA_SOURCE}"
-    export testdata_url=$DATA_SOURCE
+    SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url" "$url_validation_regex" "please provide valid datasource url"; fi) || exit $?
+    status_log $TYPE_DEFAULT "SOURCE_DATA: ${SOURCE_DATA}"
+    export testdata_url=$SOURCE_DATA
 
-    DB_FILE_PATH=$(if [ "${DB_FILE_PATH}" != "" ]; then echo ${DB_FILE_PATH}; else prompt_for_explicit_input_with_validation "Enter DB_FILE_PATH: " "Provide file path where you want to store data" "$abs_path_regex" "please provide correct absolute file path"; fi) || exit $?
+    DB_FILE_PATH=$(if [ "${DB_FILE_PATH}" != "" ]; then echo ${DB_FILE_PATH}; else prompt_for_explicit_input_with_validation "Enter DB_FILE_PATH: " "Provide file path where you want to store data, default value is $db_file_default_value" "$abs_path_regex" "please provide correct absolute file path"; fi) || exit $?
     if [ "${DB_FILE_PATH}" == "" ]; then 
-        DB_FILE_PATH="/tmp/db.json"
+        DB_FILE_PATH=$db_file_default_value
     fi
     status_log $TYPE_DEFAULT "DB_FILE_PATH: ${DB_FILE_PATH}"
     export db_file=$DB_FILE_PATH
-
-    take_relation_input "${models_name[@]}"
-    export relations=$RELATIONS
+    cli_args=$@
+    if [[ "${cli_args[@]}" =~ "--RELATIONS" ]]; then
+         export relations=$RELATIONS
+    else
+        take_relation_input "${models_name[@]}"
+        export relations=$RELATIONS
+    fi
+    
     
     status_log $TYPE_DEFAULT "Do you want enable gruim?"
     ENABLE_GRUIM=$(if [ "${ENABLE_GRUIM}" != "" ]; then echo ${ENABLE_GRUIM}; else  gum choose "Yes" "No"; fi) || exit $?
@@ -245,7 +256,7 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     check_and_install_gettext
     envsubst < "$template_file_dest" > "$tmp_file_dest" && mv "$tmp_file_dest" "$template_file_dest"
 
-    # at this point our template manifest is ready at /temp/db-file/yaml
+    # at this point our template manifest is ready at /tmp/db-file.yaml
     # we'll deploy it now
     deploy_db_file_template
 
