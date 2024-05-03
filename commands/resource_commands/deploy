@@ -126,6 +126,94 @@ take_relation_input() {
     
 }
 
+take_model_input() {
+    
+    MODELS=""
+    while true; do
+
+        local model_name=$(prompt_for_input_with_validation "Enter the model name: " "Please enter model name" "$non_empty_regex" "please enter valid model name") || exit $?
+        status_log $TYPE_DEFAULT  "Enter the model name: ${model_name}"
+
+        local base_name=$(prompt_for_input_with_validation "Enter the model base name: " "Please enter model base name e.g Entity" "$non_empty_regex" "please enter valid model base name") || exit $?
+        status_log $TYPE_DEFAULT  "Enter the base name: ${base_name}"
+
+        props="properties:"
+        id_selected=0
+        while true; do
+
+            status_log $TYPE_INFO "Let's add property to $model_name"
+            status_log $TYPE_INFO "Enter an empty property name when done"
+
+            local property_name=$(prompt_for_explicit_input_with_validation "Enter the property name: " "Please enter property name" ".*" "please enter valid property name") || exit $?
+            status_log $TYPE_DEFAULT  "Enter the property name: ${property_name}"
+
+            if [[ $property_name == "" ]]; then
+                break
+            fi
+
+            local property_type=$(gum choose --header "Please select the property type" "string" "number" "boolean" "object" "array" "date" "buffer" "geopoint" "any") || exit $?
+            status_log $TYPE_DEFAULT  "Enter the property type: ${property_type}"   
+
+            props="$props
+        $property_name:
+          type: $property_type"
+
+            if [ $id_selected == 0 ]; then
+                is_id=$(prompt_for_input_with_validation "Is $property_name the ID property? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+                status_log $TYPE_DEFAULT  "Is $property_name the ID property? ${is_id}"                
+                if [[ $is_id == "y" || $is_id == "Y" ]]; then
+                    is_generated=$(prompt_for_input_with_validation "Is $property_name generated automatically? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+                    status_log $TYPE_DEFAULT  "Is $property_name generated automatically? ${is_generated}" 
+                    id_selected=1
+
+                    props="$props
+          id: true
+          required: true"
+
+                    if [[ $is_generated == "y" || $is_generated == "Y" ]]; then
+                    props="$props
+          generated: true"
+                    fi
+
+                    continue
+                fi
+            fi
+
+            local is_required=$(prompt_for_input_with_validation "Is it required? " "(y/N)" "$non_empty_regex" "please enter valid property name") || exit $?
+            status_log $TYPE_DEFAULT  "Is it required? ${is_required}"
+            if [[ $is_generated == "y" || $is_generated == "Y" ]]; then
+                props="$props
+          required: true"
+            fi
+
+            if [[ $is_required != "y" && $is_required != "Y" ]]; then
+                default_value=$(prompt_for_explicit_input_with_validation "Default value [leave blank for none]: " "enter default value" ".*" "please select valid value") || exit $?
+                status_log $TYPE_DEFAULT  "Default value [leave blank for none]: ${default_value}" 
+                props="$props
+          defaultFn: $default_value"
+            fi
+
+        done
+
+        status_log $TYPE_INFO "Do you want to add another model?"
+        local another_rule=$(gum choose "Yes" "No") || exit $?
+        
+
+
+        MODELS="$MODELS
+  - name: "$model_name"
+    spec: 
+      name: $model_name
+      base: $base_name
+      $props"
+        if [ "$another_rule" == "No" ]; then
+            return 0
+        fi
+
+    done
+    
+}
+
 deploy_db_file_template() {
 
     cli_log "resource deploy BEGIN"
@@ -143,10 +231,13 @@ deploy_db_file_template() {
     current_ns="default"
     GRAS_NS=$(if [ "${GRAS_NS}" != "" ]; then echo ${GRAS_NS}; else gum choose  --header "Please select kubectl namespace you want to use, default value is '$current_ns'" $namespaces --selected=$current_ns ; fi) || exit $?
 
-    gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${GRAS_NS} -f /tmp/db-file.yaml ${MINIKUBE_PATCH}
+    if ! gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${GRAS_NS} -f /tmp/db-file.yaml ${MINIKUBE_PATCH}; then
+        status_log $TYPE_ERROR "Failed to deploy db-file template, configs might be invalid"
+        exit 1
+    fi
     
     status_log $TYPE_INFO "wait for $GRAS_NAME to be ready" 
-    CRD="gras" && echo "wait for $CRD to be deployed:" && until kubectl get $CRD -n $GRAS_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+    CRD="gras" && echo "Wait for $CRD to be deployed:" && SECONDS=0 && TIMEOUT=60 && until kubectl get $CRD -n $GRAS_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1 || [ $SECONDS -ge $TIMEOUT ]; do echo -n .; sleep 1; done && if [ $SECONDS -ge $TIMEOUT ]; then status_log $TYPE_ERROR "Timeout exceeded, $CRD not deployed after 1 minute" >&2; exit 1; else echo "$CRD deployed"; fi
     status_log $TYPE_SUCCESS "$CRD deployed"
     status_log $TYPE_SUCCESS "grpl db-file template is deployed"
 
@@ -216,12 +307,15 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     cp "$GRPL_WORKDIR/template-files/db-file.yaml" $template_file_dest
 
     # input model
-    # MODELS=$(if [ "${MODELS}" != "" ]; then echo ${MODELS}; else prompt_for_input_with_validation "Enter MODELS: " "Provide models" "$non_empty_regex" "please provide valid models"; fi) || exit $?
-    # echo "models: ${MODELS}"
-    # the input model should look like this
-    # 'customers:{"base":"Entity","name":"customers","properties":{"city":{"type":"string"},"generatedValue":{"generated":true,"defaultFn":999,"id":false,"required":true,"type":"number"}}}|employees:{"base":"Entity","name":"employees","properties":{"country":{"type":"string"},"creditLimit":{"type":"number"}}}'
-    transform_model_input_to_yaml $MODELS
-    export models=$model_parsed_data
+    if [[ $MODELS == "" ]]; then
+        take_model_input
+        export models=$MODELS
+    else 
+        # the input model should look like this
+        # 'customers:{"base":"Entity","name":"customers","properties":{"city":{"type":"string"},"generatedValue":{"generated":true,"defaultFn":999,"id":false,"required":true,"type":"number"}}}|employees:{"base":"Entity","name":"employees","properties":{"country":{"type":"string"},"creditLimit":{"type":"number"}}}'
+        transform_model_input_to_yaml $MODELS
+        export models=$model_parsed_data
+    fi 
 
     # input data source url
     SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url" "$url_validation_regex" "please provide valid datasource url"; fi) || exit $?
