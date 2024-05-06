@@ -61,13 +61,13 @@ is_correct_civo_cluster_provided() {
 
 is_correct_grapple_version_provided() {
 
-    versions=("0.2.1" "0.2.0")
+    versions=$GRAPPLE_AVAILABLE_VERSIONS
     selected_version=$1
 
     if [[ " ${versions[@]} " =~ " $selected_version " ]]; then
         return 0
     else
-        errMsg="Error: Invalid GRAPPLE_VERSION provided : $selected_version,  Please provide one of the following 1) 0.2.1 2) 0.2.0"
+        errMsg="Error: Invalid GRAPPLE_VERSION provided : $selected_version,  Please provide one of the following ${GRAPPLE_AVAILABLE_VERSIONS[@]}"
         echo $errMsg
         status_log $TYPE_ERROR "$errMsg"
         exit 1

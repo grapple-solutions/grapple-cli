@@ -190,6 +190,16 @@ extract_input_params_from_cli() {
 
 }
 
+read_grapple_available_version() {
+  # Define an array to store lines
+  GRAPPLE_AVAILABLE_VERSIONS=()
+
+  # Read the file line by line using mapfile (or readarray)
+  mapfile -t GRAPPLE_AVAILABLE_VERSIONS < grapple-versions  # -t removes trailing newlines
+
+}
+
+read_grapple_available_version
 
 transform_crds_docs_into_web_docs_format() {
     local previous_line=""
