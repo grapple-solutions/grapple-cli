@@ -176,7 +176,7 @@ fi
 if [ "${GRAPPLE_VERSION}" != "" ]; then 
   is_correct_grapple_version_provided $GRAPPLE_VERSION 
 fi 
-GRAPPLE_VERSION=$(if [ "${GRAPPLE_VERSION}" != "" ]; then echo ${GRAPPLE_VERSION}; else gum choose "0.2.1" "0.2.0"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
+GRAPPLE_VERSION=$(if [ "${GRAPPLE_VERSION}" != "" ]; then echo ${GRAPPLE_VERSION}; else gum choose "${GRAPPLE_AVAILABLE_VERSIONS[@]}"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
 echo "installing grapple version: ${GRAPPLE_VERSION}"
 
 # VERSION=$(prompt_for_input_with_validation "Enter version of the grapple solution framework: " "Semver version is expected. Default value if empty: 0.2.0" "$non_empty_regex" "Version cannot be empty." "0.2.0") || exit $?
