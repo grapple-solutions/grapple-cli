@@ -877,6 +877,19 @@ Usage:
 
     grpl resource deploy [command]
 
+Usage with params from cli: 
+
+  grpl resource deploy --params --<variable-name>=<variable value>
+  e.g grpl resource deploy --params --GRAS_TEMPLATE=db-file
+  OR
+  grpl resource deploy --params --<variable-name> <variable value>
+  e.g grpl resource deploy --params --GRAS_TEMPLATE=db-file
+
+Usage with params from configfile: 
+
+  grpl resource deploy --configfile <file-name>.json
+  e.g grpl resource deploy --configfile grpl-config.json
+
 Commands:
 
     h or help     Help menu
@@ -892,11 +905,13 @@ Variable:
     KUBECTL_CONTEXT: kubectl context you want to use e.g minikube, civo, etc
     GRAS_NAME: name of the project
     GRAS_TEMPLATE: gras template e.g db-file, etc
-    DATA_SOURCE: data source
-    DB_FILE_PATH: path where data is stored
+    SOURCE_DATA: source of the data
+    DB_FILE_PATH: path where data is stored, default path is /data/db.json
     DB_TYPE: db type it can either internal or external
     ENABLE_GRUIM: to enable gruim, it can either be "Yes" or "No"
     MODELS: input of models 
+    RELATIONS: models relations
+    GRAS_NS: namespace to deploy gras, default ns is 'default'
 "
 
     if [ "$type" == $WEB_DOC ]; then
