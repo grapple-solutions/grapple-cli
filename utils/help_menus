@@ -61,27 +61,37 @@ echo "$doc" > "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
         
 }
 
-
-generate_gras_web_doc() {
+generate_crds_web_doc() {
 
     install_prerequisite
     check_and_install_asciidoc
-    docs=$(kubectl explain gras.spec)
-     doc="
-= gras Documentation
+    gras_doc=$(kubectl explain gras.spec)
+    grapi_doc=$(kubectl explain grapi.spec)
+    gruim_doc=$(kubectl explain gruim.spec)
+    crds_doc="
+= grpl CRDs Documentation
 :toc: 
 
 == Introduction
 
-the grapple gras
+the grapple CRDs
 
 https://grapple-solutions.com/[grapple solution^]
 
-$(echo "$docs" | sed '/^$/d;G')
+== gras
+$(echo "$gras_doc" | transform_crds_docs_into_web_docs_format)
+
+== grapi
+$(echo "$grapi_doc" | transform_crds_docs_into_web_docs_format)
+
+== gruim
+$(echo "$gruim_doc" | transform_crds_docs_into_web_docs_format)
+
 "
-echo "$doc" > "$GRPL_WORKDIR/grpl-gras-web-doc.adoc"
-        asciidoctor "$GRPL_WORKDIR/grpl-gras-web-doc.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/grpl-gras-web-doc.html to view the grpl documentation"
+
+echo "$crds_doc" > "$GRPL_WORKDIR/grpl-crds-web-doc.adoc"
+        asciidoctor "$GRPL_WORKDIR/grpl-crds-web-doc.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/grpl-crds-web-doc.html to view the grpl documentation"
         
 }
 
@@ -118,17 +128,13 @@ Commands:
 
     h or help     Help menu
     cli           to generate web documentation for grpl cli 
-    gras          to generate web documentation for gras  
-    grapi         to generate web documentation for grapi  
-    gruim         to generate web documentation for gruim  
+    crds          to generate web documentation for custom grpl CRDs
     
 Examples:
 
     grpl d h        or        grpl doc help
     grpl d cli      or        grpl doc cli
-    grpl d gras     or        grpl doc gras
-    grpl d grapi    or        grpl doc grapi
-    grpl d gruim    or        grpl doc gruim
+    grpl d crds     or        grpl doc crds
 "
 
     if [ "$type" == $WEB_DOC ]; then
