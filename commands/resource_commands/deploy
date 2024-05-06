@@ -318,7 +318,7 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     fi 
 
     # input data source url
-    SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url" "$url_validation_regex" "please provide valid datasource url"; fi) || exit $?
+    SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url" "$non_empty_regex" "please provide valid datasource url"; fi) || exit $?
     status_log $TYPE_DEFAULT "SOURCE_DATA: ${SOURCE_DATA}"
     export testdata_url=$SOURCE_DATA
 
