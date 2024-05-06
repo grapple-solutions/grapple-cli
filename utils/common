@@ -190,3 +190,29 @@ extract_input_params_from_cli() {
 
 }
 
+
+transform_crds_docs_into_web_docs_format() {
+    local previous_line=""
+    process_completed="0"
+    while IFS= read -r line; do
+    
+        if [[ "$line" == "FIELDS:" ]];then
+            process_completed="1"
+            echo ""
+            echo "$line"
+            echo ""
+            continue
+        elif [[ "$process_completed" == "1" ]];then
+             echo "$line"
+             continue
+        fi
+
+        if [[ -z "$previous_line" || -z "$line" ]]; then
+            echo "$line"
+        else
+            echo ""
+            echo "$line"
+        fi
+        previous_line="$line"
+    done
+}

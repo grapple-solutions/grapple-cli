@@ -2,7 +2,7 @@
 
 . "$GRPL_WORKDIR/utils/common"
 
-generate_web_doc() {
+generate_cli_web_doc() {
 
     install_prerequisite
     check_and_install_asciidoc
@@ -55,11 +55,46 @@ $grpl_install_doc
 $grpl_upgrade_doc
 $grpl_version_doc
 "
-echo "$doc" > "$GRPL_WORKDIR/grpl-web-doc.adoc"
-        asciidoctor "$GRPL_WORKDIR/grpl-web-doc.adoc"
-        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/grpl-web-doc.html to view the grpl documentation"
+echo "$doc" > "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
+        asciidoctor "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/grpl-cli-web-doc.html to view the grpl documentation"
         
 }
+
+generate_crds_web_doc() {
+
+    install_prerequisite
+    check_and_install_asciidoc
+    gras_doc=$(kubectl explain gras.spec)
+    grapi_doc=$(kubectl explain grapi.spec)
+    gruim_doc=$(kubectl explain gruim.spec)
+    crds_doc="
+= grpl CRDs Documentation
+:toc: 
+
+== Introduction
+
+the grapple CRDs
+
+https://grapple-solutions.com/[grapple solution^]
+
+== gras
+$(echo "$gras_doc" | transform_crds_docs_into_web_docs_format)
+
+== grapi
+$(echo "$grapi_doc" | transform_crds_docs_into_web_docs_format)
+
+== gruim
+$(echo "$gruim_doc" | transform_crds_docs_into_web_docs_format)
+
+"
+
+echo "$crds_doc" > "$GRPL_WORKDIR/grpl-crds-web-doc.adoc"
+        asciidoctor "$GRPL_WORKDIR/grpl-crds-web-doc.adoc"
+        status_log $TYPE_INFO "please visit file://$GRPL_WORKDIR/grpl-crds-web-doc.html to view the grpl documentation"
+        
+}
+
 
 grpl_web_doc_cli_help() {
 
@@ -92,12 +127,14 @@ Usage:
 Commands:
 
     h or help     Help menu
-    *             to generate web documentation
+    cli           to generate web documentation for grpl cli 
+    crds          to generate web documentation for custom grpl CRDs
     
 Examples:
 
-    grpl d h    or    grpl doc help
-    grpl d *    or    grpl doc *
+    grpl d h        or        grpl doc help
+    grpl d cli      or        grpl doc cli
+    grpl d crds     or        grpl doc crds
 "
 
     if [ "$type" == $WEB_DOC ]; then

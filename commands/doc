@@ -8,6 +8,6 @@ cli_help() {
 }
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+[ "$1" = "cli" ] && generate_cli_web_doc
+[ "$1" = "crds" ] && generate_crds_web_doc
 
-
-generate_web_doc
