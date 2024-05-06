@@ -450,7 +450,7 @@ extract_yq_cli_version(){
         yq_version=$(yq --version | awk '{print $NF}')
 
         # Output the latest version
-        echo "       $yq_version - yq" >> "$GRPL_WORKDIR/dependency_versions"
+        echo "      $yq_version - yq" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }
