@@ -226,18 +226,22 @@ deploy_db_file_template() {
         MINIKUBE_PATCH=""
     fi
 
-    is_correct_kubectl_namespace_provided $GRAS_NS
+
+    if [[ "$KUBE_NS" != "" ]] &&  ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
+        status_log $TYPE_INFO "namespace $KUBE_NS doesn't exist, now creating"
+        kubectl create namespace "$KUBE_NS"
+    fi
     namespaces=$(kubectl get namespaces -o name | awk -F'/' '{print $2}')
     current_ns="default"
-    GRAS_NS=$(if [ "${GRAS_NS}" != "" ]; then echo ${GRAS_NS}; else gum choose  --header "Please select kubectl namespace you want to use, default value is '$current_ns'" $namespaces --selected=$current_ns ; fi) || exit $?
+    KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else gum choose  --header "Please select kubectl namespace you want to use, default value is '$current_ns'" $namespaces --selected=$current_ns ; fi) || exit $?
 
-    if ! gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${GRAS_NS} -f /tmp/db-file.yaml ${MINIKUBE_PATCH}; then
+    if ! gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f /tmp/db-file.yaml ${MINIKUBE_PATCH}; then
         status_log $TYPE_ERROR "Failed to deploy db-file template, configs might be invalid"
         exit 1
     fi
     
     status_log $TYPE_INFO "wait for $GRAS_NAME to be ready" 
-    CRD="gras" && echo "Wait for $CRD to be deployed:" && SECONDS=0 && TIMEOUT=60 && until kubectl get $CRD -n $GRAS_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1 || [ $SECONDS -ge $TIMEOUT ]; do echo -n .; sleep 1; done && if [ $SECONDS -ge $TIMEOUT ]; then status_log $TYPE_ERROR "Timeout exceeded, $CRD not deployed after 1 minute"; exit 1; else echo "$CRD deployed"; fi
+    CRD="gras" && echo "Wait for $CRD to be deployed:" && SECONDS=0 && TIMEOUT=60 && until kubectl get $CRD -n $KUBE_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1 || [ $SECONDS -ge $TIMEOUT ]; do echo -n .; sleep 1; done && if [ $SECONDS -ge $TIMEOUT ]; then status_log $TYPE_ERROR "Timeout exceeded, $CRD not deployed after 1 minute"; exit 1; else echo "$CRD deployed"; fi
     status_log $TYPE_SUCCESS "$CRD deployed"
     status_log $TYPE_SUCCESS "grpl db-file template is deployed"
 
@@ -262,7 +266,7 @@ valid_args=(
     "ENABLE_GRUIM"
     "MODELS"
     "RELATIONS"
-    "GRAS_NS"
+    "KUBE_NS"
   )
 
 # check if values are already passed form terminal

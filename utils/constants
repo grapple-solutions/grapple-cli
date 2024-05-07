@@ -59,6 +59,13 @@ gruim:
   additionalpackages: \"\"
 "
 
+GRUIM_NOT_ENABLED="
+gruims:
+- name: gras-patrick
+  spec:
+    additionalpackages: ""
+    config: ""
+"
 
   #relations
   BELONGS_TO="belogsTo"
