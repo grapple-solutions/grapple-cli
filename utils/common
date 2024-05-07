@@ -191,12 +191,13 @@ extract_input_params_from_cli() {
 }
 
 read_grapple_available_version() {
-  # Define an array to store lines
+
   GRAPPLE_AVAILABLE_VERSIONS=()
 
-  # Read the file line by line using mapfile (or readarray)
-  mapfile -t GRAPPLE_AVAILABLE_VERSIONS < grapple-versions  # -t removes trailing newlines
-
+  while IFS= read -r version || [ -n "$version" ]; do
+      GRAPPLE_AVAILABLE_VERSIONS+=("$version")
+  done < "$GRPL_WORKDIR/grapple-versions"
+  
 }
 
 read_grapple_available_version
