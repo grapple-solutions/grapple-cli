@@ -55,16 +55,10 @@ gruim:
   ssl: true
   sslissuer: letsencrypt-grapple-demo
   style: '{\"colors\":{\"primary\":{\"DEFAULT\":\"#34344A\",\"fg\":\"#fff\"},\"accent\":{\"DEFAULT\":\"#CC5A71\",\"fg\":\"#fff\"}}}'
-  config: \"\"
-  additionalpackages: \"\"
-"
-
-GRUIM_NOT_ENABLED="
-gruims:
 - name: gras-patrick
   spec:
-    additionalpackages: ""
-    config: ""
+    config: \"\"
+    additionalpackages: \"\"
 "
 
   #relations
