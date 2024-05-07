@@ -166,7 +166,7 @@ extract_input_params_from_cli() {
           if  $valid; then
               export $config_param
           else
-              status_log $TYPE_ERROR "Error: One of the argument is not valid, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+              status_log $TYPE_ERROR "Error: $key is not a valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
               return 1
           fi
 
@@ -178,7 +178,7 @@ extract_input_params_from_cli() {
           if [[ " ${valid_args[@]} " =~ " $config_param " ]]; then
               export "$config_param=$arg2"
           else
-              status_log $TYPE_ERROR "Error: One of the argument is not valid, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+              status_log $TYPE_ERROR "Error: $config_param is a not valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
               return 1
           fi
       fi

@@ -55,10 +55,11 @@ gruim:
   ssl: true
   sslissuer: letsencrypt-grapple-demo
   style: '{\"colors\":{\"primary\":{\"DEFAULT\":\"#34344A\",\"fg\":\"#fff\"},\"accent\":{\"DEFAULT\":\"#CC5A71\",\"fg\":\"#fff\"}}}'
-  config: \"\"
-  additionalpackages: \"\"
+- name: gras-patrick
+  spec:
+    config: \"\"
+    additionalpackages: \"\"
 "
-
 
   #relations
   BELONGS_TO="belogsTo"
