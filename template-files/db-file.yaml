@@ -5,12 +5,7 @@ grapi:
   ingress: true
   ssl: true
   sslissuer: letsencrypt-grapple-demo
-  initContainers:
-  - name: test
-    spec:
-      name: init-db
-      image: busybox:1.28
-      command: ['sh', '-c', "if ! test -f $db_file; then wget -O $db_file $testdata_url; chmod 777 $db_file; fi"]
+$initContainers
   volumes:
   - name: data
     emptyDir: {}
