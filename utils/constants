@@ -49,21 +49,27 @@ INTERNAL_DB="internal"
 EXTERNAL_DB="external"
 
 
+# GRUIM="
+# gruim:
+#   # uiimagetag: "0.1.38"
+#   ssl: true
+#   sslissuer: letsencrypt-grapple-demo
+#   style: '{\"colors\":{\"primary\":{\"DEFAULT\":\"#34344A\",\"fg\":\"#fff\"},\"accent\":{\"DEFAULT\":\"#CC5A71\",\"fg\":\"#fff\"}}}'
+#   config: \"\"
+#   additionalpackages: \"\"
+# "
+
 GRUIM="
-gruim:
-  # uiimagetag: "0.1.38"
-  ssl: true
-  sslissuer: letsencrypt-grapple-demo
-  style: '{\"colors\":{\"primary\":{\"DEFAULT\":\"#34344A\",\"fg\":\"#fff\"},\"accent\":{\"DEFAULT\":\"#CC5A71\",\"fg\":\"#fff\"}}}'
+gruims:
 - name: gras-patrick
   spec:
-    config: \"\"
     additionalpackages: \"\"
+    config: \"\"
 "
 
-  #relations
-  BELONGS_TO="belogsTo"
-  HAS_MANY="hasMany"
-  HAS_MANY_THROUGH="hasManyThrough"
-  HAS_ONE="hasOne"
-  REFRENCES_MANY="refrencesMany"
+#relations
+BELONGS_TO="belogsTo"
+HAS_MANY="hasMany"
+HAS_MANY_THROUGH="hasManyThrough"
+HAS_ONE="hasOne"
+REFRENCES_MANY="refrencesMany"

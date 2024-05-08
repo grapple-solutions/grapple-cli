@@ -227,13 +227,25 @@ deploy_db_file_template() {
     fi
 
 
-    if [[ "$KUBE_NS" != "" ]] &&  ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
+    if [[ "$KUBE_NS" != "" ]] && ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
         status_log $TYPE_INFO "namespace $KUBE_NS doesn't exist, now creating"
         kubectl create namespace "$KUBE_NS"
+    elif [[ "$KUBE_NS" == "" ]]; then
+        status_log $TYPE_INFO "Do you want to select existing namespace or create new one?"
+        local another_rule=$(gum choose "Select from existing" "Create new") || exit $?
+        
+        if [ "$another_rule" == "Select from existing" ]; then
+            namespaces=$(kubectl get namespaces -o name | awk -F'/' '{print $2}')
+            current_ns="default"
+            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else gum choose  --header "Please select kubectl namespace you want to use, default value is '$current_ns'" $namespaces --selected=$current_ns ; fi) || exit $?
+        else
+            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else prompt_for_input_with_validation "Enter KUBE_NS: " "Provide kube ns" "$non_empty_regex" "kube ns can't be empty"; fi) || exit $?
+            if ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
+                    status_log $TYPE_INFO "namespace $KUBE_NS doesn't exist, now creating"
+                    kubectl create namespace "$KUBE_NS"
+            fi
+        fi    
     fi
-    namespaces=$(kubectl get namespaces -o name | awk -F'/' '{print $2}')
-    current_ns="default"
-    KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else gum choose  --header "Please select kubectl namespace you want to use, default value is '$current_ns'" $namespaces --selected=$current_ns ; fi) || exit $?
 
     if ! gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f /tmp/db-file.yaml ${MINIKUBE_PATCH}; then
         status_log $TYPE_ERROR "Failed to deploy db-file template, configs might be invalid"
@@ -321,10 +333,6 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
         export models=$model_parsed_data
     fi 
 
-    # input data source url
-    SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url" "$non_empty_regex" "please provide valid datasource url"; fi) || exit $?
-    status_log $TYPE_DEFAULT "SOURCE_DATA: ${SOURCE_DATA}"
-    export testdata_url=$SOURCE_DATA
 
     DB_FILE_PATH=$(if [ "${DB_FILE_PATH}" != "" ]; then echo ${DB_FILE_PATH}; else prompt_for_explicit_input_with_validation "Enter DB_FILE_PATH: " "Provide file path where you want to store data, default value is $db_file_default_value" "$abs_path_regex" "please provide correct absolute file path"; fi) || exit $?
     if [ "${DB_FILE_PATH}" == "" ]; then 
@@ -332,6 +340,16 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     fi
     status_log $TYPE_DEFAULT "DB_FILE_PATH: ${DB_FILE_PATH}"
     export db_file=$DB_FILE_PATH
+
+    # input data source url
+    SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url, press enter to omit" ".*" "please provide valid datasource url"; fi) || exit $?
+    if [[ $SOURCE_DATA != "" ]]; then
+        status_log $TYPE_DEFAULT "SOURCE_DATA: ${SOURCE_DATA}"
+        export initContainers=$(getInitContainers $DB_FILE_PATH $SOURCE_DATA)
+    else 
+        export initContainers=""
+    fi
+
     cli_args=$@
     if [[ "${cli_args[@]}" =~ "--RELATIONS" ]]; then
          export relations=$RELATIONS
