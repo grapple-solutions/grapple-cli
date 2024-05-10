@@ -24,7 +24,6 @@ awsregistry="p7h7z5g3"
 
 transform_model_input_to_yaml() {
 
-    check_and_install_jq
     check_and_install_yq
 
     local Models=$1
@@ -32,38 +31,24 @@ transform_model_input_to_yaml() {
     json_string="${Models//\'/\"}"
 
     # Initialize an array to store the models
-    local models=()
     models_name=()
     # Split the input string by pipe symbol (|)
     IFS='|' read -ra models_data <<< "$json_string"
 
 
     # Iterate over each model data
+    index=0
     for model_data in "${models_data[@]}"; do
         # Extract the model name and its properties
         IFS=':' read -r model_name properties <<< "$model_data"
+        yq -i ".grapi.models[$index].name=\"$model_name\" | .grapi.models[$index].name style=\"double\"" $template_file_dest
         
         # Parse the properties JSON and format it as YAML
-        yaml_properties=$(echo "$properties" | jq -r '. | {spec: {name: .name, base: .base, properties: (.properties | map_values(with_entries(select(.value != null))))}}' | yq eval -P)
-
-        # Add the model name and its properties to the array
-        models+=("$yaml_properties")
+        yq eval ".grapi.models[$index].spec += $properties" -i $template_file_dest
         models_name+=("$model_name")
+        ((index+=1))
     done
-    
-    model_parsed_data=""
-    x=0
-    for model in "${models[@]}"; do
 
-        model_with_tab=$(echo "$model" | awk '{print "    " $0}')
-
-        model_parsed_data="$model_parsed_data
-  - name: \"${models_name[$x]}\"
-$model_with_tab"
-
-        x=$x+1
-
-    done
 }
 
 
@@ -78,6 +63,7 @@ take_relation_input() {
     
     local models=("$@")
     RELATIONS="  relations:"
+    index=0
     while true; do
 
         local relation_type=$(gum choose --header "Please select the relation type" $BELONGS_TO $HAS_MANY $HAS_MANY_THROUGH $HAS_ONE $REFRENCES_MANY) || exit $?
@@ -104,23 +90,22 @@ take_relation_input() {
             register_inclusion_resolver=false
         fi
 
-        RELATIONS="$RELATIONS
-  - name: \"$relation_name\"
-    spec:
-      relationName: \"$relation_name\"
-      sourceModel: \"$source_model\"
-      destinationModel: \"$target_model\"
-      foreignKeyName: \"$foreign_key\"
-      relationType: \"$relation_type\"
-      registerInclusionResolver: $register_inclusion_resolver
-      "
-
+        yq -i ".grapi.relations[$index].name=\"$relation_name\" | .grapi.relations[$index].name style=\"double\"" $template_file_dest
+        yq -i ".grapi.relations[$index].spec.relationName=\"$relation_name\" | .grapi.relations[$index].spec.relationName style=\"double\"" $template_file_dest
+        yq -i ".grapi.relations[$index].spec.destinationModel=\"$target_model\" | .grapi.relations[$index].spec.destinationModel style=\"double\"" $template_file_dest
+        yq -i ".grapi.relations[$index].spec.foreignKeyName=\"$foreign_key\" | .grapi.relations[$index].spec.foreignKeyName style=\"double\"" $template_file_dest
+        yq -i ".grapi.relations[$index].spec.relationType=\"$relation_type\" | .grapi.relations[$index].spec.relationType style=\"double\"" $template_file_dest
+        yq -i ".grapi.relations[$index].spec.registerInclusionResolver=$register_inclusion_resolver" $template_file_dest
+        
         status_log $TYPE_INFO "Do you want to add another relationship?"
         local another_rule=$(gum choose "Yes" "No") || exit $?
         
         if [ "$another_rule" == "No" ]; then
             return 0
         fi
+
+        ((index+=1))
+    
 
     done
     
@@ -129,15 +114,20 @@ take_relation_input() {
 take_model_input() {
     
     MODELS=""
+    models_name=()
+    i=0
     while true; do
 
         local model_name=$(prompt_for_input_with_validation "Enter the model name: " "Please enter model name" "$non_empty_regex" "please enter valid model name") || exit $?
         status_log $TYPE_DEFAULT  "Enter the model name: ${model_name}"
+        yq -i ".grapi.models[$i].name=\"$model_name\" | .grapi.models[$i].name style=\"double\"" $template_file_dest
+
+        models_name+=("$model_name")
 
         local base_name=$(prompt_for_input_with_validation "Enter the model base name: " "Please enter model base name e.g Entity" "$non_empty_regex" "please enter valid model base name") || exit $?
         status_log $TYPE_DEFAULT  "Enter the base name: ${base_name}"
+        yq -i ".grapi.models[$i].spec.base=\"$base_name\"" $template_file_dest
 
-        props="properties:"
         id_selected=0
         while true; do
 
@@ -153,26 +143,23 @@ take_model_input() {
 
             local property_type=$(gum choose --header "Please select the property type" "string" "number" "boolean" "object" "array" "date" "buffer" "geopoint" "any") || exit $?
             status_log $TYPE_DEFAULT  "Enter the property type: ${property_type}"   
-
-            props="$props
-        $property_name:
-          type: $property_type"
+            yq -i ".grapi.models[$i].spec.properties.$property_name.type=\"$property_type\"" $template_file_dest
 
             if [ $id_selected == 0 ]; then
+
                 is_id=$(prompt_for_input_with_validation "Is $property_name the ID property? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
                 status_log $TYPE_DEFAULT  "Is $property_name the ID property? ${is_id}"                
                 if [[ $is_id == "y" || $is_id == "Y" ]]; then
+                    
                     is_generated=$(prompt_for_input_with_validation "Is $property_name generated automatically? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
                     status_log $TYPE_DEFAULT  "Is $property_name generated automatically? ${is_generated}" 
                     id_selected=1
 
-                    props="$props
-          id: true
-          required: true"
+                    yq -i ".grapi.models[$i].spec.properties.$property_name.id=true" $template_file_dest
+                    yq -i ".grapi.models[$i].spec.properties.$property_name.required=true" $template_file_dest
 
                     if [[ $is_generated == "y" || $is_generated == "Y" ]]; then
-                    props="$props
-          generated: true"
+                        yq -i ".grapi.models[$i].spec.properties.$property_name.generated=true" $template_file_dest
                     fi
 
                     continue
@@ -182,15 +169,13 @@ take_model_input() {
             local is_required=$(prompt_for_input_with_validation "Is it required? " "(y/N)" "$non_empty_regex" "please enter valid property name") || exit $?
             status_log $TYPE_DEFAULT  "Is it required? ${is_required}"
             if [[ $is_generated == "y" || $is_generated == "Y" ]]; then
-                props="$props
-          required: true"
+                yq -i ".grapi.models[$i].spec.properties.$property_name.required=true" $template_file_dest
             fi
 
             if [[ $is_required != "y" && $is_required != "Y" ]]; then
                 default_value=$(prompt_for_explicit_input_with_validation "Default value [leave blank for none]: " "enter default value" ".*" "please select valid value") || exit $?
                 status_log $TYPE_DEFAULT  "Default value [leave blank for none]: ${default_value}" 
-                props="$props
-          defaultFn: $default_value"
+                yq -i ".grapi.models[$i].spec.properties.$property_name.defaultFn=\"$default_value\"" $template_file_dest
             fi
 
         done
@@ -198,17 +183,11 @@ take_model_input() {
         status_log $TYPE_INFO "Do you want to add another model?"
         local another_rule=$(gum choose "Yes" "No") || exit $?
         
-
-
-        MODELS="$MODELS
-  - name: "$model_name"
-    spec: 
-      name: $model_name
-      base: $base_name
-      $props"
         if [ "$another_rule" == "No" ]; then
             return 0
         fi
+
+        ((i+=1))
 
     done
     
@@ -325,13 +304,12 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     # input model
     if [[ $MODELS == "" ]]; then
         take_model_input
-        export models=$MODELS
     else 
         # the input model should look like this
         # 'customers:{"base":"Entity","name":"customers","properties":{"city":{"type":"string"},"generatedValue":{"generated":true,"defaultFn":999,"id":false,"required":true,"type":"number"}}}|employees:{"base":"Entity","name":"employees","properties":{"country":{"type":"string"},"creditLimit":{"type":"number"}}}'
         transform_model_input_to_yaml $MODELS
-        export models=$model_parsed_data
     fi 
+
 
 
     DB_FILE_PATH=$(if [ "${DB_FILE_PATH}" != "" ]; then echo ${DB_FILE_PATH}; else prompt_for_explicit_input_with_validation "Enter DB_FILE_PATH: " "Provide file path where you want to store data, default value is $db_file_default_value" "$abs_path_regex" "please provide correct absolute file path"; fi) || exit $?
@@ -345,17 +323,16 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url, press enter to omit" ".*" "please provide valid datasource url"; fi) || exit $?
     if [[ $SOURCE_DATA != "" ]]; then
         status_log $TYPE_DEFAULT "SOURCE_DATA: ${SOURCE_DATA}"
-        export initContainers=$(getInitContainers $DB_FILE_PATH $SOURCE_DATA)
-    else 
-        export initContainers=""
+        export testdata_url=$SOURCE_DATA
+    else
+        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
     fi
 
     cli_args=$@
-    if [[ "${cli_args[@]}" =~ "--RELATIONS" ]]; then
-         export relations=$RELATIONS
+    if [[ "${cli_args[@]}" =~ "--RELATIONS" ]] && [[ $RELATIONS == "" ]] ; then
+        yq eval 'del(.grapi.relations)' -i $template_file_dest
     else
         take_relation_input "${models_name[@]}"
-        export relations=$RELATIONS
     fi
     
     
@@ -363,10 +340,8 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     ENABLE_GRUIM=$(if [ "${ENABLE_GRUIM}" != "" ]; then echo ${ENABLE_GRUIM}; else  gum choose "Yes" "No"; fi) || exit $?
     status_log $TYPE_DEFAULT "ENABLE_GRUIM: ${ENABLE_GRUIM}"
     
-    if [ "$ENABLE_GRUIM" == "Yes" ]; then
-        export grum_ui=$GRUIM
-    else
-        export grum_ui=""
+    if [ "$ENABLE_GRUIM" == "No" ]; then
+        yq eval 'del(.gruims)' -i $template_file_dest
     fi
 
     check_and_install_gettext
