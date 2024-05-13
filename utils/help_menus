@@ -65,9 +65,9 @@ generate_crds_web_doc() {
 
     install_prerequisite
     check_and_install_asciidoc
-    gras_doc=$(kubectl explain gras.spec)
-    grapi_doc=$(kubectl explain grapi.spec)
-    gruim_doc=$(kubectl explain gruim.spec)
+    gras_doc=$(kubectl explain gras.spec --recursive)
+    grapi_doc=$(kubectl explain grapi.spec --recursive)
+    gruim_doc=$(kubectl explain gruim.spec --recursive)
     crds_doc="
 = grpl CRDs Documentation
 :toc: 
