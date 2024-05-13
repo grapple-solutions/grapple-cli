@@ -204,19 +204,24 @@ read_grapple_available_version
 
 transform_crds_docs_into_web_docs_format() {
     local previous_line=""
-    process_completed="0"
+    encounteredCompositField="false"
     while IFS= read -r line; do
     
         if [[ "$line" == "FIELDS:" ]];then
             process_completed="1"
             echo ""
             echo "$line"
-            echo ""
+            echo "[,yaml]"
+            echo "----"
             continue
-        elif [[ "$process_completed" == "1" ]];then
-             echo "$line"
-             continue
-        fi
+        elif [[ "$line" == *"composit"* ]] || [[ "$line" == *"writeConnectionSecret"* ]];then
+            encounteredCompositField="true"
+            continue
+        elif [[ "$line" == "    "* ]] && [[ "$encounteredCompositField" == "true" ]];then
+            continue
+        elif [[ "$line" != "    "* ]] && [[ "$encounteredCompositField" == "true" ]];then
+            encounteredCompositField="false"
+        fi        
 
         if [[ -z "$previous_line" || -z "$line" ]]; then
             echo "$line"
@@ -226,4 +231,5 @@ transform_crds_docs_into_web_docs_format() {
         fi
         previous_line="$line"
     done
+    echo "----"
 }

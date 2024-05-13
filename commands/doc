@@ -7,7 +7,9 @@ cli_help() {
   exit 0
 }
 
-[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
-[ "$1" = "cli" ] && generate_cli_web_doc
-[ "$1" = "crds" ] && generate_crds_web_doc
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help && exit 0
+[ "$1" = "cli" ] && generate_cli_web_doc && exit 0
+[ "$1" = "crds" ] && generate_crds_web_doc && exit 0
 
+status_log $TYPE_ERROR "Error: Invalid resource '$1' specified"
+exit 1
