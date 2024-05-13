@@ -231,21 +231,5 @@ transform_crds_docs_into_web_docs_format() {
         fi
         previous_line="$line"
     done
-
     echo "----"
-}
-
-
-getInitContainers() {
-
-  local db_file_path=$1
-  local source_data_url=$2
-  INTT_CONTAINERS="  initContainers:
-    - name: test
-      spec:
-        name: init-db
-        image: busybox:1.28
-        command: ['sh', '-c', \"if ! test -f $db_file_path; then wget -O $db_file_path $source_data_url; chmod 777 $db_file_path; fi\"]"
-
-  echo "$INTT_CONTAINERS"
 }
