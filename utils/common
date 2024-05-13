@@ -211,7 +211,7 @@ transform_crds_docs_into_web_docs_format() {
             process_completed="1"
             echo ""
             echo "$line"
-            echo "[,bash]"
+            echo "[,yaml]"
             echo "----"
             continue
         elif [[ "$line" == *"composit"* ]] || [[ "$line" == *"writeConnectionSecret"* ]];then
