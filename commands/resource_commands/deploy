@@ -205,6 +205,21 @@ deploy_db_file_template() {
         MINIKUBE_PATCH=""
     fi
 
+    check_and_create_kubens
+
+    if ! gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f /tmp/db-file.yaml ${MINIKUBE_PATCH}; then
+        status_log $TYPE_ERROR "Failed to deploy db-file template, configs might be invalid"
+        exit 1
+    fi
+    
+    status_log $TYPE_INFO "wait for $GRAS_NAME to be ready" 
+    CRD="gras" && echo "Wait for $CRD to be deployed:" && SECONDS=0 && TIMEOUT=60 && until kubectl get $CRD -n $KUBE_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1 || [ $SECONDS -ge $TIMEOUT ]; do echo -n .; sleep 1; done && if [ $SECONDS -ge $TIMEOUT ]; then status_log $TYPE_ERROR "Timeout exceeded, $CRD not deployed after 1 minute"; exit 1; else echo "$CRD deployed"; fi
+    status_log $TYPE_SUCCESS "$CRD deployed"
+    status_log $TYPE_SUCCESS "grpl db-file template is deployed"
+
+}
+
+check_and_create_kubens() {
 
     if [[ "$KUBE_NS" != "" ]] && ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
         status_log $TYPE_INFO "namespace $KUBE_NS doesn't exist, now creating"
@@ -225,19 +240,7 @@ deploy_db_file_template() {
             fi
         fi    
     fi
-
-    if ! gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f /tmp/db-file.yaml ${MINIKUBE_PATCH}; then
-        status_log $TYPE_ERROR "Failed to deploy db-file template, configs might be invalid"
-        exit 1
-    fi
-    
-    status_log $TYPE_INFO "wait for $GRAS_NAME to be ready" 
-    CRD="gras" && echo "Wait for $CRD to be deployed:" && SECONDS=0 && TIMEOUT=60 && until kubectl get $CRD -n $KUBE_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1 || [ $SECONDS -ge $TIMEOUT ]; do echo -n .; sleep 1; done && if [ $SECONDS -ge $TIMEOUT ]; then status_log $TYPE_ERROR "Timeout exceeded, $CRD not deployed after 1 minute"; exit 1; else echo "$CRD deployed"; fi
-    status_log $TYPE_SUCCESS "$CRD deployed"
-    status_log $TYPE_SUCCESS "grpl db-file template is deployed"
-
 }
-
 
 
 # ----------------------- functions code ended ---------------------
@@ -357,10 +360,61 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     exit 1
 fi
 
-
 #check if input from params is valid or not
 if [ "${DB_TYPE}" != "" ]; then 
   is_correct_grapple_applicationsets_provided $DB_TYPE 
 fi
 DB_TYPE=$(if [ "${DB_TYPE}" != "" ]; then echo ${DB_TYPE}; else gum choose  --header "Please select the database type you want" $INTERNAL_DB $EXTERNAL_DB; fi) || exit $?
+
+if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
+
+    check_and_install_kbcli
+    check_and_install_kubeblocks
+    check_and_create_kubens
+    kubectl apply -n ${KUBE_NS} -f $GRPL_WORKDIR/files/db.yaml
+
+    status_log $TYPE_INFO "wating for StatefulSet grappledb-mysql to be in running state"
+    sleep 5
+    timedOut=true
+    for _ in {1..120}; do  # 120 iterations for 10 minutes with 5 seconds interval
+        kubectl get statefulset grappledb-mysql -n grpl-db | grep '1/1' >/dev/null 2>&1 && {
+            echo "StatefulSet grappledb-mysql is now running. Proceeding."
+            status_log $TYPE_SUCCESS "StatefulSet grappledb-mysql is now running. Proceeding."
+            timedOut=false
+            break
+        }
+        sleep 5
+    done
+    if ${timedOut}; then
+        echo "StatefulSet $STATEFULSET_NAME did not start within 10 minutes. Exiting."
+        status_log $TYPE_ERROR "${EDITION} Failed to Deploy"
+        exit 1
+    fi
+elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
+
+    host= prompt_for_input_with_validation "host: " "please provide host: " "$non_empty_regex" "host name can't be empty"
+    status_log $TYPE_DEFAULT "host: ${host}"    
+
+    port= prompt_for_input_with_validation "port: " "please provide port: " "$non_empty_regex" "port name can't be empty"
+    status_log $TYPE_DEFAULT "port: ${port}"   
+
+    user= prompt_for_input_with_validation "user: " "please provide user: " "$non_empty_regex" "user name can't be empty"
+    status_log $TYPE_DEFAULT "user: ${user}"
+
+    read -s -p "Password: " password
+    status_log $TYPE_DEFAULT "password: ${password}"
+
+    database= prompt_for_input_with_validation "database: " "please provide database: " "$non_empty_regex" "database name can't be empty"
+    status_log $TYPE_DEFAULT "database: ${database}"
+
+    export host=$host
+    export port=$port
+    export user=$user
+    export password=$password
+    export database=$database
+
+    
+
+fi
+
 status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
