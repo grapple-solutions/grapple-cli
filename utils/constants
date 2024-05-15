@@ -49,24 +49,6 @@ INTERNAL_DB="internal"
 EXTERNAL_DB="external"
 
 
-# GRUIM="
-# gruim:
-#   # uiimagetag: "0.1.38"
-#   ssl: true
-#   sslissuer: letsencrypt-grapple-demo
-#   style: '{\"colors\":{\"primary\":{\"DEFAULT\":\"#34344A\",\"fg\":\"#fff\"},\"accent\":{\"DEFAULT\":\"#CC5A71\",\"fg\":\"#fff\"}}}'
-#   config: \"\"
-#   additionalpackages: \"\"
-# "
-
-GRUIM="
-gruims:
-- name: gras-patrick
-  spec:
-    additionalpackages: \"\"
-    config: \"\"
-"
-
 #relations
 BELONGS_TO="belogsTo"
 HAS_MANY="hasMany"
