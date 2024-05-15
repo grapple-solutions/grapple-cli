@@ -68,6 +68,7 @@ generate_crds_web_doc() {
     gras_doc=$(kubectl explain gras.spec)
     grapi_doc=$(kubectl explain grapi.spec)
     gruim_doc=$(kubectl explain gruim.spec)
+    status_log $TYPE_INFO "Going to generate grapple web doc. This might take some time"
     crds_doc="
 = grpl CRDs Documentation
 :toc: 

@@ -231,21 +231,18 @@ transform_crds_docs_into_web_docs_format() {
         elif [[ "$line" == *"composit"* ]] || [[ "$line" == *"writeConnectionSecret"* ]] || [[ "$line" == *"publishConnectionDetailsTo"* ]] ;then
             encounteredCompositField="true"
             continue
-        elif [[ "$line" == "    "* ]] && [[ "$encounteredCompositField" == "true" ]];then
+        elif ([[ "$line" == "    "* ]] || [[ "$line" == "" ]] ) && [[ "$encounteredCompositField" == "true" ]];then
             continue
-        elif [[ "$line" != "    "* ]] && [[ "$encounteredCompositField" == "true" ]];then
+        elif [[ "$line" != "    "* ]] && [[ "$line" != "" ]] && [[ "$encounteredCompositField" == "true" ]];then
             encounteredCompositField="false"
-        elif [[ "$line" == *"Object>"* ]]; then 
+        fi
+        
+        if [[ "$line" == *"Object>"* ]]; then 
             i=$(echo "$line" | awk '{print $1}')
             if [[ "$i" == "FIELD:" ]]; then
               continue
             fi
             objects+=("$i")
-
-            # echo "logging:$i"
-            # echo "----"
-            # kubectl explain $base.spec.$i | transform_crds_docs_into_web_docs_format $base "=== $base.$i"
-            # continue
         fi       
 
         if [[ -z "$previous_line" || -z "$line" ]]; then
