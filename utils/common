@@ -228,7 +228,7 @@ transform_crds_docs_into_web_docs_format() {
             echo "[,bash]"
             echo "----"
             continue
-        elif [[ "$line" == *"composit"* ]] || [[ "$line" == *"writeConnectionSecret"* ]] || [[ "$line" == *"publishConnectionDetailsTo"* ]] ;then
+        elif [[ "$line" == *"composit"* ]] || [[ "$line" == *"writeConnectionSecret"* ]] || [[ "$line" == *"publishConnectionDetailsTo"* ]] || [[ "$line" == *"resourceRef"* ]]  ;then
             encounteredCompositField="true"
             continue
         elif ([[ "$line" == "    "* ]] || [[ "$line" == "" ]] ) && [[ "$encounteredCompositField" == "true" ]];then
