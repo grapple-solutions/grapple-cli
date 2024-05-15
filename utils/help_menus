@@ -4,9 +4,6 @@
 
 generate_cli_web_doc() {
 
-    install_prerequisite
-    check_and_install_asciidoc
-
     if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
       extract_grapple_cli_version
     fi
@@ -63,8 +60,6 @@ echo "$doc" > "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
 
 generate_crds_web_doc() {
 
-    install_prerequisite
-    check_and_install_asciidoc
     gras_doc=$(kubectl explain gras.spec)
     grapi_doc=$(kubectl explain grapi.spec)
     gruim_doc=$(kubectl explain gruim.spec)
