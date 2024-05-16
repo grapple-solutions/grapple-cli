@@ -4,9 +4,6 @@
 
 generate_cli_web_doc() {
 
-    install_prerequisite
-    check_and_install_asciidoc
-
     if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
       extract_grapple_cli_version
     fi
@@ -63,11 +60,10 @@ echo "$doc" > "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
 
 generate_crds_web_doc() {
 
-    install_prerequisite
-    check_and_install_asciidoc
-    gras_doc=$(kubectl explain gras.spec --recursive)
-    grapi_doc=$(kubectl explain grapi.spec --recursive)
-    gruim_doc=$(kubectl explain gruim.spec --recursive)
+    gras_doc=$(kubectl explain gras.spec)
+    grapi_doc=$(kubectl explain grapi.spec)
+    gruim_doc=$(kubectl explain gruim.spec)
+    status_log $TYPE_INFO "Going to generate grapple web doc. This might take some time"
     crds_doc="
 = grpl CRDs Documentation
 :toc: 
@@ -78,14 +74,10 @@ the grapple CRDs
 
 https://grapple-solutions.com/[grapple solution^]
 
-== gras
-$(echo "$gras_doc" | transform_crds_docs_into_web_docs_format)
 
-== grapi
-$(echo "$grapi_doc" | transform_crds_docs_into_web_docs_format)
-
-== gruim
-$(echo "$gruim_doc" | transform_crds_docs_into_web_docs_format)
+$(echo "$gras_doc" | transform_crds_docs_into_web_docs_format "gras.spec" "== gras")
+$(echo "$grapi_doc" | transform_crds_docs_into_web_docs_format "grapi.spec" "== grapi")
+$(echo "$gruim_doc" | transform_crds_docs_into_web_docs_format "gruim.spec" "== gruim")
 
 "
 
