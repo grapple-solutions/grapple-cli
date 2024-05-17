@@ -124,8 +124,8 @@ take_model_input() {
 
         models_name+=("$model_name")
 
-        local base_name=$(prompt_for_input_with_validation "Enter the model base name: " "Please enter model base name e.g Entity" "$non_empty_regex" "please enter valid model base name") || exit $?
-        status_log $TYPE_DEFAULT  "Enter the base name: ${base_name}"
+        local base_name=$(gum choose --header "Please select the model base class:" "Entity" "Model") || exit $?
+        status_log $TYPE_DEFAULT  "Please select the model base class: ${base_name}"        
         yq -i ".grapi.models[$i].spec.base=\"$base_name\"" $template_file_dest
 
         id_selected=0
