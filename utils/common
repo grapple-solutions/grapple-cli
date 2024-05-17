@@ -203,20 +203,47 @@ read_grapple_available_version() {
 read_grapple_available_version
 
 transform_crds_docs_into_web_docs_format() {
+
+    local base=$1
+    local title=$2
     local previous_line=""
-    process_completed="0"
+    local encounteredCompositField="false"
+    local objects=()
+
+    echo "$title"
     while IFS= read -r line; do
     
-        if [[ "$line" == "FIELDS:" ]];then
+        if [[ "$line" == "DESCRIPTION:" ]];then
             process_completed="1"
             echo ""
             echo "$line"
-            echo ""
+            echo "[,bash]"
+            echo "----"
             continue
-        elif [[ "$process_completed" == "1" ]];then
-             echo "$line"
-             continue
+        elif [[ "$line" == "FIELDS:" ]];then
+            process_completed="1"
+            echo "----"
+            echo ""
+            echo "$line"
+            echo "[,bash]"
+            echo "----"
+            continue
+        elif [[ "$line" == *"composit"* ]] || [[ "$line" == *"writeConnectionSecret"* ]] || [[ "$line" == *"publishConnectionDetailsTo"* ]] || [[ "$line" == *"resourceRef"* ]]  ;then
+            encounteredCompositField="true"
+            continue
+        elif ([[ "$line" == "    "* ]] || [[ "$line" == "" ]] ) && [[ "$encounteredCompositField" == "true" ]];then
+            continue
+        elif [[ "$line" != "    "* ]] && [[ "$line" != "" ]] && [[ "$encounteredCompositField" == "true" ]];then
+            encounteredCompositField="false"
         fi
+        
+        if [[ "$line" == *"Object>"* ]]; then 
+            i=$(echo "$line" | awk '{print $1}')
+            if [[ "$i" == "FIELD:" ]]; then
+              continue
+            fi
+            objects+=("$i")
+        fi       
 
         if [[ -z "$previous_line" || -z "$line" ]]; then
             echo "$line"
@@ -225,5 +252,13 @@ transform_crds_docs_into_web_docs_format() {
             echo "$line"
         fi
         previous_line="$line"
+
+    done
+    echo "----"
+
+    local obj=""
+    for obj in "${objects[@]}"; do
+    new_title="${base/.spec/}"
+      kubectl explain $base.$obj | transform_crds_docs_into_web_docs_format "$base.$obj" "=== $new_title.$obj"
     done
 }

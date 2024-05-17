@@ -413,8 +413,7 @@ elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
     export password=$password
     export database=$database
 
-    
-
+    if [[  ]]
 fi
 
 status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
