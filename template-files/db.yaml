@@ -12,32 +12,7 @@ grapi:
   - name: init-db
     spec:
       name: init-db
-  datasources:
-  - name: "$data_source"
-    spec:
-      mysql:
-        name: "$data_source"
-        url: ""
-        host: "$(host)"
-        port: "$(port)"
-        user: "$(username)"
-        password: "$(password)"
-        database: $database
-      postgresql:
-        name: "$data_source"
-        url: ""
-        host: "$(host)"
-        port: "$(port)"
-        user: "$(username)"
-        password: "$(password)"
-        database: $database
-  discoveries:
-  - name: "classicmodelsdic"
-    spec:
-      dataSource: "$data_source"
-      schema: "$database"
-      all: true
-      disableCamelCase: false
+      command: $command
   restcruds:
   - name: "classicmodelsrc"
     spec:
