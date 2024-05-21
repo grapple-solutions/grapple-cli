@@ -258,7 +258,6 @@ transform_crds_docs_into_web_docs_format() {
 
     local obj=""
     for obj in "${objects[@]}"; do
-    new_title="${base/.spec/}"
-      kubectl explain $base.$obj | transform_crds_docs_into_web_docs_format "$base.$obj" "=== $new_title.$obj"
+      kubectl explain $base.$obj | transform_crds_docs_into_web_docs_format "$base.$obj" "=== $base.$obj"
     done
 }
