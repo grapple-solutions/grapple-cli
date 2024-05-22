@@ -11,6 +11,7 @@ cli_help() {
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 install_prerequisite
+check_and_install_yq
 
 NS=grpl-system
 DB_FILE_NS=grpl-dbfile
@@ -24,8 +25,6 @@ tmp_file_dest="/tmp/temp_file"
 # ----------------------- functions code ---------------------------
 
 transform_model_input_to_yaml() {
-
-    check_and_install_yq
 
     local Models=$1
     # Convert the JSON-like string to valid JSON by replacing single quotes with double quotes
