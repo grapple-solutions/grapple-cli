@@ -638,6 +638,8 @@ elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
         fi
     fi 
 
+    # TODO: Check if data source connection details are correct or not
+
 fi
 
 # check for init-containers
