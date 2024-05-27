@@ -633,7 +633,7 @@ elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
         if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
             take_datasource_input "mysql"
         else
-            take_datasource_input "postgresql"
+            take_datasource_input "postgresl"
         fi
     fi 
 
@@ -649,10 +649,17 @@ if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_D
     yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
     export command=$mysql_init_container_bash_script
 
+elif [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
+
+    take_source_data_url
+    postgres_init_container_bash_script="['bash', '-c', 'sleep 5; while ! psql -h \$(host) -p \$(port) -U \$(username) -d postgres -c \"\\l\" >/dev/null 2>&1; do echo -n .; sleep 2; done; if psql -h \$(host) -p \$(port) -U \$(username) -d classicmodelsid -c \"select * from customers limit 1;\" >/dev/null 2>&1; then echo \"database already exists...\"; else curl -o /tmp/classicmodelsid.sql $SOURCE_DATA PGPASSWORD=\$(password) psql -h \$(host) -p \$(port) -U \$(username) -d postgres -f /tmp/classicmodelsid.sql; rm /tmp/classicmodelsid.sql; fi']"
+    yq -i ".grapi.initContainers[0].spec.image=\"postgres\"" $template_file_dest
+    export command=$postgres_init_container_bash_script
+
 fi
 
 # discovery based checks
-if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
     if [[ "$DISCOVERIES" != "" ]]; then
         transform_discoveries_input_to_yaml $DISCOVERIES
     else
