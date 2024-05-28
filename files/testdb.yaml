@@ -66,14 +66,6 @@ grapi:
       foreignKeyName: "customersId"
       relationType: "belongsTo"
       registerInclusionResolver: true
-  - name: "customers"
-    spec:
-      relationName: "customers"
-      sourceModel: "Orders"
-      destinationModel: "Customers"
-      foreignKeyName: "customersId"
-      relationType: "belongsTo"
-      registerInclusionResolver: true
   - name: "productlines"
     spec:
       relationName: "productlines"
@@ -82,6 +74,30 @@ grapi:
       foreignKeyName: "productlinesId"
       relationType: "belongsTo"
       registerInclusionResolver: true
+  - name: customerorders
+    spec:
+      destinationModel: Orders
+      foreignKeyName: customersId
+      registerInclusionResolver: true
+      relationName: customerorders
+      relationType: hasMany
+      sourceModel: Customers
+  - name: officeemployees
+    spec:
+      destinationModel: Employees
+      foreignKeyName: officesId
+      registerInclusionResolver: true
+      relationName: officeemployees
+      relationType: hasMany
+      sourceModel: Offices
+  - name: productlineproduct
+    spec:
+      destinationModel: Products
+      foreignKeyName: productlinesId
+      registerInclusionResolver: true
+      relationName: productlineproduct
+      relationType: hasMany
+      sourceModel: Productlines
   restcruds:
   - name: "classicmodelsrc"
     spec:
