@@ -16,7 +16,7 @@ grapi:
   restcruds:
   - name: "classicmodelsrc"
     spec:
-      datasource: "$datasource"
+      datasource: "$database_schema"
 
 gruim:
   ssl: true
