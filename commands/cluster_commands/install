@@ -350,6 +350,10 @@ echo ----
 helm_deploy grsf-config 
 status_log $TYPE_SUCCESS "grsf-config is Installed"
 
+for i in $(kubectl get xrd -o name); do 
+  kubectl wait --for=condition=Offered $i;
+done
+
 helm_deploy grsf-integration
 
 echo 
