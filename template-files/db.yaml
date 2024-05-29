@@ -6,8 +6,6 @@ grapi:
   ssl: true
   sslissuer: letsencrypt-grapple-demo
   autorestartgruim: true
-  extraSecrets: 
-  - grappledb-conn-credential
   initContainers:
   - name: init-db
     spec:

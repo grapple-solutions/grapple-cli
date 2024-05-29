@@ -619,20 +619,29 @@ elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
 fi
 
 # check for init-containers
-if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+cli_args=$@
+if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
+    yq eval 'del(.grapi.initContainers)' -i $template_file_dest
+else
+    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
 
-    take_source_data_url
-    mysql_init_container_bash_script="['bash', '-c', 'sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"show databases;\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"use $database_schema;\" 2>/dev/null; then echo \"database already exists...\"; else curl -o /tmp/$database_schema.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$database_schema.sql; rm /tmp/$database_schema.sql; fi']"
-    yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
-    export command=$mysql_init_container_bash_script
+        take_source_data_url
+        mysql_init_container_bash_script="['bash', '-c', 'sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"show databases;\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"use $database_schema;\" 2>/dev/null; then echo \"database already exists...\"; else curl -o /tmp/$database_schema.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$database_schema.sql; rm /tmp/$database_schema.sql; fi']"
+        yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
+        export command=$mysql_init_container_bash_script
 
-elif [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
+    elif [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
 
-    take_source_data_url
-    postgres_init_container_bash_script="['bash', '-c', 'sleep 5; while ! psql -h \$(host) -p \$(port) -U \$(username) -d postgres -c \"\\l\" >/dev/null 2>&1; do echo -n .; sleep 2; done; if psql -h \$(host) -p \$(port) -U \$(username) -c \"SELECT datname  FROM pg_database  WHERE datname = $database_schema;\" >/dev/null 2>&1; then echo \"database already exists...\"; else curl -o /tmp/$database_schema.sql $SOURCE_DATA PGPASSWORD=\$(password) psql -h \$(host) -p \$(port) -U \$(username) -d $database_schema -f /tmp/$database_schema.sql; rm /tmp/$database_schema.sql; fi']"
-    yq -i ".grapi.initContainers[0].spec.image=\"postgres\"" $template_file_dest
-    export command=$postgres_init_container_bash_script
+        take_source_data_url
+        postgres_init_container_bash_script="['bash', '-c', 'sleep 5; while ! psql -h \$(host) -p \$(port) -U \$(username) -d postgres -c \"\\l\" >/dev/null 2>&1; do echo -n .; sleep 2; done; if psql -h \$(host) -p \$(port) -U \$(username) -c \"SELECT datname  FROM pg_database  WHERE datname = $database_schema;\" >/dev/null 2>&1; then echo \"database already exists...\"; else curl -o /tmp/$database_schema.sql $SOURCE_DATA PGPASSWORD=\$(password) psql -h \$(host) -p \$(port) -U \$(username) -d $database_schema -f /tmp/$database_schema.sql; rm /tmp/$database_schema.sql; fi']"
+        yq -i ".grapi.initContainers[0].spec.image=\"postgres\"" $template_file_dest
+        export command=$postgres_init_container_bash_script
 
+    fi
+
+    if [[ "$SOURCE_DATA" == "" ]]; then
+        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
+    fi
 fi
 
 # discovery based checks
