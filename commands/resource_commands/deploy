@@ -578,8 +578,13 @@ status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
 if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
 
     if ! kbcli >/dev/null 2>&1; then
-        status_log $TYPE_INFO "installing kbcli and kubeblocks"
+        status_log $TYPE_INFO "installing kbcli"
         check_and_install_kbcli
+    fi
+
+    if ! kbcli cluster list 2>/dev/null || ! kbcli kubeblocks status; then
+
+        status_log $TYPE_INFO "installing kubeblocks"
         check_and_install_kubeblocks
 
         status_log $TYPE_INFO "waiting for configs to apply"
