@@ -267,8 +267,8 @@ helm_deploy() {
 }
 
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
-  kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
-  kubectl run grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${GRAPPLE_DNS}" --env="CIVO_MASTER_IP=${CIVO_MASTER_IP}" --restart=Never
+  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
+  kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${GRAPPLE_DNS}" --env="CIVO_MASTER_IP=${CIVO_MASTER_IP}" --restart=Never
 fi
 
 echo 
@@ -288,7 +288,7 @@ fi
 
 # remove the DNS job again
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
-  kubectl delete po grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
+  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
 fi
 
 echo "wait for crossplane to be ready"

@@ -26,7 +26,7 @@ RUN brew install gum kubectl helm && brew cleanup --prune=all
 ARG GRAPPLE_CLI_VERSION=0.2.19
 RUN export HOMEBREW_GITHUB_API_TOKEN=${HOMEBREW_GITHUB_API_TOKEN} && brew tap grapple-solutions/grapple && brew install grapple-cli && brew cleanup --prune=all
 
-RUN grpl version
+#RUN grpl version
 
 # USER root
 
