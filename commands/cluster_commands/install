@@ -350,6 +350,7 @@ echo ----
 helm_deploy grsf-config 
 status_log $TYPE_SUCCESS "grsf-config is Installed"
 
+kubectl wait --for=condition=Offered compositeresourcedefinition.apiextensions.crossplane.io/compositemanagedapis.grsf.grpl.io
 for i in $(kubectl get xrd -o name); do 
   kubectl wait --for=condition=Offered $i;
 done
