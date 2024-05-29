@@ -1,0 +1,24 @@
+gras: {}
+grapi:
+  # beimagetag: "v0.112"
+  discoveredrepos: true
+  ingress: true
+  ssl: true
+  sslissuer: letsencrypt-grapple-demo
+  autorestartgruim: true
+  initContainers:
+  - name: init-db
+    spec:
+      name: init-db
+      command: $command
+  restcruds:
+  - name: "classicmodelsrc"
+    spec:
+      datasource: "$database_schema"
+
+gruim:
+  ssl: true
+  sslissuer: letsencrypt-grapple-demo
+  style: '{"colors":{"primary":{"DEFAULT":"#ff7300","fg":"#fff"},"accent":{"DEFAULT":"#808080","fg":"#fff"}}}'
+  config: ""
+  additionalpackages: ""

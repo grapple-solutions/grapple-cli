@@ -11,11 +11,13 @@ cli_help() {
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 install_prerequisite
+check_and_install_yq
 
 NS=grpl-system
 DB_FILE_NS=grpl-dbfile
 DB_NS=grpl-db
 awsregistry="p7h7z5g3"
+tmp_file_dest="/tmp/temp_file"
 
 
 
@@ -23,8 +25,6 @@ awsregistry="p7h7z5g3"
 # ----------------------- functions code ---------------------------
 
 transform_model_input_to_yaml() {
-
-    check_and_install_yq
 
     local Models=$1
     # Convert the JSON-like string to valid JSON by replacing single quotes with double quotes
@@ -51,6 +51,56 @@ transform_model_input_to_yaml() {
 
 }
 
+transform_datasources_input_to_yaml() {
+
+    check_and_install_yq
+
+    local ds=$1
+    # Convert the JSON-like string to valid JSON by replacing single quotes with double quotes
+    json_string="${ds//\'/\"}"
+
+    # Split the input string by pipe symbol (|)
+    IFS='|' read -ra data_sources <<< "$json_string"
+
+    # Iterate over each model data
+    index=0
+    for data_source in "${data_sources[@]}"; do
+        # Extract the model name and its properties
+        IFS=':' read -r data_source_name properties <<< "$data_source"
+        yq -i ".grapi.datasources[$index].name=\"$data_source_name\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
+        
+        connector=$(echo $properties | jq -r '.connector')
+        # Parse the properties JSON and format it as YAML
+        yq eval ".grapi.datasources[$index].spec.$connector += $properties" -i $template_file_dest
+        ((index+=1))
+    done
+
+}
+
+transform_discoveries_input_to_yaml() {
+    
+
+    local dsq=$1
+    # Convert the JSON-like string to valid JSON by replacing single quotes with double quotes
+    json_string="${dsq//\'/\"}"
+
+    # Split the input string by pipe symbol (|)
+    IFS='|' read -ra discoveries <<< "$json_string"
+
+    # Iterate over each model data
+    index=0
+    for discovery in "${discoveries[@]}"; do
+        # Extract the model name and its properties
+        IFS=':' read -r discovery_name properties <<< "$discovery"
+        yq -i ".grapi.discoveries[$index].name=\"$data_source_name\" | .grapi.discoveries[$index].name style=\"double\"" $template_file_dest
+
+        # Parse the properties JSON and format it as YAML
+        yq eval ".grapi.discoveries[$index].spec += $properties" -i $template_file_dest
+        ((index+=1))
+    done
+
+}
+
 
 take_relation_input() {
    
@@ -62,18 +112,29 @@ take_relation_input() {
     fi
     
     local models=("$@")
-    RELATIONS="  relations:"
+    local models_len=${#models[@]}
     index=0
+
+
     while true; do
 
         local relation_type=$(gum choose --header "Please select the relation type" $BELONGS_TO $HAS_MANY $HAS_MANY_THROUGH $HAS_ONE $REFRENCES_MANY) || exit $?
         status_log $TYPE_DEFAULT  "relation model template: ${relation_type}"
 
-        local source_model=$(gum choose --header "Please select source model" "${models[@]}") || exit $?
-        status_log $TYPE_DEFAULT  "source model: ${source_model}"
+        if [[ $models_len > 0 ]]; then 
+            local source_model=$(gum choose --header "Please select source model" "${models[@]}") || exit $?
+            status_log $TYPE_DEFAULT  "source model: ${source_model}"
 
-        local target_model=$(gum choose --header "Please select target model" "${models[@]}") || exit $?
-        status_log $TYPE_DEFAULT  "destination model: ${target_model}"
+            local target_model=$(gum choose --header "Please select target model" "${models[@]}") || exit $?
+            status_log $TYPE_DEFAULT  "destination model: ${target_model}" 
+        else
+            local source_model=$(prompt_for_input_with_validation "Please enter source model: " "source model" "$non_empty_regex" "please enter a valid value") || exit $?
+            status_log $TYPE_DEFAULT  "source model: ${source_model}"
+
+            local target_model=$(prompt_for_input_with_validation "Please enter target model: " "target model" "$non_empty_regex" "please enter a valid value") || exit $?
+            status_log $TYPE_DEFAULT  "destination model: ${target_model}"       
+        fi
+
 
         local foreign_key=$(prompt_for_input_with_validation "Foreign key name to define on the source model: " "Please enter foreign key" "$non_empty_regex" "please select valid foreign key") || exit $?
         status_log $TYPE_DEFAULT  "foreign_key: ${foreign_key}"
@@ -193,7 +254,105 @@ take_model_input() {
     
 }
 
-deploy_db_file_template() {
+take_datasource_input() {
+
+    
+    local ds_type=$1
+    index=0
+
+        local datasource=$(prompt_for_input_with_validation "datasource: " "please provide datasource name: " "$non_empty_regex" "datasource name can't be empty")
+        status_log $TYPE_DEFAULT "datasource: ${datasource}"    
+ 
+        local url=$(prompt_for_explicit_input_with_validation "url: " "please provide url (optional): " ".*" "")
+        status_log $TYPE_DEFAULT "url: ${url}"    
+
+        local host=$(prompt_for_input_with_validation "host: " "please provide host: " "$non_empty_regex" "host name can't be empty")
+        status_log $TYPE_DEFAULT "host: ${host}"    
+
+        local port=$(prompt_for_input_with_validation "port: " "please provide port: " "$non_empty_regex" "port name can't be empty")
+        status_log $TYPE_DEFAULT "port: ${port}"   
+
+        local user=$(prompt_for_input_with_validation "user: " "please provide user: " "$non_empty_regex" "user name can't be empty")
+        status_log $TYPE_DEFAULT "user: ${user}"
+
+        read -s -p "password: " password
+        echo ""
+        database_schema=$(prompt_for_input_with_validation "database_schema: " "please provide database_schema: " "$non_empty_regex" "database_schema name can't be empty")
+        status_log $TYPE_DEFAULT "database schema: ${database_schema}"
+
+        yq -i ".grapi.datasources[$index].name=\"$datasource\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
+        yq -i ".grapi.datasources[$index].spec.$ds_type.name=\"$datasource\" | .grapi.datasources[$index].spec.$ds_type.name style=\"double\"" $template_file_dest
+        yq -i ".grapi.datasources[$index].spec.$ds_type.url=\"$url\" | .grapi.datasources[$index].spec.$ds_type.url style=\"double\"" $template_file_dest
+        yq -i ".grapi.datasources[$index].spec.$ds_type.host=\"$host\" | .grapi.datasources[$index].spec.$ds_type.host style=\"double\"" $template_file_dest
+        yq -i ".grapi.datasources[$index].spec.$ds_type.port=$port" $template_file_dest
+        yq -i ".grapi.datasources[$index].spec.$ds_type.user=\"$user\" | .grapi.datasources[$index].spec.$ds_type.user style=\"double\"" $template_file_dest
+        yq -i ".grapi.datasources[$index].spec.$ds_type.password=\"$password\" | .grapi.datasources[$index].spec.$ds_type.password style=\"double\"" $template_file_dest
+        yq -i ".grapi.datasources[$index].spec.$ds_type.database=\"$database_schema\"" $template_file_dest
+    
+}
+
+take_discovery_input() {
+
+    index=0
+
+    local discovery=$(prompt_for_input_with_validation "discovery: " "please provide discovery name: " "$non_empty_regex" "discovery name can't be empty")
+    status_log $TYPE_DEFAULT "discovery: ${discovery}"    
+
+    local all_models=$(prompt_for_input_with_validation "Discover all models without prompting users to select? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+    if [[ $all_models == "y" || $all_models == "Y" ]]; then
+        all="true"
+    else
+        all="false"
+        models=$(prompt_for_explicit_input_with_validation "models: " "please provide models(optional) e.g: table1,table2: " "$.*" "")
+        status_log $TYPE_DEFAULT "models: ${models}"    
+    fi
+    status_log $TYPE_DEFAULT "all: ${all}"  
+
+    local disableCamelCase="false"
+
+    local optionalId_value=$(prompt_for_input_with_validation "mark id property as optional field? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+    if [[ $optionalId_value == "y" || $optionalId_value == "Y" ]]; then
+        optionalId="true"
+    else
+        optionalId="false"
+    fi
+    status_log $TYPE_DEFAULT "optionalId: ${optionalId}"  
+
+    local outDir=$(prompt_for_explicit_input_with_validation "outDir: " "please provide outDir(optional): " "$.*" "")
+    status_log $TYPE_DEFAULT "outDir: ${outDir}"    
+
+    local relations_value=$(prompt_for_input_with_validation "discover and create relations? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+    if [[ $relations_value == "y" || $relations_value == "Y" ]]; then
+        relations="true"
+    else
+        relations="false"
+    fi
+    status_log $TYPE_DEFAULT "relations: ${relations}"    
+
+    local views_value=$(prompt_for_input_with_validation "discover views? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+    if [[ $views_value == "y" || $views_value == "Y" ]]; then
+        views="true"
+    else
+        views="false"
+    fi
+    status_log $TYPE_DEFAULT "views: ${views}"  
+
+    yq -i ".grapi.discoveries[$index].name=\"$discovery\" | .grapi.discoveries[$index].name style=\"double\"" $template_file_dest
+    yq -i ".grapi.discoveries[$index].spec.all=$all" $template_file_dest
+    yq -i ".grapi.discoveries[$index].spec.views=$views" $template_file_dest
+    yq -i ".grapi.discoveries[$index].spec.relations=$relations" $template_file_dest 
+    yq -i ".grapi.discoveries[$index].spec.optionalId=$optionalId" $template_file_dest
+    yq -i ".grapi.discoveries[$index].spec.disableCamelCase=$disableCamelCase" $template_file_dest 
+    yq -i ".grapi.discoveries[$index].spec.schema=\"$database_schema\" | .grapi.discoveries[$index].spec.schema style=\"double\"" $template_file_dest
+    yq -i ".grapi.discoveries[$index].spec.models=\"$models\" | .grapi.discoveries[$index].spec.models style=\"double\"" $template_file_dest
+    yq -i ".grapi.discoveries[$index].spec.outDir=\"$outDir\" | .grapi.discoveries[$index].spec.outDir style=\"double\"" $template_file_dest
+    yq -i ".grapi.discoveries[$index].spec.dataSource=\"$database_schema\" | .grapi.discoveries[$index].spec.dataSource style=\"double\"" $template_file_dest
+
+
+}
+
+deploy_template() {
+
 
     cli_log "resource deploy BEGIN"
     status_log $TYPE_DEFAULT "resource deploy is in progress"
@@ -205,6 +364,19 @@ deploy_db_file_template() {
         MINIKUBE_PATCH=""
     fi
 
+    if ! gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f $template_file_dest ${MINIKUBE_PATCH}; then
+        status_log $TYPE_ERROR "Failed to deploy db-file template, configs might be invalid"
+        exit 1
+    fi
+    
+    status_log $TYPE_INFO "wait for $GRAS_NAME to be ready" 
+    CRD="gras" && echo "Wait for $CRD to be deployed:" && SECONDS=0 && TIMEOUT=60 && until kubectl get $CRD -n $KUBE_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1 || [ $SECONDS -ge $TIMEOUT ]; do echo -n .; sleep 1; done && if [ $SECONDS -ge $TIMEOUT ]; then status_log $TYPE_ERROR "Timeout exceeded, $CRD not deployed after 1 minute"; exit 1; else echo "$CRD deployed"; fi
+    status_log $TYPE_SUCCESS "$CRD deployed"
+    status_log $TYPE_SUCCESS "grpl db-file template is deployed"
+
+}
+
+check_and_create_kubens() {
 
     if [[ "$KUBE_NS" != "" ]] && ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
         status_log $TYPE_INFO "namespace $KUBE_NS doesn't exist, now creating"
@@ -225,20 +397,71 @@ deploy_db_file_template() {
             fi
         fi    
     fi
+}
 
-    if ! gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f /tmp/db-file.yaml ${MINIKUBE_PATCH}; then
-        status_log $TYPE_ERROR "Failed to deploy db-file template, configs might be invalid"
-        exit 1
-    fi
+input_guim_option(){
+
+    status_log $TYPE_DEFAULT "Do you want enable gruim?"
+    ENABLE_GRUIM=$(if [ "${ENABLE_GRUIM}" != "" ]; then echo ${ENABLE_GRUIM}; else  gum choose "Yes" "No"; fi) || exit $?
+    status_log $TYPE_DEFAULT "ENABLE_GRUIM: ${ENABLE_GRUIM}"
     
-    status_log $TYPE_INFO "wait for $GRAS_NAME to be ready" 
-    CRD="gras" && echo "Wait for $CRD to be deployed:" && SECONDS=0 && TIMEOUT=60 && until kubectl get $CRD -n $KUBE_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1 || [ $SECONDS -ge $TIMEOUT ]; do echo -n .; sleep 1; done && if [ $SECONDS -ge $TIMEOUT ]; then status_log $TYPE_ERROR "Timeout exceeded, $CRD not deployed after 1 minute"; exit 1; else echo "$CRD deployed"; fi
-    status_log $TYPE_SUCCESS "$CRD deployed"
-    status_log $TYPE_SUCCESS "grpl db-file template is deployed"
+    if [ "$ENABLE_GRUIM" == "No" ]; then
+        yq eval 'del(.gruims)' -i $template_file_dest
+    fi
 
 }
 
+take_db_file_path() {
+    DB_FILE_PATH=$(if [ "${DB_FILE_PATH}" != "" ]; then echo ${DB_FILE_PATH}; else prompt_for_explicit_input_with_validation "Enter DB_FILE_PATH: " "Provide file path where you want to store data, default value is $db_file_default_value" "$abs_path_regex" "please provide correct absolute file path"; fi) || exit $?
+    if [ "${DB_FILE_PATH}" == "" ]; then 
+        DB_FILE_PATH=$db_file_default_value
+    fi
+    status_log $TYPE_DEFAULT "DB_FILE_PATH: ${DB_FILE_PATH}"
+    export db_file=$DB_FILE_PATH
+}
 
+take_source_data_url() {
+    
+    # input data source url
+    SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url, press enter to omit" ".*" "please provide valid datasource url"; fi) || exit $?
+    if [[ $SOURCE_DATA != "" ]]; then
+        status_log $TYPE_DEFAULT "SOURCE_DATA: ${SOURCE_DATA}"
+        export testdata_url=$SOURCE_DATA
+    else
+        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
+    fi
+}
+
+substitute_env_vars_in_template() {
+
+    check_and_install_gettext
+    envsubst < "$template_file_dest" > "$tmp_file_dest" && mv "$tmp_file_dest" "$template_file_dest"
+
+}
+
+added_internal_datasource_config_to_template() {
+
+    ds_type=$1
+
+    database_schema=$(prompt_for_input_with_validation "database schema: " "please provide database schema: " "$non_empty_regex" "database name can't be empty")
+    status_log $TYPE_DEFAULT "database schema: ${database_schema}"
+
+    local url=""
+    local host="\$(host)"
+    local port="\$(port)"
+    local user="\$(user)"
+    local password="\$(password)"
+    index=0
+    yq -i ".grapi.datasources[$index].name=\"$database_schema\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.name=\"$database_schema\" | .grapi.datasources[$index].spec.$ds_type.name style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.url=\"$url\" | .grapi.datasources[$index].spec.$ds_type.url style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.host=\"$host\" | .grapi.datasources[$index].spec.$ds_type.host style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.port=\"$port\" | .grapi.datasources[$index].spec.$ds_type.port style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.user=\"$user\" | .grapi.datasources[$index].spec.$ds_type.user style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.password=\"$password\" | .grapi.datasources[$index].spec.$ds_type.password style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.database=\"$database_schema\"" $template_file_dest
+
+}
 
 # ----------------------- functions code ended ---------------------
 
@@ -258,6 +481,8 @@ valid_args=(
     "MODELS"
     "RELATIONS"
     "KUBE_NS"
+    "DATA_SOURCES"
+    "DISCOVERIES"
   )
 
 # check if values are already passed form terminal
@@ -291,13 +516,15 @@ GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; els
 status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 
+check_and_create_kubens
+
 # ----------------------- params code ended ---------------------------
+
 
 
 if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
 
     template_file_dest="/tmp/db-file.yaml"
-    tmp_file_dest="/tmp/temp_file"
     db_file_default_value=/data/db.json
     cp "$GRPL_WORKDIR/template-files/db-file.yaml" $template_file_dest
 
@@ -311,22 +538,8 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     fi 
 
 
-
-    DB_FILE_PATH=$(if [ "${DB_FILE_PATH}" != "" ]; then echo ${DB_FILE_PATH}; else prompt_for_explicit_input_with_validation "Enter DB_FILE_PATH: " "Provide file path where you want to store data, default value is $db_file_default_value" "$abs_path_regex" "please provide correct absolute file path"; fi) || exit $?
-    if [ "${DB_FILE_PATH}" == "" ]; then 
-        DB_FILE_PATH=$db_file_default_value
-    fi
-    status_log $TYPE_DEFAULT "DB_FILE_PATH: ${DB_FILE_PATH}"
-    export db_file=$DB_FILE_PATH
-
-    # input data source url
-    SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url, press enter to omit" ".*" "please provide valid datasource url"; fi) || exit $?
-    if [[ $SOURCE_DATA != "" ]]; then
-        status_log $TYPE_DEFAULT "SOURCE_DATA: ${SOURCE_DATA}"
-        export testdata_url=$SOURCE_DATA
-    else
-        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
-    fi
+    take_db_file_path
+    take_source_data_url
 
     cli_args=$@
     if [[ "${cli_args[@]}" =~ "--RELATIONS" ]] && [[ $RELATIONS == "" ]] ; then
@@ -335,21 +548,14 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
         take_relation_input "${models_name[@]}"
     fi
     
-    
-    status_log $TYPE_DEFAULT "Do you want enable gruim?"
-    ENABLE_GRUIM=$(if [ "${ENABLE_GRUIM}" != "" ]; then echo ${ENABLE_GRUIM}; else  gum choose "Yes" "No"; fi) || exit $?
-    status_log $TYPE_DEFAULT "ENABLE_GRUIM: ${ENABLE_GRUIM}"
-    
-    if [ "$ENABLE_GRUIM" == "No" ]; then
-        yq eval 'del(.gruims)' -i $template_file_dest
-    fi
 
-    check_and_install_gettext
-    envsubst < "$template_file_dest" > "$tmp_file_dest" && mv "$tmp_file_dest" "$template_file_dest"
+    input_guim_option
+
+    substitute_env_vars_in_template
 
     # at this point our template manifest is ready at /tmp/db-file.yaml
     # we'll deploy it now
-    deploy_db_file_template
+    deploy_template
 
     # now remove the tmp file
     rm $template_file_dest
@@ -357,10 +563,116 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     exit 1
 fi
 
+# for all other cases
+template_file_dest="/tmp/db.yaml"
+cp "$GRPL_WORKDIR/template-files/db.yaml" $template_file_dest
 
 #check if input from params is valid or not
 if [ "${DB_TYPE}" != "" ]; then 
-  is_correct_grapple_applicationsets_provided $DB_TYPE 
+  is_correct_db_type_provided $DB_TYPE 
 fi
 DB_TYPE=$(if [ "${DB_TYPE}" != "" ]; then echo ${DB_TYPE}; else gum choose  --header "Please select the database type you want" $INTERNAL_DB $EXTERNAL_DB; fi) || exit $?
 status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
+
+# internal/external db case
+if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
+
+    if ! kbcli >/dev/null 2>&1; then
+        status_log $TYPE_INFO "installing kbcli"
+        check_and_install_kbcli
+    fi
+
+    if ! kbcli cluster list 2>/dev/null || ! kbcli kubeblocks status; then
+
+        status_log $TYPE_INFO "installing kubeblocks"
+        check_and_install_kubeblocks
+
+        status_log $TYPE_INFO "waiting for configs to apply"
+        for i in $(kubectl get clusterversion -o name); do 
+            kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
+        done
+
+        kubectl apply -n ${KUBE_NS} -f $GRPL_WORKDIR/files/db.yaml
+        status_log $TYPE_INFO "created internal db"
+    fi
+
+    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+        added_internal_datasource_config_to_template "mysql"
+    else
+        added_internal_datasource_config_to_template "postgres"
+    fi
+
+elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
+
+    if [[ $DATA_SOURCES != "" ]]; then
+        transform_datasources_input_to_yaml $DATA_SOURCES
+    else
+        if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+            take_datasource_input "mysql"
+        else
+            take_datasource_input "postgres"
+        fi
+    fi 
+
+    # TODO: Check if data source connection details are correct or not
+
+fi
+
+# check for init-containers
+cli_args=$@
+if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
+    yq eval 'del(.grapi.initContainers)' -i $template_file_dest
+else
+    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+
+        take_source_data_url
+        mysql_init_container_bash_script="['bash', '-c', 'sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"show databases;\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"use $database_schema;\" 2>/dev/null; then echo \"database already exists...\"; else curl -o /tmp/$database_schema.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$database_schema.sql; rm /tmp/$database_schema.sql; fi']"
+        yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
+        export command=$mysql_init_container_bash_script
+
+    elif [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
+
+        take_source_data_url
+        postgres_init_container_bash_script="['bash', '-c', 'sleep 5; while ! psql -h \$(host) -p \$(port) -U \$(username) -d postgres -c \"\\l\" >/dev/null 2>&1; do echo -n .; sleep 2; done; if psql -h \$(host) -p \$(port) -U \$(username) -c \"SELECT datname  FROM pg_database  WHERE datname = $database_schema;\" >/dev/null 2>&1; then echo \"database already exists...\"; else curl -o /tmp/$database_schema.sql $SOURCE_DATA PGPASSWORD=\$(password) psql -h \$(host) -p \$(port) -U \$(username) -d $database_schema -f /tmp/$database_schema.sql; rm /tmp/$database_schema.sql; fi']"
+        yq -i ".grapi.initContainers[0].spec.image=\"postgres\"" $template_file_dest
+        export command=$postgres_init_container_bash_script
+
+    fi
+
+    if [[ "$SOURCE_DATA" == "" ]]; then
+        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
+    fi
+fi
+
+# discovery based checks
+if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
+    
+    if [[ "$DISCOVERIES" != "" ]]; then
+        transform_discoveries_input_to_yaml $DISCOVERIES
+    else
+        take_discovery_input
+    fi
+elif  [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]]; then
+    # input model
+    if [[ $MODELS == "" ]]; then
+        take_model_input
+    else 
+        # the input model should look like this
+        # 'customers:{"base":"Entity","name":"customers","properties":{"city":{"type":"string"},"generatedValue":{"generated":true,"defaultFn":999,"id":false,"required":true,"type":"number"}}}|employees:{"base":"Entity","name":"employees","properties":{"country":{"type":"string"},"creditLimit":{"type":"number"}}}'
+        transform_model_input_to_yaml $MODELS
+    fi 
+fi
+
+cli_args=$@
+if [[ "${cli_args[@]}" =~ "--RELATIONS" ]] && [[ $RELATIONS == "" ]] ; then
+    yq eval 'del(.grapi.relations)' -i $template_file_dest
+else
+    take_relation_input "${models_name[@]}"
+fi
+
+input_guim_option
+export database_schema=$database_schema
+substitute_env_vars_in_template
+# at this point our template manifest is ready at /tmp/db.yaml
+# we'll deploy it now
+deploy_template

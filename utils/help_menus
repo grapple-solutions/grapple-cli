@@ -909,7 +909,10 @@ Variable:
     ENABLE_GRUIM: to enable gruim, it can either be "Yes" or "No"
     MODELS: input of models 
     RELATIONS: models relations
-    GRAS_NS: namespace to deploy gras, default ns is 'default'
+    KUBE_NS: namespace to deploy gras, default ns is 'default'
+    DATA_SOURCES: data sources configs
+    DISCOVERIES: discoveries configs
+    
 "
 
     if [ "$type" == $WEB_DOC ]; then
