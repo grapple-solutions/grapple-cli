@@ -84,8 +84,6 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
     CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
     CIVO_CLUSTER_ID=$(gum spin --title "fetching cluster id of ${CIVO_CLUSTER} cluster" --show-output -- civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
 
-  else
-    CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
   fi
 
   GRAPPLE_DNS=${CIVO_CLUSTER}
