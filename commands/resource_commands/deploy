@@ -70,6 +70,7 @@ transform_datasources_input_to_yaml() {
         yq -i ".grapi.datasources[$index].name=\"$data_source_name\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
         
         connector=$(echo $properties | jq -r '.connector')
+        database_schema=$(echo $properties | jq -r '.database')
         # Parse the properties JSON and format it as YAML
         yq eval ".grapi.datasources[$index].spec.$connector += $properties" -i $template_file_dest
         ((index+=1))
@@ -512,7 +513,7 @@ status_log $TYPE_DEFAULT "GRAS_NAME: ${GRAS_NAME}"
 if [ "${GRAS_TEMPLATE}" != "" ]; then 
   is_correct_grapple_applicationsets_provided $GRAS_TEMPLATE 
 fi
-GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL $DB_MYSQL_DISCOVERY_BASED $DB_POSTGRES $DB_POSTGRES_DISCOVERY_BASED; fi) || exit $?
+GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED $DB_POSTGRES_MODEL_BASED $DB_POSTGRES_DISCOVERY_BASED; fi) || exit $?
 status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 
@@ -596,7 +597,7 @@ if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
         status_log $TYPE_INFO "created internal db"
     fi
 
-    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
         added_internal_datasource_config_to_template "mysql"
     else
         added_internal_datasource_config_to_template "postgres"
@@ -607,7 +608,7 @@ elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
     if [[ $DATA_SOURCES != "" ]]; then
         transform_datasources_input_to_yaml $DATA_SOURCES
     else
-        if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+        if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
             take_datasource_input "mysql"
         else
             take_datasource_input "postgres"
@@ -623,14 +624,14 @@ cli_args=$@
 if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
     yq eval 'del(.grapi.initContainers)' -i $template_file_dest
 else
-    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
 
         take_source_data_url
         mysql_init_container_bash_script="['bash', '-c', 'sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"show databases;\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"use $database_schema;\" 2>/dev/null; then echo \"database already exists...\"; else curl -o /tmp/$database_schema.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$database_schema.sql; rm /tmp/$database_schema.sql; fi']"
         yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
         export command=$mysql_init_container_bash_script
 
-    elif [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
+    elif [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
 
         take_source_data_url
         postgres_init_container_bash_script="['bash', '-c', 'sleep 5; while ! psql -h \$(host) -p \$(port) -U \$(username) -d postgres -c \"\\l\" >/dev/null 2>&1; do echo -n .; sleep 2; done; if psql -h \$(host) -p \$(port) -U \$(username) -c \"SELECT datname  FROM pg_database  WHERE datname = $database_schema;\" >/dev/null 2>&1; then echo \"database already exists...\"; else curl -o /tmp/$database_schema.sql $SOURCE_DATA PGPASSWORD=\$(password) psql -h \$(host) -p \$(port) -U \$(username) -d $database_schema -f /tmp/$database_schema.sql; rm /tmp/$database_schema.sql; fi']"
@@ -652,7 +653,7 @@ if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]] || [[ "$GRAS_TEMPLATE"
     else
         take_discovery_input
     fi
-elif  [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL"  ]]; then
+elif  [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
     # input model
     if [[ $MODELS == "" ]]; then
         take_model_input
