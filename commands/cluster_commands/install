@@ -350,7 +350,9 @@ echo ----
 helm_deploy grsf-config 
 status_log $TYPE_SUCCESS "grsf-config is Installed"
 
-kubectl wait --for=condition=Offered compositeresourcedefinition.apiextensions.crossplane.io/compositemanagedapis.grsf.grpl.io
+CRD=compositemanagedapis.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+CRD=compositemanageduimodules.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+CRD=compositemanageddatasources.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
 for i in $(kubectl get xrd -o name); do 
   kubectl wait --for=condition=Offered $i;
 done
