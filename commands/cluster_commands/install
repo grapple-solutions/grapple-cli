@@ -247,8 +247,12 @@ helm_deploy() {
     fi
 
     echo "Deploying $i with version $version"
-
-  if ! output=$(gum spin --title "Installing ${i} component" --show-output -- helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml); then
+    if [ "$TTY" != "" ]; then
+      GUMSPIN='gum spin --title "Installing ${i} component" --show-output --'
+    else
+      GUMSPIN=''
+    fi
+  if ! output=$(${GUMSPIN} helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml); then
     if [[ "$output" == *"access denied"* ]]; then
       output=$(helm registry logout public.ecr.aws/${awsregistry} 2>&1)
       if [[ "$output" == "Removing login credentials for public.ecr.aws/${awsregistry}" ]]; then
