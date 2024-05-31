@@ -35,7 +35,6 @@ transform_model_input_to_yaml() {
     # Split the input string by pipe symbol (|)
     IFS='|' read -ra models_data <<< "$json_string"
 
-
     # Iterate over each model data
     index=0
     for model_data in "${models_data[@]}"; do
@@ -70,7 +69,7 @@ transform_datasources_input_to_yaml() {
         yq -i ".grapi.datasources[$index].name=\"$data_source_name\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
         
         connector=$(echo $properties | jq -r '.connector')
-        database_schema=$(echo $properties | jq -r '.database')
+        DATABASE_SCHEMA=$(echo $properties | jq -r '.database')
         # Parse the properties JSON and format it as YAML
         yq eval ".grapi.datasources[$index].spec.$connector += $properties" -i $template_file_dest
         ((index+=1))
@@ -95,6 +94,10 @@ transform_discoveries_input_to_yaml() {
         IFS=':' read -r discovery_name properties <<< "$discovery"
         yq -i ".grapi.discoveries[$index].name=\"$data_source_name\" | .grapi.discoveries[$index].name style=\"double\"" $template_file_dest
 
+        if [[ "$DATABASE_SCHEMA" == "" ]]; then
+            DATABASE_SCHEMA=$(echo $properties | jq -r '.schema')
+        fi
+        
         # Parse the properties JSON and format it as YAML
         yq eval ".grapi.discoveries[$index].spec += $properties" -i $template_file_dest
         ((index+=1))
@@ -278,8 +281,6 @@ take_datasource_input() {
 
         read -s -p "password: " password
         echo ""
-        database_schema=$(prompt_for_input_with_validation "database_schema: " "please provide database_schema: " "$non_empty_regex" "database_schema name can't be empty")
-        status_log $TYPE_DEFAULT "database schema: ${database_schema}"
 
         yq -i ".grapi.datasources[$index].name=\"$datasource\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
         yq -i ".grapi.datasources[$index].spec.$ds_type.name=\"$datasource\" | .grapi.datasources[$index].spec.$ds_type.name style=\"double\"" $template_file_dest
@@ -288,7 +289,7 @@ take_datasource_input() {
         yq -i ".grapi.datasources[$index].spec.$ds_type.port=$port" $template_file_dest
         yq -i ".grapi.datasources[$index].spec.$ds_type.user=\"$user\" | .grapi.datasources[$index].spec.$ds_type.user style=\"double\"" $template_file_dest
         yq -i ".grapi.datasources[$index].spec.$ds_type.password=\"$password\" | .grapi.datasources[$index].spec.$ds_type.password style=\"double\"" $template_file_dest
-        yq -i ".grapi.datasources[$index].spec.$ds_type.database=\"$database_schema\"" $template_file_dest
+        yq -i ".grapi.datasources[$index].spec.$ds_type.database=\"\$DATABASE_SCHEMA\"" $template_file_dest
     
 }
 
@@ -344,10 +345,10 @@ take_discovery_input() {
     yq -i ".grapi.discoveries[$index].spec.relations=$relations" $template_file_dest 
     yq -i ".grapi.discoveries[$index].spec.optionalId=$optionalId" $template_file_dest
     yq -i ".grapi.discoveries[$index].spec.disableCamelCase=$disableCamelCase" $template_file_dest 
-    yq -i ".grapi.discoveries[$index].spec.schema=\"$database_schema\" | .grapi.discoveries[$index].spec.schema style=\"double\"" $template_file_dest
+    yq -i ".grapi.discoveries[$index].spec.schema=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.schema style=\"double\"" $template_file_dest
     yq -i ".grapi.discoveries[$index].spec.models=\"$models\" | .grapi.discoveries[$index].spec.models style=\"double\"" $template_file_dest
     yq -i ".grapi.discoveries[$index].spec.outDir=\"$outDir\" | .grapi.discoveries[$index].spec.outDir style=\"double\"" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.dataSource=\"$database_schema\" | .grapi.discoveries[$index].spec.dataSource style=\"double\"" $template_file_dest
+    yq -i ".grapi.discoveries[$index].spec.dataSource=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.dataSource style=\"double\"" $template_file_dest
 
 
 }
@@ -365,15 +366,14 @@ deploy_template() {
         MINIKUBE_PATCH=""
     fi
 
-    if ! gum spin --title "Deploying db-file-template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f $template_file_dest ${MINIKUBE_PATCH}; then
-        status_log $TYPE_ERROR "Failed to deploy db-file template, configs might be invalid"
+    if ! gum spin --title "Deploying template" -- helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f $template_file_dest ${MINIKUBE_PATCH}; then
+        status_log $TYPE_ERROR "Failed to deploy template, configs might be invalid"
         exit 1
     fi
     
     status_log $TYPE_INFO "wait for $GRAS_NAME to be ready" 
     CRD="gras" && echo "Wait for $CRD to be deployed:" && SECONDS=0 && TIMEOUT=60 && until kubectl get $CRD -n $KUBE_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1 || [ $SECONDS -ge $TIMEOUT ]; do echo -n .; sleep 1; done && if [ $SECONDS -ge $TIMEOUT ]; then status_log $TYPE_ERROR "Timeout exceeded, $CRD not deployed after 1 minute"; exit 1; else echo "$CRD deployed"; fi
     status_log $TYPE_SUCCESS "$CRD deployed"
-    status_log $TYPE_SUCCESS "grpl db-file template is deployed"
 
 }
 
@@ -444,23 +444,20 @@ added_internal_datasource_config_to_template() {
 
     ds_type=$1
 
-    database_schema=$(prompt_for_input_with_validation "database schema: " "please provide database schema: " "$non_empty_regex" "database name can't be empty")
-    status_log $TYPE_DEFAULT "database schema: ${database_schema}"
-
     local url=""
     local host="\$(host)"
     local port="\$(port)"
-    local user="\$(user)"
+    local user="\$(username)"
     local password="\$(password)"
     index=0
-    yq -i ".grapi.datasources[$index].name=\"$database_schema\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
-    yq -i ".grapi.datasources[$index].spec.$ds_type.name=\"$database_schema\" | .grapi.datasources[$index].spec.$ds_type.name style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].name=\"\$DATABASE_SCHEMA\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.name=\"\$DATABASE_SCHEMA\" | .grapi.datasources[$index].spec.$ds_type.name style=\"double\"" $template_file_dest
     yq -i ".grapi.datasources[$index].spec.$ds_type.url=\"$url\" | .grapi.datasources[$index].spec.$ds_type.url style=\"double\"" $template_file_dest
     yq -i ".grapi.datasources[$index].spec.$ds_type.host=\"$host\" | .grapi.datasources[$index].spec.$ds_type.host style=\"double\"" $template_file_dest
     yq -i ".grapi.datasources[$index].spec.$ds_type.port=\"$port\" | .grapi.datasources[$index].spec.$ds_type.port style=\"double\"" $template_file_dest
     yq -i ".grapi.datasources[$index].spec.$ds_type.user=\"$user\" | .grapi.datasources[$index].spec.$ds_type.user style=\"double\"" $template_file_dest
     yq -i ".grapi.datasources[$index].spec.$ds_type.password=\"$password\" | .grapi.datasources[$index].spec.$ds_type.password style=\"double\"" $template_file_dest
-    yq -i ".grapi.datasources[$index].spec.$ds_type.database=\"$database_schema\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.database=\"\$DATABASE_SCHEMA\"" $template_file_dest
 
 }
 
@@ -484,6 +481,7 @@ valid_args=(
     "KUBE_NS"
     "DATA_SOURCES"
     "DISCOVERIES"
+    "DATABASE_SCHEMA"
   )
 
 # check if values are already passed form terminal
@@ -566,7 +564,9 @@ fi
 
 # for all other cases
 template_file_dest="/tmp/db.yaml"
+kubeblocks_template_file_dest="/tmp/kube_db.yaml"
 cp "$GRPL_WORKDIR/template-files/db.yaml" $template_file_dest
+cp "$GRPL_WORKDIR/files/db.yaml" $kubeblocks_template_file_dest
 
 #check if input from params is valid or not
 if [ "${DB_TYPE}" != "" ]; then 
@@ -583,7 +583,7 @@ if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
         check_and_install_kbcli
     fi
 
-    if ! kbcli cluster list 2>/dev/null || ! kbcli kubeblocks status; then
+    if kbcli cluster list | grep "No cluster found"; then
 
         status_log $TYPE_INFO "installing kubeblocks"
         check_and_install_kubeblocks
@@ -593,7 +593,8 @@ if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
             kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
         done
 
-        kubectl apply -n ${KUBE_NS} -f $GRPL_WORKDIR/files/db.yaml
+        yq -i ".metadata.name=\"$GRAS_NAME\"" $kubeblocks_template_file_dest
+        kubectl apply -n ${KUBE_NS} -f $kubeblocks_template_file_dest
         status_log $TYPE_INFO "created internal db"
     fi
 
@@ -617,32 +618,6 @@ elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
 
     # TODO: Check if data source connection details are correct or not
 
-fi
-
-# check for init-containers
-cli_args=$@
-if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
-    yq eval 'del(.grapi.initContainers)' -i $template_file_dest
-else
-    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
-
-        take_source_data_url
-        mysql_init_container_bash_script="['bash', '-c', 'sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"show databases;\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"use $database_schema;\" 2>/dev/null; then echo \"database already exists...\"; else curl -o /tmp/$database_schema.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$database_schema.sql; rm /tmp/$database_schema.sql; fi']"
-        yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
-        export command=$mysql_init_container_bash_script
-
-    elif [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
-
-        take_source_data_url
-        postgres_init_container_bash_script="['bash', '-c', 'sleep 5; while ! psql -h \$(host) -p \$(port) -U \$(username) -d postgres -c \"\\l\" >/dev/null 2>&1; do echo -n .; sleep 2; done; if psql -h \$(host) -p \$(port) -U \$(username) -c \"SELECT datname  FROM pg_database  WHERE datname = $database_schema;\" >/dev/null 2>&1; then echo \"database already exists...\"; else curl -o /tmp/$database_schema.sql $SOURCE_DATA PGPASSWORD=\$(password) psql -h \$(host) -p \$(port) -U \$(username) -d $database_schema -f /tmp/$database_schema.sql; rm /tmp/$database_schema.sql; fi']"
-        yq -i ".grapi.initContainers[0].spec.image=\"postgres\"" $template_file_dest
-        export command=$postgres_init_container_bash_script
-
-    fi
-
-    if [[ "$SOURCE_DATA" == "" ]]; then
-        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
-    fi
 fi
 
 # discovery based checks
@@ -671,8 +646,37 @@ else
     take_relation_input "${models_name[@]}"
 fi
 
+DATABASE_SCHEMA=$(if [ "${DATABASE_SCHEMA}" != "" ]; then echo ${DATABASE_SCHEMA}; else prompt_for_input_with_validation "DATABASE_SCHEMA: " "please provide DATABASE SCHEMA: " "$non_empty_regex" "DATABASE_SCHEMA name can't be empty"; fi) || exit $?
+status_log $TYPE_DEFAULT "DATABASE_SCHEMA: ${DATABASE_SCHEMA}"
+export DATABASE_SCHEMA=$DATABASE_SCHEMA
+
+# check for init-containers
+cli_args=$@
+if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
+    yq eval 'del(.grapi.initContainers)' -i $template_file_dest
+else
+    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+
+        take_source_data_url
+        mysql_init_container_bash_script="['bash', '-c', 'sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"show databases;\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \"use $DATABASE_SCHEMA;\" 2>/dev/null; then echo \"database already exists...\"; else curl -o /tmp/$DATABASE_SCHEMA.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$DATABASE_SCHEMA.sql; rm /tmp/$DATABASE_SCHEMA.sql; fi']"
+        yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
+        export command=$mysql_init_container_bash_script
+
+    elif [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
+
+        take_source_data_url
+        postgres_init_container_bash_script="['bash', '-c', 'sleep 5; while ! psql -h \$(host) -p \$(port) -U \$(username) -d postgres -c \"\\l\" >/dev/null 2>&1; do echo -n .; sleep 2; done; if psql -h \$(host) -p \$(port) -U \$(username) -c \"SELECT datname  FROM pg_database  WHERE datname = $DATABASE_SCHEMA;\" >/dev/null 2>&1; then echo \"database already exists...\"; else curl -o /tmp/$DATABASE_SCHEMA.sql $SOURCE_DATA PGPASSWORD=\$(password) psql -h \$(host) -p \$(port) -U \$(username) -d $DATABASE_SCHEMA -f /tmp/$DATABASE_SCHEMA.sql; rm /tmp/$DATABASE_SCHEMA.sql; fi']"
+        yq -i ".grapi.initContainers[0].spec.image=\"postgres\"" $template_file_dest
+        export command=$postgres_init_container_bash_script
+
+    fi
+
+    if [[ "$SOURCE_DATA" == "" ]]; then
+        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
+    fi
+fi
+
 input_guim_option
-export database_schema=$database_schema
 substitute_env_vars_in_template
 # at this point our template manifest is ready at /tmp/db.yaml
 # we'll deploy it now
