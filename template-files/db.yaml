@@ -21,6 +21,6 @@ grapi:
 gruim:
   ssl: true
   sslissuer: letsencrypt-grapple-demo
-  style: '{"colors":{"primary":{"DEFAULT":"#ff7300","fg":"#fff"},"accent":{"DEFAULT":"#808080","fg":"#fff"}}}'
+  style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
   config: ""
   additionalpackages: ""
