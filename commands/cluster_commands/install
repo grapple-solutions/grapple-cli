@@ -199,7 +199,7 @@ config:
   grapiversion: "0.0.1"
   gruimversion: "0.0.1"
   dev: "false"
-  ssl: "true"
+  ssl: "false"
   sslissuer: "letsencrypt-grapple-demo"
   CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}
   CIVO_CLUSTER_NAME: ${CIVO_CLUSTER_NAME}

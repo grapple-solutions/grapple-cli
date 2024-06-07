@@ -119,7 +119,7 @@ config:
   clusterdomain: ${GRAPPLE_DNS}.grapple-demo.com
   grapiversion: "0.0.1"
   gruimversion: "0.0.1"
-  ssl: "true"
+  ssl: false
   sslissuer: "letsencrypt-grapple-demo"
   CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}
   CIVO_CLUSTER_NAME: ${CIVO_CLUSTER_NAME}
