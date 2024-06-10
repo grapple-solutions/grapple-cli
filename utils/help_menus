@@ -912,6 +912,7 @@ Variable:
     KUBE_NS: namespace to deploy gras, default ns is 'default'
     DATA_SOURCES: data sources configs
     DISCOVERIES: discoveries configs
+    DATABASE_SCHEMA: database schema you want to use
     
 "
 

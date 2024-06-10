@@ -6,15 +6,13 @@ grapi:
   ssl: true
   sslissuer: letsencrypt-grapple-demo
   autorestartgruim: true
-  extraSecrets: 
-  - grappledb-conn-credential
   initContainers:
   - name: init-db
     spec:
       name: init-db
-      command: $command
+      command: ['bash', '-c', "$command"]
   restcruds:
-  - name: "classicmodelsrc"
+  - name: "$DATABASE_SCHEMA"
     spec:
       datasource: "$DATABASE_SCHEMA"
 
