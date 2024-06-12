@@ -656,16 +656,18 @@ export DATABASE_SCHEMA=$DATABASE_SCHEMA
 
 if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
 
-    take_source_data_url
-    mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"SET @tablename := (select table_name from information_schema.tables where table_type = 'BASE TABLE' and table_schema = '$DATABASE_SCHEMA' limit 1); set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ; execute stmt ;\\\" 2>/dev/null; then echo \\\"database already exists...\\\"; else curl -o /tmp/$DATABASE_SCHEMA.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$DATABASE_SCHEMA.sql; rm /tmp/$DATABASE_SCHEMA.sql; fi"
-
-
-    yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
-    export command=$mysql_init_container_bash_script
-
     cli_args=$@
     if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
         yq eval 'del(.grapi.initContainers)' -i $template_file_dest
+    else
+
+        take_source_data_url
+        mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"SET @tablename := (select table_name from information_schema.tables where table_type = 'BASE TABLE' and table_schema = '$DATABASE_SCHEMA' limit 1); set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ; execute stmt ;\\\" 2>/dev/null; then echo \\\"database already exists...\\\"; else curl -o /tmp/$DATABASE_SCHEMA.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$DATABASE_SCHEMA.sql; rm /tmp/$DATABASE_SCHEMA.sql; fi"
+
+
+        yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
+        export command=$mysql_init_container_bash_script
+
     fi
 
 elif [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
