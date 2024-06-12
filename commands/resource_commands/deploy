@@ -511,7 +511,7 @@ status_log $TYPE_DEFAULT "GRAS_NAME: ${GRAS_NAME}"
 if [ "${GRAS_TEMPLATE}" != "" ]; then 
   is_correct_grapple_applicationsets_provided $GRAS_TEMPLATE 
 fi
-GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED $DB_POSTGRES_MODEL_BASED $DB_POSTGRES_DISCOVERY_BASED; fi) || exit $?
+GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED; fi) || exit $?
 status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 
@@ -601,8 +601,6 @@ if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
 
     if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
         added_internal_datasource_config_to_template "mysql"
-    else
-        added_internal_datasource_config_to_template "postgres"
     fi
 
     #updating secrets name
@@ -616,8 +614,6 @@ elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
     else
         if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
             take_datasource_input_from_cli "mysql"
-        else
-            take_datasource_input_from_cli "postgres"
         fi
     fi 
 
@@ -626,14 +622,14 @@ elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
 fi
 
 # discovery based checks
-if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
+if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
     
     if [[ "$DISCOVERIES" != "" ]]; then
         transform_discoveries_input_to_yaml $DISCOVERIES
     else
         take_discovery_input_from_cli
     fi
-elif  [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
+elif  [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
     # input model
     if [[ $MODELS == "" ]]; then
         take_model_input_from_cli
@@ -642,6 +638,7 @@ elif  [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLAT
         # 'customers:{"base":"Entity","name":"customers","properties":{"city":{"type":"string"},"generatedValue":{"generated":true,"defaultFn":999,"id":false,"required":true,"type":"number"}}}|employees:{"base":"Entity","name":"employees","properties":{"country":{"type":"string"},"creditLimit":{"type":"number"}}}'
         transform_model_input_to_yaml $MODELS
     fi 
+
 fi
 
 cli_args=$@
@@ -660,7 +657,7 @@ cli_args=$@
 if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
     yq eval 'del(.grapi.initContainers)' -i $template_file_dest
 else
-    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
 
         take_source_data_url
         mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"SET @tablename := (select table_name from information_schema.tables where table_type = 'BASE TABLE' and table_schema = '$DATABASE_SCHEMA' limit 1); set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ; execute stmt ;\\\" 2>/dev/null; then echo \\\"database already exists...\\\"; else curl -o /tmp/$DATABASE_SCHEMA.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$DATABASE_SCHEMA.sql; rm /tmp/$DATABASE_SCHEMA.sql; fi"
@@ -669,18 +666,19 @@ else
         yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
         export command=$mysql_init_container_bash_script
 
-    elif [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
 
-        take_source_data_url
-        postgres_init_container_bash_script="['bash', '-c', 'sleep 5; while ! psql -h \$(host) -p \$(port) -U \$(username) -d postgres -c \"\\l\" >/dev/null 2>&1; do echo -n .; sleep 2; done; if psql -h \$(host) -p \$(port) -U \$(username) -c \"SELECT datname  FROM pg_database  WHERE datname = $DATABASE_SCHEMA;\" >/dev/null 2>&1; then echo \"database already exists...\"; else curl -o /tmp/$DATABASE_SCHEMA.sql $SOURCE_DATA PGPASSWORD=\$(password) psql -h \$(host) -p \$(port) -U \$(username) -d $DATABASE_SCHEMA -f /tmp/$DATABASE_SCHEMA.sql; rm /tmp/$DATABASE_SCHEMA.sql; fi']"
-        yq -i ".grapi.initContainers[0].spec.image=\"postgres\"" $template_file_dest
-        export command=$postgres_init_container_bash_script
+    elif [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
+    
+        mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"CREATE DATABASE IF NOT EXISTS ${DBSCHEMA};\\\";"
+        yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
+        export command=$mysql_init_container_bash_script
+        
+        yq -i ".grapi.automigrate=\"true\"" $template_file_dest
+        yq eval 'del(.grapi.discoveredrepos)' -i $template_file_dest
+
 
     fi
 
-    if [[ "$SOURCE_DATA" == "" ]]; then
-        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
-    fi
 fi
 
 ask_guim_enablement
