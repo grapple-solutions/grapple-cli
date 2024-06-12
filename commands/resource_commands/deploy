@@ -666,10 +666,11 @@ if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
     cli_args=$@
     if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
         yq eval 'del(.grapi.initContainers)' -i $template_file_dest
+    fi
 
 elif [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
 
-    mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"CREATE DATABASE IF NOT EXISTS ${DBSCHEMA};\\\";"
+    mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"CREATE DATABASE IF NOT EXISTS ${DATABASE_SCHEMA};\\\";"
     yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
     export command=$mysql_init_container_bash_script
     
