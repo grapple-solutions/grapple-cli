@@ -629,6 +629,9 @@ if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
     else
         take_discovery_input_from_cli
     fi
+
+    yq -i ".grapi.discoveredrepos=true" $template_file_dest
+
 elif  [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
     # input model
     if [[ $MODELS == "" ]]; then
@@ -638,6 +641,8 @@ elif  [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
         # 'customers:{"base":"Entity","name":"customers","properties":{"city":{"type":"string"},"generatedValue":{"generated":true,"defaultFn":999,"id":false,"required":true,"type":"number"}}}|employees:{"base":"Entity","name":"employees","properties":{"country":{"type":"string"},"creditLimit":{"type":"number"}}}'
         transform_model_input_to_yaml $MODELS
     fi 
+
+    yq -i ".grapi.automigrate=true" $template_file_dest
 
 fi
 
@@ -653,7 +658,6 @@ status_log $TYPE_DEFAULT "DATABASE_SCHEMA: ${DATABASE_SCHEMA}"
 export DATABASE_SCHEMA=$DATABASE_SCHEMA
 
 # check for init-containers
-
 if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
 
     cli_args=$@
@@ -675,9 +679,7 @@ elif [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
     mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"CREATE DATABASE IF NOT EXISTS ${DATABASE_SCHEMA};\\\";"
     yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
     export command=$mysql_init_container_bash_script
-    
-    yq -i ".grapi.automigrate=\"true\"" $template_file_dest
-    yq eval 'del(.grapi.discoveredrepos)' -i $template_file_dest
+
 
 
 fi
