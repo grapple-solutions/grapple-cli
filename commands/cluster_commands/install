@@ -237,6 +237,7 @@ fi
 
 
 # Define helm_deploy function 
+loggedOut="false"
 helm_deploy() {
     i=$1
     v=${2:-$GRAPPLE_VERSION}
@@ -246,24 +247,21 @@ helm_deploy() {
       version=""
     fi
 
+    
+
     echo "Deploying $i with version $version"
     GUMSPIN='gum spin --title "Installing ${i} component" --show-output -- '
 
   if ! output=$(eval "${GUMSPIN}helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml"); then
-    if [[ "$output" == *"access denied"* ]]; then
-      output=$(helm registry logout public.ecr.aws/${awsregistry} 2>&1)
-      if [[ "$output" == "Removing login credentials for public.ecr.aws/${awsregistry}" ]]; then
-        helm_deploy $i
-      elif [[ "$output" == "Error: not logged in" ]]; then
-        output=$(helm registry logout public.ecr.aws 2>&1)
-        if [[ "$output" == "Removing login credentials for public.ecr.aws" ]]; then
-          helm_deploy $i
-        else
-          echo $output
-          status_log $TYPE_ERROR "${i} Failed to Installed"
-          exit 1
-        fi
-      fi
+    
+    if [ "$loggedOut" = "true" ]; then
+      exit 1
+    fi
+
+    if helm registry logout public.ecr.aws/${awsregistry} >/dev/null 2>&1; then
+      loggedOut="true"
+      status_log $TYPE_INFO "logged out of public.ecr.aws/${awsregistry} registry"
+      helm_deploy $i
     else 
       echo "${i} Failed to Installed"
       status_log $TYPE_ERROR "${i} Failed to Installed"
