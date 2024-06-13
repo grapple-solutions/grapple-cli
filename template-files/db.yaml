@@ -5,7 +5,6 @@ grapi:
   ingress: true
   ssl: false
   sslissuer: letsencrypt-grapple-demo
-  autorestartgruim: true
   initContainers:
   - name: init-db
     spec:

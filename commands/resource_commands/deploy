@@ -286,7 +286,7 @@ take_datasource_input_from_cli() {
         yq -i ".grapi.datasources[$index].spec.$ds_type.name=\"$datasource\" | .grapi.datasources[$index].spec.$ds_type.name style=\"double\"" $template_file_dest
         yq -i ".grapi.datasources[$index].spec.$ds_type.url=\"$url\" | .grapi.datasources[$index].spec.$ds_type.url style=\"double\"" $template_file_dest
         yq -i ".grapi.datasources[$index].spec.$ds_type.host=\"$host\" | .grapi.datasources[$index].spec.$ds_type.host style=\"double\"" $template_file_dest
-        yq -i ".grapi.datasources[$index].spec.$ds_type.port=$port" $template_file_dest
+        yq -i ".grapi.datasources[$index].spec.$ds_type.port=\"$port\" | .grapi.datasources[$index].spec.$ds_type.port style=\"double\" " $template_file_dest
         yq -i ".grapi.datasources[$index].spec.$ds_type.user=\"$user\" | .grapi.datasources[$index].spec.$ds_type.user style=\"double\"" $template_file_dest
         yq -i ".grapi.datasources[$index].spec.$ds_type.password=\"$password\" | .grapi.datasources[$index].spec.$ds_type.password style=\"double\"" $template_file_dest
         yq -i ".grapi.datasources[$index].spec.$ds_type.database=\"\$DATABASE_SCHEMA\"" $template_file_dest
@@ -297,59 +297,84 @@ take_discovery_input_from_cli() {
 
     index=0
 
-    local discovery=$(prompt_for_input_with_validation "discovery: " "please provide discovery name: " "$non_empty_regex" "discovery name can't be empty")
-    status_log $TYPE_DEFAULT "discovery: ${discovery}"    
+    if [ "$AUTO_DISCOVERY" == "" ]; then 
+    
+        status_log $TYPE_INFO "Do you want the discovery to be created automatically?"
+        local disc=$(gum choose "Yes" "No") || exit $?
+        
+        if [ "$disc" == "No" ]; then
+            AUTO_DISCOVERY="false"
+        else
+            AUTO_DISCOVERY="true"
+        fi
 
-    local all_models=$(prompt_for_input_with_validation "Discover all models without prompting users to select? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
-    if [[ $all_models == "y" || $all_models == "Y" ]]; then
-        all="true"
-    else
-        all="false"
-        models=$(prompt_for_explicit_input_with_validation "models: " "please provide models(optional) e.g: table1,table2: " "$.*" "")
-        status_log $TYPE_DEFAULT "models: ${models}"    
     fi
-    status_log $TYPE_DEFAULT "all: ${all}"  
 
-    local disableCamelCase="false"
+    
+    if [ "$AUTO_DISCOVERY" == "true" ]; then
+    
+        yq -i ".grapi.discoveries[$index].name=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].name style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.all=true" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.disableCamelCase=false" $template_file_dest 
+        yq -i ".grapi.discoveries[$index].spec.schema=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.schema style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.dataSource=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.dataSource style=\"double\"" $template_file_dest
 
-    local optionalId_value=$(prompt_for_input_with_validation "mark id property as optional field? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
-    if [[ $optionalId_value == "y" || $optionalId_value == "Y" ]]; then
-        optionalId="true"
-    else
-        optionalId="false"
+    else 
+
+        local discovery=$(prompt_for_input_with_validation "discovery: " "please provide discovery name: " "$non_empty_regex" "discovery name can't be empty")
+        status_log $TYPE_DEFAULT "discovery: ${discovery}"    
+
+        local all_models=$(prompt_for_input_with_validation "Discover all models without prompting users to select? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+        if [[ $all_models == "y" || $all_models == "Y" ]]; then
+            all="true"
+        else
+            all="false"
+            models=$(prompt_for_explicit_input_with_validation "models: " "please provide models(optional) e.g: table1,table2: " "$.*" "")
+            status_log $TYPE_DEFAULT "models: ${models}"    
+        fi
+        status_log $TYPE_DEFAULT "all: ${all}"  
+
+        local disableCamelCase="false"
+
+        local optionalId_value=$(prompt_for_input_with_validation "mark id property as optional field? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+        if [[ $optionalId_value == "y" || $optionalId_value == "Y" ]]; then
+            optionalId="true"
+        else
+            optionalId="false"
+        fi
+        status_log $TYPE_DEFAULT "optionalId: ${optionalId}"  
+
+        local outDir=$(prompt_for_explicit_input_with_validation "outDir: " "please provide outDir(optional): " "$.*" "")
+        status_log $TYPE_DEFAULT "outDir: ${outDir}"    
+
+        local relations_value=$(prompt_for_input_with_validation "discover and create relations? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+        if [[ $relations_value == "y" || $relations_value == "Y" ]]; then
+            relations="true"
+        else
+            relations="false"
+        fi
+        status_log $TYPE_DEFAULT "relations: ${relations}"    
+
+        local views_value=$(prompt_for_input_with_validation "discover views? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+        if [[ $views_value == "y" || $views_value == "Y" ]]; then
+            views="true"
+        else
+            views="false"
+        fi
+        status_log $TYPE_DEFAULT "views: ${views}"  
+
+        yq -i ".grapi.discoveries[$index].name=\"$discovery\" | .grapi.discoveries[$index].name style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.all=$all" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.views=$views" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.relations=$relations" $template_file_dest 
+        yq -i ".grapi.discoveries[$index].spec.optionalId=$optionalId" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.disableCamelCase=$disableCamelCase" $template_file_dest 
+        yq -i ".grapi.discoveries[$index].spec.schema=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.schema style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.models=\"$models\" | .grapi.discoveries[$index].spec.models style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.outDir=\"$outDir\" | .grapi.discoveries[$index].spec.outDir style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.dataSource=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.dataSource style=\"double\"" $template_file_dest
+
     fi
-    status_log $TYPE_DEFAULT "optionalId: ${optionalId}"  
-
-    local outDir=$(prompt_for_explicit_input_with_validation "outDir: " "please provide outDir(optional): " "$.*" "")
-    status_log $TYPE_DEFAULT "outDir: ${outDir}"    
-
-    local relations_value=$(prompt_for_input_with_validation "discover and create relations? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
-    if [[ $relations_value == "y" || $relations_value == "Y" ]]; then
-        relations="true"
-    else
-        relations="false"
-    fi
-    status_log $TYPE_DEFAULT "relations: ${relations}"    
-
-    local views_value=$(prompt_for_input_with_validation "discover views? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
-    if [[ $views_value == "y" || $views_value == "Y" ]]; then
-        views="true"
-    else
-        views="false"
-    fi
-    status_log $TYPE_DEFAULT "views: ${views}"  
-
-    yq -i ".grapi.discoveries[$index].name=\"$discovery\" | .grapi.discoveries[$index].name style=\"double\"" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.all=$all" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.views=$views" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.relations=$relations" $template_file_dest 
-    yq -i ".grapi.discoveries[$index].spec.optionalId=$optionalId" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.disableCamelCase=$disableCamelCase" $template_file_dest 
-    yq -i ".grapi.discoveries[$index].spec.schema=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.schema style=\"double\"" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.models=\"$models\" | .grapi.discoveries[$index].spec.models style=\"double\"" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.outDir=\"$outDir\" | .grapi.discoveries[$index].spec.outDir style=\"double\"" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.dataSource=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.dataSource style=\"double\"" $template_file_dest
-
 
 }
 
@@ -479,9 +504,10 @@ valid_args=(
     "MODELS"
     "RELATIONS"
     "KUBE_NS"
-    "DATA_SOURCES"
+    "DATASOURCES"
     "DISCOVERIES"
     "DATABASE_SCHEMA"
+    "AUTO_DISCOVERY"
   )
 
 # check if values are already passed form terminal
@@ -511,7 +537,7 @@ status_log $TYPE_DEFAULT "GRAS_NAME: ${GRAS_NAME}"
 if [ "${GRAS_TEMPLATE}" != "" ]; then 
   is_correct_grapple_applicationsets_provided $GRAS_TEMPLATE 
 fi
-GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED $DB_POSTGRES_MODEL_BASED $DB_POSTGRES_DISCOVERY_BASED; fi) || exit $?
+GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED; fi) || exit $?
 status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 
@@ -601,19 +627,19 @@ if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
 
     if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
         added_internal_datasource_config_to_template "mysql"
-    else
-        added_internal_datasource_config_to_template "postgres"
     fi
+
+    #updating secrets name
+    yq -i ".grapi.extraSecrets[0]=\"$GRAS_NAME-conn-credential\"" $template_file_dest
+
 
 elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
 
-    if [[ $DATA_SOURCES != "" ]]; then
-        transform_datasources_input_to_yaml $DATA_SOURCES
+    if [[ $DATASOURCES != "" ]]; then
+        transform_datasources_input_to_yaml $DATASOURCES
     else
         if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
             take_datasource_input_from_cli "mysql"
-        else
-            take_datasource_input_from_cli "postgres"
         fi
     fi 
 
@@ -622,14 +648,17 @@ elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
 fi
 
 # discovery based checks
-if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
+if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
     
     if [[ "$DISCOVERIES" != "" ]]; then
         transform_discoveries_input_to_yaml $DISCOVERIES
     else
         take_discovery_input_from_cli
     fi
-elif  [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
+
+    yq -i ".grapi.discoveredrepos=true" $template_file_dest
+
+elif  [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
     # input model
     if [[ $MODELS == "" ]]; then
         take_model_input_from_cli
@@ -638,6 +667,9 @@ elif  [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLAT
         # 'customers:{"base":"Entity","name":"customers","properties":{"city":{"type":"string"},"generatedValue":{"generated":true,"defaultFn":999,"id":false,"required":true,"type":"number"}}}|employees:{"base":"Entity","name":"employees","properties":{"country":{"type":"string"},"creditLimit":{"type":"number"}}}'
         transform_model_input_to_yaml $MODELS
     fi 
+
+    yq -i ".grapi.automigrate=true" $template_file_dest
+
 fi
 
 cli_args=$@
@@ -647,16 +679,17 @@ else
     take_relation_input_from_cli "${models_name[@]}"
 fi
 
-DATABASE_SCHEMA=$(if [ "${DATABASE_SCHEMA}" != "" ]; then echo ${DATABASE_SCHEMA}; else prompt_for_input_with_validation "DATABASE_SCHEMA: " "please provide DATABASE SCHEMA: " "$non_empty_regex" "DATABASE_SCHEMA name can't be empty"; fi) || exit $?
+DATABASE_SCHEMA=$(if [ "${DATABASE_SCHEMA}" != "" ]; then echo ${DATABASE_SCHEMA}; else prompt_for_input_with_validation "DATABASE_SCHEMA: " "please provide DATABASE SCHEMA: " "$non_empty_regex" "DATABASE_SCHEMA name can'tdi be empty"; fi) || exit $?
 status_log $TYPE_DEFAULT "DATABASE_SCHEMA: ${DATABASE_SCHEMA}"
 export DATABASE_SCHEMA=$DATABASE_SCHEMA
 
 # check for init-containers
-cli_args=$@
-if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
-    yq eval 'del(.grapi.initContainers)' -i $template_file_dest
-else
-    if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
+
+    cli_args=$@
+    if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
+        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
+    else
 
         take_source_data_url
         mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"SET @tablename := (select table_name from information_schema.tables where table_type = 'BASE TABLE' and table_schema = '$DATABASE_SCHEMA' limit 1); set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ; execute stmt ;\\\" 2>/dev/null; then echo \\\"database already exists...\\\"; else curl -o /tmp/$DATABASE_SCHEMA.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$DATABASE_SCHEMA.sql; rm /tmp/$DATABASE_SCHEMA.sql; fi"
@@ -665,22 +698,17 @@ else
         yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
         export command=$mysql_init_container_bash_script
 
-    elif [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_MODEL_BASED"  ]] || [[ "$GRAS_TEMPLATE" == "$DB_POSTGRES_DISCOVERY_BASED"  ]]; then
-
-        take_source_data_url
-        postgres_init_container_bash_script="['bash', '-c', 'sleep 5; while ! psql -h \$(host) -p \$(port) -U \$(username) -d postgres -c \"\\l\" >/dev/null 2>&1; do echo -n .; sleep 2; done; if psql -h \$(host) -p \$(port) -U \$(username) -c \"SELECT datname  FROM pg_database  WHERE datname = $DATABASE_SCHEMA;\" >/dev/null 2>&1; then echo \"database already exists...\"; else curl -o /tmp/$DATABASE_SCHEMA.sql $SOURCE_DATA PGPASSWORD=\$(password) psql -h \$(host) -p \$(port) -U \$(username) -d $DATABASE_SCHEMA -f /tmp/$DATABASE_SCHEMA.sql; rm /tmp/$DATABASE_SCHEMA.sql; fi']"
-        yq -i ".grapi.initContainers[0].spec.image=\"postgres\"" $template_file_dest
-        export command=$postgres_init_container_bash_script
-
     fi
 
-    if [[ "$SOURCE_DATA" == "" ]]; then
-        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
-    fi
+elif [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
+
+    mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"CREATE DATABASE IF NOT EXISTS ${DATABASE_SCHEMA};\\\";"
+    yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
+    export command=$mysql_init_container_bash_script
+
+
+
 fi
-
-#updating secrets name
-yq -i ".grapi.extraSecrets[0]=\"$GRAS_NAME-conn-credential\"" $template_file_dest
 
 ask_guim_enablement
 substitute_env_vars_in_template
