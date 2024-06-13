@@ -297,59 +297,84 @@ take_discovery_input_from_cli() {
 
     index=0
 
-    local discovery=$(prompt_for_input_with_validation "discovery: " "please provide discovery name: " "$non_empty_regex" "discovery name can't be empty")
-    status_log $TYPE_DEFAULT "discovery: ${discovery}"    
+    if [ "$AUTO_DISCOVERY" == "" ]; then 
+    
+        status_log $TYPE_INFO "Do you want the discovery to be created automatically?"
+        local disc=$(gum choose "Yes" "No") || exit $?
+        
+        if [ "$disc" == "No" ]; then
+            AUTO_DISCOVERY="false"
+        else
+            AUTO_DISCOVERY="true"
+        fi
 
-    local all_models=$(prompt_for_input_with_validation "Discover all models without prompting users to select? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
-    if [[ $all_models == "y" || $all_models == "Y" ]]; then
-        all="true"
-    else
-        all="false"
-        models=$(prompt_for_explicit_input_with_validation "models: " "please provide models(optional) e.g: table1,table2: " "$.*" "")
-        status_log $TYPE_DEFAULT "models: ${models}"    
     fi
-    status_log $TYPE_DEFAULT "all: ${all}"  
 
-    local disableCamelCase="false"
+    
+    if [ "$AUTO_DISCOVERY" == "true" ]; then
+    
+        yq -i ".grapi.discoveries[$index].name=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].name style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.all=true" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.disableCamelCase=false" $template_file_dest 
+        yq -i ".grapi.discoveries[$index].spec.schema=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.schema style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.dataSource=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.dataSource style=\"double\"" $template_file_dest
 
-    local optionalId_value=$(prompt_for_input_with_validation "mark id property as optional field? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
-    if [[ $optionalId_value == "y" || $optionalId_value == "Y" ]]; then
-        optionalId="true"
-    else
-        optionalId="false"
+    else 
+
+        local discovery=$(prompt_for_input_with_validation "discovery: " "please provide discovery name: " "$non_empty_regex" "discovery name can't be empty")
+        status_log $TYPE_DEFAULT "discovery: ${discovery}"    
+
+        local all_models=$(prompt_for_input_with_validation "Discover all models without prompting users to select? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+        if [[ $all_models == "y" || $all_models == "Y" ]]; then
+            all="true"
+        else
+            all="false"
+            models=$(prompt_for_explicit_input_with_validation "models: " "please provide models(optional) e.g: table1,table2: " "$.*" "")
+            status_log $TYPE_DEFAULT "models: ${models}"    
+        fi
+        status_log $TYPE_DEFAULT "all: ${all}"  
+
+        local disableCamelCase="false"
+
+        local optionalId_value=$(prompt_for_input_with_validation "mark id property as optional field? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+        if [[ $optionalId_value == "y" || $optionalId_value == "Y" ]]; then
+            optionalId="true"
+        else
+            optionalId="false"
+        fi
+        status_log $TYPE_DEFAULT "optionalId: ${optionalId}"  
+
+        local outDir=$(prompt_for_explicit_input_with_validation "outDir: " "please provide outDir(optional): " "$.*" "")
+        status_log $TYPE_DEFAULT "outDir: ${outDir}"    
+
+        local relations_value=$(prompt_for_input_with_validation "discover and create relations? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+        if [[ $relations_value == "y" || $relations_value == "Y" ]]; then
+            relations="true"
+        else
+            relations="false"
+        fi
+        status_log $TYPE_DEFAULT "relations: ${relations}"    
+
+        local views_value=$(prompt_for_input_with_validation "discover views? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
+        if [[ $views_value == "y" || $views_value == "Y" ]]; then
+            views="true"
+        else
+            views="false"
+        fi
+        status_log $TYPE_DEFAULT "views: ${views}"  
+
+        yq -i ".grapi.discoveries[$index].name=\"$discovery\" | .grapi.discoveries[$index].name style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.all=$all" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.views=$views" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.relations=$relations" $template_file_dest 
+        yq -i ".grapi.discoveries[$index].spec.optionalId=$optionalId" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.disableCamelCase=$disableCamelCase" $template_file_dest 
+        yq -i ".grapi.discoveries[$index].spec.schema=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.schema style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.models=\"$models\" | .grapi.discoveries[$index].spec.models style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.outDir=\"$outDir\" | .grapi.discoveries[$index].spec.outDir style=\"double\"" $template_file_dest
+        yq -i ".grapi.discoveries[$index].spec.dataSource=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.dataSource style=\"double\"" $template_file_dest
+
     fi
-    status_log $TYPE_DEFAULT "optionalId: ${optionalId}"  
-
-    local outDir=$(prompt_for_explicit_input_with_validation "outDir: " "please provide outDir(optional): " "$.*" "")
-    status_log $TYPE_DEFAULT "outDir: ${outDir}"    
-
-    local relations_value=$(prompt_for_input_with_validation "discover and create relations? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
-    if [[ $relations_value == "y" || $relations_value == "Y" ]]; then
-        relations="true"
-    else
-        relations="false"
-    fi
-    status_log $TYPE_DEFAULT "relations: ${relations}"    
-
-    local views_value=$(prompt_for_input_with_validation "discover views? " "(y/N)" "$non_empty_regex" "please select valid value") || exit $?
-    if [[ $views_value == "y" || $views_value == "Y" ]]; then
-        views="true"
-    else
-        views="false"
-    fi
-    status_log $TYPE_DEFAULT "views: ${views}"  
-
-    yq -i ".grapi.discoveries[$index].name=\"$discovery\" | .grapi.discoveries[$index].name style=\"double\"" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.all=$all" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.views=$views" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.relations=$relations" $template_file_dest 
-    yq -i ".grapi.discoveries[$index].spec.optionalId=$optionalId" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.disableCamelCase=$disableCamelCase" $template_file_dest 
-    yq -i ".grapi.discoveries[$index].spec.schema=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.schema style=\"double\"" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.models=\"$models\" | .grapi.discoveries[$index].spec.models style=\"double\"" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.outDir=\"$outDir\" | .grapi.discoveries[$index].spec.outDir style=\"double\"" $template_file_dest
-    yq -i ".grapi.discoveries[$index].spec.dataSource=\"\$DATABASE_SCHEMA\" | .grapi.discoveries[$index].spec.dataSource style=\"double\"" $template_file_dest
-
 
 }
 
@@ -482,6 +507,7 @@ valid_args=(
     "DATASOURCES"
     "DISCOVERIES"
     "DATABASE_SCHEMA"
+    "AUTO_DISCOVERY"
   )
 
 # check if values are already passed form terminal

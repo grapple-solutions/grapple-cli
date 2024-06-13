@@ -913,6 +913,7 @@ Variable:
     DATA_SOURCES: data sources configs
     DISCOVERIES: discoveries configs
     DATABASE_SCHEMA: database schema you want to use
+    AUTO_DISCOVERY: to enable auto discovery
     
 "
 
