@@ -56,6 +56,7 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
+  CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
   if [ "${CIVO_CLUSTER_ID}" = "" ] || [ "${CIVO_MASTER_IP}" = "" ]; then
     # first check if civo is installed or not, if not? then install it
     check_and_install_civo
@@ -81,7 +82,6 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
     extract_kubectl_cli_version
 
     # if a CIVO cluster was selected, pre-set the configuration
-    CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
     CIVO_CLUSTER_ID=$(gum spin --title "fetching cluster id of ${CIVO_CLUSTER} cluster" --show-output -- civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
 
     GRAPPLE_DNS=${CIVO_CLUSTER}
@@ -100,6 +100,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   CIVO_MASTER_IP=$(if [ "${CIVO_MASTER_IP}" != "" ]; then echo ${CIVO_MASTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
   echo "selected civo master ip: ${CIVO_MASTER_IP}"
 
+  status_log $TYPE_INFO "$CIVO_EMAIL_ADDRESS"
   #check if input from params is valid or not
   if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then 
     is_value_correct_wrt_regex $CIVO_EMAIL_ADDRESS $email_regex "Invalid email address format. Please try again"
