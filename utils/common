@@ -164,7 +164,6 @@ extract_input_params_from_cli() {
           done
 
           if  $valid; then
-              status_log $TYPE_INFO "$config_param"
               export $config_param
           else
               status_log $TYPE_ERROR "Error: $key is not a valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
