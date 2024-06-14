@@ -56,7 +56,7 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
-  CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
+
   if [ "${CIVO_CLUSTER_ID}" = "" ] || [ "${CIVO_MASTER_IP}" = "" ]; then
     # first check if civo is installed or not, if not? then install it
     check_and_install_civo
@@ -86,11 +86,12 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
     GRAPPLE_DNS=${CIVO_CLUSTER}
   else
-    GRAPPLE_DNS=${CIVO_CLUSTER_NAME}
+    GRAPPLE_DNS=${CIVO_CLUSTER}
   fi
 
   GRAPPLE_DOMAIN=".grapple-demo.com"
-
+  CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
+  
   CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "selected civo cluster ID: ${CIVO_CLUSTER_ID}"
 
