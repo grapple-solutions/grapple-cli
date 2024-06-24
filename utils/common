@@ -138,8 +138,6 @@ extract_input_params_from_file() {
 
 extract_input_params_from_cli() {
 
-  cli_args=$@
-  status_log $TYPE_INFO "$cli_agrs"
   valid_args=$1
   shift
   help_menu_cmd=$1
