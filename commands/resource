@@ -8,12 +8,14 @@ cli_help() {
   exit 0
 }
 
-case "$1" in
+command=$1
+shift
+case "$command" in
   deploy|d)
-    "$GRPL_WORKDIR/commands/resource_commands/deploy" $(echo $@ | sed 's,deploy,,g' | sed 's,d ,,') | tee -ia "$GRPL_WORKDIR/logs/resource_deploy.log"
+    "$GRPL_WORKDIR/commands/resource_commands/deploy" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/resource_deploy.log"
     ;;
   render|r)
-    "$GRPL_WORKDIR/commands/resource_commands/render" $(echo $@ | sed 's,render,,g' | sed 's,r ,,') | tee -ia "$GRPL_WORKDIR/logs/resource_render.log"
+    "$GRPL_WORKDIR/commands/resource_commands/render" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/resource_render.log"
     ;;
   *)
     cli_help

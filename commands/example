@@ -9,12 +9,14 @@ cli_help() {
   exit 0
 }
 
-case "$1" in
+command=$1
+shift
+case "$command" in
   status|s)
-    "$GRPL_WORKDIR/commands/example_commands/status" $(echo $@ | sed 's,status,,g' | sed 's,s ,,') | tee -ia "$GRPL_WORKDIR/logs/example_status.log"
+    "$GRPL_WORKDIR/commands/example_commands/status" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/example_status.log"
     ;;
   deploy|d)
-    "$GRPL_WORKDIR/commands/example_commands/deploy" $(echo $@ | sed 's,deploy,,g' | sed 's,i ,,') | tee -ia "$GRPL_WORKDIR/logs/example_deploy.log"
+    "$GRPL_WORKDIR/commands/example_commands/deploy" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/example_deploy.log"
     ;;
   *)
     cli_help

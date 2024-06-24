@@ -147,8 +147,8 @@ extract_input_params_from_cli() {
 
       arg1=$1
       shift
-
-      # determin which method is used to pass cli params
+      
+      # determine which method is used to pass cli params
       if [[ "$arg1" = *=* ]]; then
           
           config_param="${arg1#--}"
@@ -182,8 +182,6 @@ extract_input_params_from_cli() {
               return 1
           fi
       fi
-
-
 
 
   done
