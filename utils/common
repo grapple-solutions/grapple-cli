@@ -146,6 +146,8 @@ extract_input_params_from_cli() {
   while [[ $# -gt 0 ]]; do
 
       arg1=$1
+      shift
+      
       # determine which method is used to pass cli params
       if [[ "$arg1" = *=* ]]; then
           
@@ -181,8 +183,6 @@ extract_input_params_from_cli() {
           fi
       fi
 
-
-      shift
 
   done
 
