@@ -259,3 +259,15 @@ transform_crds_docs_into_web_docs_format() {
       kubectl explain $base.$obj | transform_crds_docs_into_web_docs_format "$base.$obj" "=== $base.$obj"
     done
 }
+
+
+getGumSpinnerOrLogger() {
+
+  msg=$1
+  if [ -t 0 ]; then
+    echo "gum spin --title \"${msg}\" --show-output -- "
+  else
+    gum log $msg
+  fi
+
+}

@@ -71,19 +71,19 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
     if [ "${CIVO_REGION}" != "" ]; then 
       is_correct_civo_region_provided $CIVO_REGION 
     fi
-    CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
-    civo region use ${CIVO_REGION} | true
 
+    CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else eval "$(getGumSpinnerOrLogger "fetching civo regions") civo region ls -o custom -f code | gum choose"; fi)
+    civo region use ${CIVO_REGION} | true
     if [ "${CIVO_CLUSTER}" != "" ]; then 
       is_correct_civo_cluster_provided $CIVO_CLUSTER 
     fi
-    CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+    CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if civo k8s ls -o custom -f name >/dev/null 2>&1; then eval "$(getGumSpinnerOrLogger "fetching civo regions") civo k8s ls -o custom -f name | gum choose"; else echo ""; fi; fi)
     echo "selected civo cluster: ${CIVO_CLUSTER}"
-    gum spin --title "switching to ${CIVO_CLUSTER}" --show-output -- civo k8s config ${CIVO_CLUSTER} --save --switch
+    eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"
     extract_kubectl_cli_version
 
     # if a CIVO cluster was selected, pre-set the configuration
-    CIVO_CLUSTER_ID=$(gum spin --title "fetching cluster id of ${CIVO_CLUSTER} cluster" --show-output -- civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
+    CIVO_CLUSTER_ID=$(eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER}") civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
 
     GRAPPLE_DNS=${CIVO_CLUSTER}
   else
@@ -125,7 +125,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
   # check if minikube cluster is running or not, if not? then start it
   if ! minikube status | grep "host: Running"; then
       echo "Minikube is not running. Starting Minikube..."
-      if ! gum spin --title "minikube is not running, now starting minikube" --show-output -- minikube start; then
+      if ! eval "$(getGumSpinnerOrLogger  "minikube is not running, now starting minikube") minikube start"; then
         status_log $TYPE_ERROR "Error: minikube failed to start becasue docker or any driver service is not running. Details are listed below"
         minikube start >&2
       fi
@@ -252,9 +252,8 @@ helm_deploy() {
     
 
     echo "Deploying $i with version $version"
-    GUMSPIN='gum spin --title "Installing ${i} component" --show-output -- '
 
-  if ! output=$(eval "${GUMSPIN}helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml"); then
+  if ! output=$(eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml"); then
     
     if [ "$loggedOut" = "true" ]; then
       exit 1
