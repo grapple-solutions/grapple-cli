@@ -9,6 +9,7 @@
 # civo
 # kbcli
 # kubeblocks
+# yq
 
 
 check_and_install_snap() {
@@ -101,9 +102,19 @@ check_and_install_civo() {
     if ! civo version 2>&1; then
         echo "civo cli is required"
         echo "installing civo cli..."
-        gum spin --title "civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
-        status_log $TYPE_INFO "going to move /tmp/civo /usr/local/bin/civo this might take some time"
-        sudo mv /tmp/civo /usr/local/bin/civo
+        if [ $OS == "mac" ]; then 
+            gum spin --title "a prerequisite civo is not installed, now tapping civo" --show-output -- brew tap civo/tools
+            gum spin --title "a prerequisite civo is not installed, now installing civo" --show-output -- brew install civo
+        elif [ $OS == "gnu" ]; then
+            gum spin --title "a prerequisite civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
+            status_log $TYPE_INFO "going to move /tmp/civo /usr/local/bin/civo this might take some time"
+            sudo mv /tmp/civo /usr/local/bin/civo
+        else
+            errMsg="Failed to install a prerequisite helm, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
     fi
  
     extract_civo_cli_version
@@ -137,10 +148,21 @@ check_and_install_kbcli() {
 
     # checks for checking and installing kbcli
     if ! kbcli >/dev/null 2>&1; then
-        gum spin --title "a prerequisite kbcli is not installed, now installing kbcli" --show-output -- curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash 
-        sleep 2
+        echo "kbcli cli is required"
+        echo "installing kbcli cli..."
+        if [ "${OS}" == "mac" ]; then
+            gum spin --title "a prerequisite kbcli is not installed, now tapping kbcli" --show-output -- brew tap apecloud/tap
+            gum spin --title "a prerequisite kbcli is not installed, now installing kbcli" --show-output -- brew install kbcli
+         elif [ "${OS}" == "gnu" ]; then
+            gum spin --title "a prerequisite kbcli is not installed, now installing kbcli" --show-output -- curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash 
+        else
+            errMsg="Failed to install kbcli, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
     fi
-
+       
     extract_kbcli_cli_version
 
 }
