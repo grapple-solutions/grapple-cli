@@ -446,17 +446,6 @@ take_db_file_path() {
     export db_file=$DB_FILE_PATH
 }
 
-take_source_data_url() {
-    
-    # input data source url
-    SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url, press enter to omit" ".*" "please provide valid datasource url"; fi) || exit $?
-    if [[ $SOURCE_DATA != "" ]]; then
-        status_log $TYPE_DEFAULT "SOURCE_DATA: ${SOURCE_DATA}"
-        export testdata_url=$SOURCE_DATA
-    else
-        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
-    fi
-}
 
 substitute_env_vars_in_template() {
 
@@ -564,7 +553,16 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
 
 
     take_db_file_path
-    take_source_data_url
+
+    # input data source url
+    SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url, press enter to omit" ".*" "please provide valid datasource url"; fi) || exit $?
+    if [[ $SOURCE_DATA != "" ]]; then
+        status_log $TYPE_DEFAULT "SOURCE_DATA: ${SOURCE_DATA}"
+        export testdata_url=$SOURCE_DATA
+    else
+        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
+    fi
+
 
     cli_args=$@
     if [[ "${cli_args[@]}" =~ "--RELATIONS" ]] && [[ $RELATIONS == "" ]] ; then
@@ -684,31 +682,32 @@ status_log $TYPE_DEFAULT "DATABASE_SCHEMA: ${DATABASE_SCHEMA}"
 export DATABASE_SCHEMA=$DATABASE_SCHEMA
 
 # check for init-containers
-if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
-
-    cli_args=$@
-    if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
-        yq eval 'del(.grapi.initContainers)' -i $template_file_dest
-    else
-
-        take_source_data_url
-        mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"SET @tablename := (select table_name from information_schema.tables where table_type = 'BASE TABLE' and table_schema = '$DATABASE_SCHEMA' limit 1); set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ; execute stmt ;\\\" 2>/dev/null; then echo \\\"database already exists...\\\"; else curl -o /tmp/$DATABASE_SCHEMA.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$DATABASE_SCHEMA.sql; rm /tmp/$DATABASE_SCHEMA.sql; fi"
-
-
-        yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
-        export command=$mysql_init_container_bash_script
-
-    fi
-
-elif [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
-
+cli_args=$@
+if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
     mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"CREATE DATABASE IF NOT EXISTS ${DATABASE_SCHEMA};\\\";"
     yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
     export command=$mysql_init_container_bash_script
+else
 
+    # input data source url
+    SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url, press enter to omit" ".*" "please provide valid datasource url"; fi) || exit $?
+    if [[ $SOURCE_DATA != "" ]]; then
+        status_log $TYPE_DEFAULT "SOURCE_DATA: ${SOURCE_DATA}"
+        export testdata_url=$SOURCE_DATA
+
+        mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"SET @tablename := (select table_name from information_schema.tables where table_type = 'BASE TABLE' and table_schema = '$DATABASE_SCHEMA' limit 1); set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ; execute stmt ;\\\" 2>/dev/null; then echo \\\"database already exists...\\\"; else curl -o /tmp/$DATABASE_SCHEMA.sql $SOURCE_DATA; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/$DATABASE_SCHEMA.sql; rm /tmp/$DATABASE_SCHEMA.sql; fi"
+
+        yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
+        export command=$mysql_init_container_bash_script
+    else
+        mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"CREATE DATABASE IF NOT EXISTS ${DATABASE_SCHEMA};\\\";"
+        yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
+        export command=$mysql_init_container_bash_script
+    fi
 
 
 fi
+
 
 ask_guim_enablement
 substitute_env_vars_in_template
