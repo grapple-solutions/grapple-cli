@@ -9,6 +9,7 @@
 # civo
 # kbcli
 # kubeblocks
+# yq
 
 
 check_and_install_snap() {
@@ -58,6 +59,7 @@ check_and_install_helm() {
         echo "helm is a prerequisite for this script to run."
         echo "installing helm..."
         if [ $OS == "mac" ]; then 
+            gum spin --title "a prerequisite helm is not installed, now tapping helm" --show-output -- brew tap civo/tools
             gum spin --title "a prerequisite helm is not installed, now installing helm" --show-output -- brew install helm
         elif [ $OS == "gnu" ]; then
             sudo snap refresh >/dev/null 2>&1
@@ -137,10 +139,21 @@ check_and_install_kbcli() {
 
     # checks for checking and installing kbcli
     if ! kbcli >/dev/null 2>&1; then
-        gum spin --title "a prerequisite kbcli is not installed, now installing kbcli" --show-output -- curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash 
-        sleep 2
+        echo "kbcli cli is required"
+        echo "installing kbcli cli..."
+        if [ "${OS}" == "mac" ]; then
+            gum spin --title "a prerequisite kbcli is not installed, now tapping kbcli" --show-output -- brew tap apecloud/tap
+            gum spin --title "a prerequisite kbcli is not installed, now installing kbcli" --show-output -- brew install kbcli
+         elif [ "${OS}" == "gnu" ]; then
+            gum spin --title "a prerequisite kbcli is not installed, now installing kbcli" --show-output -- curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash 
+        else
+            errMsg="Failed to install kbcli, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
     fi
-
+       
     extract_kbcli_cli_version
 
 }
