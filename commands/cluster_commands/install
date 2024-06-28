@@ -38,12 +38,7 @@ valid_args=(
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-
-[ "$1" = "$cli_params" ] && shift && extract_input_params_from_cli $valid_args "grpl c i h" $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--params ,,')
-
-# check if values are already passed form terminal through a file
-# if yes? then store then in the respective vars
-[ "$1" = "$config_file_params" ] && shift && extract_input_params_from_file $valid_args "grpl c i h" $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--configfile ,,')
+extract_input_params_from_cli $valid_args "grpl c i h" $(echo "$@")
 
 
 # verify install target platform
@@ -241,20 +236,20 @@ fi
 # Define helm_deploy function 
 loggedOut="false"
 helm_deploy() {
-    i=$1
-    v=${2:-$GRAPPLE_VERSION}
-    if [ "$v" != "" ]; then 
-      version="--version ${v}"
-    else
-      version=""
-    fi
+  i=$1
+  v=${2:-$GRAPPLE_VERSION}
+  if [ "$v" != "" ]; then 
+    version="--version ${v}"
+  else
+    version=""
+  fi
 
     
 
-    echo "Deploying $i with version $version"
-    GUMSPIN='gum spin --title "Installing ${i} component" --show-output -- '
+  echo "Deploying $i with version $version"
+  status_log $TYPE_INFO "helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names"
 
-  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml" >/dev/null; then
+  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names" >/dev/null; then
     
     if [ "$loggedOut" = "true" ]; then
       exit 1
