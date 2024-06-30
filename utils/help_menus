@@ -560,6 +560,11 @@ Usage with params from configfile:
   grpl cluster install --configfile <file-name>.json
   e.g grpl cluster install --configfile grpl-config.json
 
+Usage with values yaml: 
+
+  grpl cluster install --values <file1>.yaml <file2>.yaml
+  e.g grpl cluster install --values config-values.yaml config-values2.yaml
+
 Commands:
 
     h or help     Help menu

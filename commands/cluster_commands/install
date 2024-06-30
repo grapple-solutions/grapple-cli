@@ -234,8 +234,13 @@ fi
 
 
 # Define helm_deploy function 
+if [ "$values_yaml_file_names" != "" ]; then
+  values_yaml_file_names=$(echo "$values_yaml_file_names" | awk -v grpl_workdir="$GRPL_WORKDIR" '{gsub("values-templates", "\"" grpl_workdir "/values-templates\"")}1')
+  values_yaml_file_names=$(echo "$values_yaml_file_names" | sed 's/"//g')
+fi
 loggedOut="false"
 helm_deploy() {
+
   i=$1
   v=${2:-$GRAPPLE_VERSION}
   if [ "$v" != "" ]; then 
@@ -243,7 +248,6 @@ helm_deploy() {
   else
     version=""
   fi
-
     
 
   echo "Deploying $i with version $version"
