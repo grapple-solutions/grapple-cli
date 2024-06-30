@@ -25,7 +25,7 @@ valid_args=(
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@" | sed 's,help,,' | sed 's,h ,,')
+extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@")
 
 #check if input from params is valid or not
 if [ "${PROJECT_NAME}" != "" ]; then 
