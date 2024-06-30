@@ -254,7 +254,7 @@ helm_deploy() {
     echo "Deploying $i with version $version"
     GUMSPIN='gum spin --title "Installing ${i} component" --show-output -- '
 
-  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml" >/dev/null; then
+  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml"  >/dev/null 2>&1; then
     
     if [ "$loggedOut" = "true" ]; then
       exit 1
