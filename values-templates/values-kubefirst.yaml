@@ -1,0 +1,37 @@
+# Default values for grsf-init.
+
+clusterdomain: test
+
+# Configuration
+config:
+  clusterdomain: test
+  grapiversion: "0.0.1"
+  gruimversion: "0.0.1"
+  dev: "false"
+  ssl: "false"
+  sslissuer: "letsencrypt-grapple-demo"
+  CIVO_CLUSTER_ID: 
+  CIVO_CLUSTER_NAME: 
+  CIVO_REGION: 
+  CIVO_EMAIL_ADDRESS: 
+  CIVO_MASTER_IP: 
+  GRAPPLE_DNS: test
+  GRAPPLE_VERSION: 0.2.2
+# Additional configurations omitted for brevity
+
+cert-manager:
+  enabled: false
+  installCRDs: false
+
+external-secrets:
+  enabled: false
+  installCRDs: false
+  crds:
+    createClusterExternalSecret: false
+    createClusterSecretStore: false
+  webhook:
+    create: false
+
+crossplane:
+  enabled: false
+

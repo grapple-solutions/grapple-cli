@@ -501,11 +501,7 @@ valid_args=(
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-[ "$1" = "$cli_params" ] && shift && extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--params ,,')
-
-# check if values are already passed form terminal through a file
-# if yes? then store then in the respective vars
-[ "$1" = "$config_file_params" ] && shift && extract_input_params_from_file $valid_args "grpl r d h" $(echo "$@" | sed 's,help,,' | sed 's,h ,,' | sed 's,--configfile ,,')
+extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@")
 
 #check if input from params is valid or not
 is_correct_kubectl_context_provided $KUBECTL_CONTEXT
