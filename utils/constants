@@ -33,6 +33,7 @@ NC='\033[0m' # No Color
 # input params type
 cli_params="--params"
 config_file_params="--configfile"
+values_params="--values"
 
 # help menu types
 WEB_DOC="web-doc"
@@ -55,3 +56,4 @@ HAS_MANY="hasMany"
 HAS_MANY_THROUGH="hasManyThrough"
 HAS_ONE="hasOne"
 REFRENCES_MANY="refrencesMany"
+

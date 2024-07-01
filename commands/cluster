@@ -14,16 +14,17 @@ generate_web_doc() {
 }
 
 install_prerequisite
-
-case "$1" in
+command=$1
+shift
+case "$command" in
   status|s)
-    "$GRPL_WORKDIR/commands/cluster_commands/status" $(echo $@ | sed 's,status,,g' | sed 's,s ,,') | tee -ia "$GRPL_WORKDIR/logs/cluster_status.log"
+    "$GRPL_WORKDIR/commands/cluster_commands/status" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/cluster_status.log"
     ;;
   install|i)
-    "$GRPL_WORKDIR/commands/cluster_commands/install" $(echo $@ | sed 's,install,,g' | sed 's,i ,,') | tee -ia "$GRPL_WORKDIR/logs/cluster_install.log"
+    "$GRPL_WORKDIR/commands/cluster_commands/install" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/cluster_install.log"
     ;;
   create|c)
-    "$GRPL_WORKDIR/commands/cluster_commands/create" $(echo $@ | sed 's,create,,g' | sed 's,c ,,') | tee -ia "$GRPL_WORKDIR/logs/cluster_create.log"
+    "$GRPL_WORKDIR/commands/cluster_commands/create" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/cluster_create.log"
     ;;
   *)
     cli_help

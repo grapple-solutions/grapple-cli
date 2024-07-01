@@ -114,26 +114,6 @@ extract_value_from_json() {
     fi 
 }
 
-extract_input_params_from_file() {
-
-  help_menu_cmd=$2
-  config_file_name=$3
-  
-  # Check if the input file has a JSON extension
-  if [[ "$config_file_name" != *.json ]]; then
-    status_log $TYPE_ERROR "Error: Input file is not a JSON file, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
-    exit 1
-  fi
-
-
-  json=$(<${config_file_name})
-
-  valid_args=$1
-  for val in "${valid_args[@]}"; do
-      export "$val=$(extract_value_from_json "$json"  "$val")"
-  done
-
-}
 
 
 extract_input_params_from_cli() {
@@ -142,51 +122,104 @@ extract_input_params_from_cli() {
   shift
   help_menu_cmd=$1
   shift
-  # Loop through arguments
+
   while [[ $# -gt 0 ]]; do
 
-      arg1=$1
+    param_type=$1
+    shift
+
+    if [[ $param_type ==  $config_file_params ]]; then
+
+      config_file_name=$1
       shift
-
-      # determin which method is used to pass cli params
-      if [[ "$arg1" = *=* ]]; then
-          
-          config_param="${arg1#--}"
-          declare -a parts=($(echo "$config_param" | tr '=' ' '))
-          key="${parts[0]}"
-          # Check if the argument is valid
-          valid=false
-          for valid_arg in "${valid_args[@]}"; do
-              if [[ "$key" == "$valid_arg" ]]; then
-                  valid=true
-                  break
-              fi
-          done
-
-          if  $valid; then
-              export $config_param
-          else
-              status_log $TYPE_ERROR "Error: $key is not a valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
-              return 1
-          fi
-
-      else
-          arg2=$1
-          shift
-          config_param="${arg1#--}"
-          # Check if the argument is valid
-          if [[ " ${valid_args[@]} " =~ " $config_param " ]]; then
-              export "$config_param=$arg2"
-          else
-              status_log $TYPE_ERROR "Error: $config_param is a not valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
-              return 1
-          fi
+      # Check if the input file has a JSON extension
+      if [[ "$config_file_name" != *.json ]]; then
+        status_log $TYPE_ERROR "Error: Input file is not a JSON file, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+        exit 1
       fi
 
 
+      json=$(<${config_file_name})
+      for val in "${valid_args[@]}"; do
+          export "$val=$(extract_value_from_json "$json"  "$val")"
+      done
 
+    elif [[ $param_type == $values_params ]]; then
+        # Loop through arguments
+        values_yaml_file_names=""
+
+        while [[ $# -gt 0 ]]; do
+            arg1=$1
+            if ! [[ "$arg1" = *=* ]] && [[ "$arg1" != $cli_params ]] && [[ "$arg1" != $config_file_params ]] ; then
+                values_yaml_file_names="$values_yaml_file_names -f $arg1"
+                shift
+            else 
+                if [[ "$values_yaml_file_names" == "" ]]; then
+                  status_log $TYPE_ERROR "Error: $arg1 is not a valid argument for values, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+                  export values_yaml_file_names=$values_yaml_file_names
+                  return 1
+                fi
+                export values_yaml_file_names=$values_yaml_file_names
+                break
+            fi
+        done
+    else
+      # Loop through arguments
+      while [[ $# -gt 0 ]]; do
+
+          arg1=$1
+          if [[ $arg1 == $values_params ]]; then
+            break
+          fi
+
+          shift
+
+          
+          # determine which method is used to pass cli params
+          if [[ "$arg1" = *=* ]]; then
+              
+              config_param="${arg1#--}"
+              declare -a parts=($(echo "$config_param" | tr '=' ' '))
+              key="${parts[0]}"
+              # Check if the argument is valid
+              valid=false
+              for valid_arg in "${valid_args[@]}"; do
+                  if [[ "$key" == "$valid_arg" ]]; then
+                      valid=true
+                      break
+                  fi
+              done
+
+              if  $valid; then
+                  export $config_param
+              else
+                  status_log $TYPE_ERROR "Error: $key is not a valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+                  return 1
+              fi
+
+          else
+              arg2=$1
+              shift
+              config_param="${arg1#--}"
+              # Check if the argument is valid
+              if [[ " ${valid_args[@]} " =~ " $config_param " ]]; then
+                  export "$config_param=$arg2"
+              else
+                  status_log $TYPE_ERROR "Error: $config_param is a not valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+                  return 1
+              fi
+          fi
+
+
+      done
+    fi
 
   done
+
+
+
+
+
 
 }
 
@@ -260,4 +293,16 @@ transform_crds_docs_into_web_docs_format() {
     for obj in "${objects[@]}"; do
       kubectl explain $base.$obj | transform_crds_docs_into_web_docs_format "$base.$obj" "=== $base.$obj"
     done
+}
+
+
+getGumSpinnerOrLogger() {
+
+  msg=$1
+  if [ -t 0 ]; then
+    echo "gum spin --title \"${msg}\" --show-output -- "
+  else
+    gum log $msg
+  fi
+
 }

@@ -18,31 +18,32 @@ if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
   mkdir $GRPL_WORKDIR/logs 2>/dev/null | true
 fi
 
-
-case "$1" in
+command=$1
+shift
+case "$command" in
   install|i)
-    "$GRPL_WORKDIR/commands/install" $(echo $@ | sed 's,install,,g' | sed 's,i ,,') | tee -ia "$GRPL_WORKDIR/logs/install.log" >/dev/null
+    "$GRPL_WORKDIR/commands/install" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/install.log" >/dev/null
     ;;
   cluster|c)
-    "$GRPL_WORKDIR/commands/cluster" $(echo $@ | sed 's,cluster,,g' | sed 's,c ,,') | tee -ia "$GRPL_WORKDIR/logs/cluster.log" >/dev/null
+    "$GRPL_WORKDIR/commands/cluster" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/cluster.log" >/dev/null
     ;;
   example|e)
-    "$GRPL_WORKDIR/commands/example" $(echo $@ | sed 's,example,,g' | sed 's,e ,,') | tee -ia "$GRPL_WORKDIR/logs/example.log" >/dev/null
+    "$GRPL_WORKDIR/commands/example" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/example.log" >/dev/null
     ;;
   version|v)
-    "$GRPL_WORKDIR/commands/version" $(echo $@ | sed 's,version,,g' | sed 's,v ,,') | tee -ia "$GRPL_WORKDIR/logs/version.log"
+    "$GRPL_WORKDIR/commands/version" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/version.log"
     ;;
   upgrade|u)
-    "$GRPL_WORKDIR/commands/upgrade" $(echo $@ | sed 's,upgrade,,g' | sed 's,u ,,') | tee -ia "$GRPL_WORKDIR/logs/upgrade.log" >/dev/null
+    "$GRPL_WORKDIR/commands/upgrade" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/upgrade.log" >/dev/null
     ;;
   application|app|a)
-    "$GRPL_WORKDIR/commands/application" $(echo $@ | sed 's,application,,g' | sed 's,app,,g' | sed 's,a ,,') | tee -ia "$GRPL_WORKDIR/logs/application.log" >/dev/null
+    "$GRPL_WORKDIR/commands/application" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/application.log" >/dev/null
     ;;
   doc|d)
-    "$GRPL_WORKDIR/commands/doc" $(echo $@ | sed 's,doc,,g' | sed 's,d ,,') | tee -ia "$GRPL_WORKDIR/logs/doc.log" >/dev/null
+    "$GRPL_WORKDIR/commands/doc" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/doc.log" >/dev/null
     ;;
   resource|r)
-    "$GRPL_WORKDIR/commands/resource" $(echo $@ | sed 's,resource,,g' | sed 's,r ,,') | tee -ia "$GRPL_WORKDIR/logs/resource.log" >/dev/null
+    "$GRPL_WORKDIR/commands/resource" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/resource.log" >/dev/null
     ;;
   *)
     cli_help
