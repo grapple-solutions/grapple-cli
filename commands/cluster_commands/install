@@ -74,7 +74,14 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
     fi
     CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
     echo "selected civo cluster: ${CIVO_CLUSTER}"
-    gum spin --title "switching to ${CIVO_CLUSTER}" --show-output -- civo k8s config ${CIVO_CLUSTER} --save --switch
+
+    if ! gum spin --title "switching to ${CIVO_CLUSTER}" --show-output -- civo k8s config ${CIVO_CLUSTER} --save --switch; then
+      if ! gum spin --title "checking if cluster is accessible" --show-output -- kubectl get ns; then
+        status_log $TYPE_ERROR "Failed to switch to ${CIVO_CLUSTER}"
+        exit 1
+      fi
+    fi
+
     extract_kubectl_cli_version
 
     # if a CIVO cluster was selected, pre-set the configuration
