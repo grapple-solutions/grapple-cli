@@ -56,4 +56,3 @@ HAS_MANY="hasMany"
 HAS_MANY_THROUGH="hasManyThrough"
 HAS_ONE="hasOne"
 REFRENCES_MANY="refrencesMany"
-
