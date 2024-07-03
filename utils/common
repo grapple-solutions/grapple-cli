@@ -309,10 +309,11 @@ getGumSpinnerOrLogger() {
 
 setTTYModeState() {
   if [ -t 0 ]; then
-    TTY="enable"
+    TTY="enabled"
   else
-    TTY="disable"
+    TTY="disabled"
   fi
+
 }
 
 setTTYModeState
