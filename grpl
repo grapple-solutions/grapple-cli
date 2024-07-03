@@ -25,7 +25,7 @@ case "$command" in
     "$GRPL_WORKDIR/commands/install" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/install.log" >/dev/null
     ;;
   cluster|c)
-    "$GRPL_WORKDIR/commands/cluster" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/cluster.log" >/dev/null
+    "$GRPL_WORKDIR/commands/cluster" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/cluster.log" #>/dev/null
     ;;
   example|e)
     "$GRPL_WORKDIR/commands/example" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/example.log" >/dev/null
