@@ -35,6 +35,7 @@ valid_args=(
     "CIVO_CLUSTER_ID"
     "CIVO_MASTER_IP"
     "CIVO_EMAIL_ADDRESS"
+    "CIVO_API_KEY"
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
@@ -77,19 +78,23 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
     fi
 
     if [ $TTY == "enabled" ]; then
-      CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
-      echo "selected civo cluster: ${CIVO_CLUSTER}"
+    CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+    echo "selected civo cluster: ${CIVO_CLUSTER}"
     fi
 
-    if [ "${CIVO_CLUSTER}" != "" ]; then
-      eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"
-      extract_kubectl_cli_version
-      # if a CIVO cluster was selected, pre-set the configuration
-      CIVO_CLUSTER_ID=$(eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
-      GRAPPLE_DNS=${CIVO_CLUSTER}
+    if ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
+      if ! eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl get ns"; then
+        status_log $TYPE_ERROR "Failed to switch to ${CIVO_CLUSTER}"
+        exit 1
+      fi
     fi
 
+    extract_kubectl_cli_version
 
+    # if a CIVO cluster was selected, pre-set the configuration
+    CIVO_CLUSTER_ID=$(eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
+
+    GRAPPLE_DNS=${CIVO_CLUSTER}
   else
     GRAPPLE_DNS=${CIVO_CLUSTER}
   fi

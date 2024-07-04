@@ -8,9 +8,11 @@ cli_help() {
   exit 0
 }
 
-case "$1" in
+command=$1
+shift
+case "$command" in
   init|i)
-    "$GRPL_WORKDIR/commands/application_commands/init" $(echo $@ | sed 's,init,,g' | sed 's,i ,,') | tee -ia "$GRPL_WORKDIR/logs/app_init.log"
+    "$GRPL_WORKDIR/commands/application_commands/init" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/app_init.log"
     ;;
   *)
     cli_help

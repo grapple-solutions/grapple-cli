@@ -270,6 +270,31 @@ check_and_install_gettext() {
 }
 
 
+check_and_install_jq() {
+
+    # checks for checking and installing jq
+    if ! jq --version  >/dev/null 2>&1; then
+        echo "jq cli is required"
+        echo "installing jq cli..."
+        if [ "${OS}" == "mac" ]; then
+            gum spin --title "jq is not installed, now installing jq" --show-output -- brew install jq
+        elif [ "${OS}" == "gnu" ]; then
+            status_log $TYPE_INFO "going to refresh snap"
+            sudo snap refresh >/dev/null 2>&1
+            gum spin --title "jq is not installed, now installing jq" --show-output -- sudo wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo chmod +x jq-linux64 && sudo mv jq-linux64 /usr/local/bin/jq
+        else
+            errMsg="Failed to install jq, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    extract_jq_cli_version
+    
+}
+
+
 extract_helm_cli_version(){
 
     if ! grep -q "helm" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
