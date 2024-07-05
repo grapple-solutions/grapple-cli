@@ -126,10 +126,10 @@ extract_input_params_from_cli() {
   while [[ $# -gt 0 ]]; do
 
     param_type=$1
-    shift
 
     if [[ $param_type ==  $config_file_params ]]; then
 
+      shift
       config_file_name=$1
       shift
       # Check if the input file has a JSON extension
@@ -149,10 +149,10 @@ extract_input_params_from_cli() {
         values_yaml_file_names=""
 
         while [[ $# -gt 0 ]]; do
+            shift
             arg1=$1
-            if ! [[ "$arg1" = *=* ]] && [[ "$arg1" != $cli_params ]] && [[ "$arg1" != $config_file_params ]] ; then
+            if [[ "$arg1" = *.yaml* ]] ; then
                 values_yaml_file_names="$values_yaml_file_names -f $arg1"
-                shift
             else 
                 if [[ "$values_yaml_file_names" == "" ]]; then
                   status_log $TYPE_ERROR "Error: $arg1 is not a valid argument for values, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
@@ -171,7 +171,6 @@ extract_input_params_from_cli() {
           if [[ $arg1 == $values_params ]]; then
             break
           fi
-
           shift
 
           
