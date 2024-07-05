@@ -56,46 +56,41 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   # first check if civo is installed or not, if not? then install it
   check_and_install_civo
 
-  if [ "${CIVO_CLUSTER_ID}" = "" ] || [ "${CIVO_MASTER_IP}" = "" ]; then
-
-    if grep '"apikeys":{}' ~/.civo.json && [ $TTY == "enabled" ]; then
-      CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
-    fi
-
-    if [ "${CIVO_API_KEY}" != "" ]; then
-      civo apikey add grapple $CIVO_API_KEY
-      civo apikey current grapple
-    fi
-
-    if [ "${CIVO_REGION}" != "" ]; then 
-      is_correct_civo_region_provided $CIVO_REGION 
-    fi
-
-    CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else [ $TTY == "enabled" ] &&  gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
-    civo region use ${CIVO_REGION} | true
-
-    if [ "${CIVO_CLUSTER}" != "" ]; then 
-      is_correct_civo_cluster_provided $CIVO_CLUSTER 
-    fi
-    CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if [ $TTY == "enabled" ] && gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
-    echo "selected civo cluster: ${CIVO_CLUSTER}"
-
-    if ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
-      if ! eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl get ns"; then
-        status_log $TYPE_ERROR "Failed to switch to ${CIVO_CLUSTER}"
-        exit 1
-      fi
-    fi
-
-    extract_kubectl_cli_version
-
-    # if a CIVO cluster was selected, pre-set the configuration
-    CIVO_CLUSTER_ID=$(eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
-
-    GRAPPLE_DNS=${CIVO_CLUSTER}
-  else
-    GRAPPLE_DNS=${CIVO_CLUSTER}
+  if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [ $TTY == "enabled" ]; then
+    CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
   fi
+
+  if [ "${CIVO_API_KEY}" != "" ]; then
+    civo apikey add grapple $CIVO_API_KEY
+    civo apikey current grapple
+  fi
+
+  if [ "${CIVO_REGION}" != "" ]; then 
+    is_correct_civo_region_provided $CIVO_REGION 
+  fi
+
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else [ $TTY == "enabled" ] &&  gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
+  civo region use ${CIVO_REGION} | true
+
+  if [ "${CIVO_CLUSTER}" != "" ]; then 
+    is_correct_civo_cluster_provided $CIVO_CLUSTER 
+  fi
+  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if [ $TTY == "enabled" ] && gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+  echo "selected civo cluster: ${CIVO_CLUSTER}"
+
+  if ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
+    if ! eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl get ns"; then
+      status_log $TYPE_ERROR "Failed to switch to ${CIVO_CLUSTER}"
+      exit 1
+    fi
+  fi
+
+  extract_kubectl_cli_version
+
+  # if a CIVO cluster was selected, pre-set the configuration
+  CIVO_CLUSTER_ID=$(eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
+
+  GRAPPLE_DNS=${CIVO_CLUSTER}
 
   GRAPPLE_DOMAIN=".grapple-demo.com"
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
