@@ -313,9 +313,6 @@ setTTYModeState() {
   else
     TTY="disabled"
   fi
-
-
-  echo "TTY=$TTY"
 }
 
 setTTYModeState
