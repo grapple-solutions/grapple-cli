@@ -277,11 +277,11 @@ check_and_install_jq() {
         echo "jq cli is required"
         echo "installing jq cli..."
         if [ "${OS}" == "mac" ]; then
-            gum spin --title "jq is not installed, now installing jq" --show-output -- brew install jq
+            eval "$(getGumSpinnerOrLogger "jq is not installed, now installing jq") brew install jq"
         elif [ "${OS}" == "gnu" ]; then
             status_log $TYPE_INFO "going to refresh snap"
             sudo snap refresh >/dev/null 2>&1
-            gum spin --title "jq is not installed, now installing jq" --show-output -- sudo wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo chmod +x jq-linux64 && sudo mv jq-linux64 /usr/local/bin/jq
+            eval "$(getGumSpinnerOrLogger "jq is not installed, now installing jq") sudo wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo chmod +x jq-linux64 && sudo mv jq-linux64 /usr/local/bin/jq"
         else
             errMsg="Failed to install jq, OS ${OS} not supported at the moment"
             echo $errMsg

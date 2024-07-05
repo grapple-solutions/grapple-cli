@@ -23,7 +23,7 @@ if [ "$installed_version" == "$stable_version" ]; then
   exit 0
 fi
 
-if ! gum spin --title "Upgrading grapple-cli" --show-output -- brew upgrade grapple-cli; then 
+if ! eval "$(getGumSpinnerOrLogger "Upgrading grapple-cli" ) brew upgrade grapple-cli"; then 
   errMsg="Failed to upgrade grappgle-cli"
   status_log $TYPE_INFO $errMsg
   echo $errMsg

@@ -40,7 +40,7 @@ echo "project name: ${PROJECT_NAME}"
 if ! ls $GRPL_WORKDIR | grep 'grapple-template' >/dev/null 2>&1; then
   # clone the grapple-template repo
   check_and_install_git
-  gum spin --title "cloning grapple template" --show-output -- git clone "https://github.com/grapple-solutions/grapple-template.git" $PROJECT_NAME
+  eval "$(getGumSpinnerOrLogger "cloning grapple template" ) git clone \"https://github.com/grapple-solutions/grapple-template.git\" $PROJECT_NAME"
 fi
 
 awk -v repl="$PROJECT_NAME" '{gsub("grapple-template", repl)}1' "$PROJECT_NAME/README.md" > temp && mv temp "$PROJECT_NAME/README.md"
