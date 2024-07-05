@@ -53,13 +53,16 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
-    # first check if civo is installed or not, if not? then install it
-    check_and_install_civo
+  # first check if civo is installed or not, if not? then install it
+  check_and_install_civo
 
   if [ "${CIVO_CLUSTER_ID}" = "" ] || [ "${CIVO_MASTER_IP}" = "" ]; then
 
     if grep '"apikeys":{}' ~/.civo.json && [ $TTY == "enabled" ]; then
       CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
+    fi
+
+    if [ "${CIVO_API_KEY}" != "" ]; then
       civo apikey add grapple $CIVO_API_KEY
       civo apikey current grapple
     fi
@@ -70,16 +73,16 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
     if [ $TTY == "enabled" ]; then
       CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
-      civo region use ${CIVO_REGION} | true
     fi 
+    civo region use ${CIVO_REGION} | true
 
     if [ "${CIVO_CLUSTER}" != "" ]; then 
       is_correct_civo_cluster_provided $CIVO_CLUSTER 
     fi
 
     if [ $TTY == "enabled" ]; then
-    CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
-    echo "selected civo cluster: ${CIVO_CLUSTER}"
+      CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+      echo "selected civo cluster: ${CIVO_CLUSTER}"
     fi
 
     if ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
@@ -103,7 +106,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
 
   if [ $TTY == "enabled" ]; then
-    CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ] then echo ${CIVO_CLUSTER_ID}; else prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+    CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
     echo "selected civo cluster ID: ${CIVO_CLUSTER_ID}"
   fi
 
@@ -112,10 +115,9 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
     echo "selected civo cluster name: ${CIVO_CLUSTER_NAME}"
   fi
 
-  if [ $TTY == "enabled" ]; then
-    CIVO_MASTER_IP=$(if [ "${CIVO_MASTER_IP}" != "" ]; then echo ${CIVO_MASTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
-    echo "selected civo master ip: ${CIVO_MASTER_IP}"
-  fi
+  CIVO_MASTER_IP=$(if [ "${CIVO_MASTER_IP}" != "" ]; then echo ${CIVO_MASTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
+  echo "selected civo master ip: ${CIVO_MASTER_IP}"
+
   #check if input from params is valid or not
   if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then 
     is_value_correct_wrt_regex $CIVO_EMAIL_ADDRESS $email_regex "Invalid email address format. Please try again"
@@ -124,6 +126,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
     CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
     echo "selected civo email address: ${CIVO_EMAIL_ADDRESS}"
   fi
+  
 fi
 
 # if CIVO, then pre-set the configuration params

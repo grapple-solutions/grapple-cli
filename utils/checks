@@ -39,7 +39,7 @@ is_correct_civo_region_provided() {
 
 is_correct_civo_cluster_provided() {
 
-    output=$( eval"$(getGumSpinnerOrLogger "fetching civo regions") civo k8s ls -o custom -f name")
+    output=$( eval "$(getGumSpinnerOrLogger "fetching civo clusters") civo k8s ls -o custom -f name")
     cluster=$1
 
     # Declare an empty array
