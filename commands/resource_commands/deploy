@@ -12,6 +12,7 @@ cli_help() {
 
 install_prerequisite
 check_and_install_yq
+check_and_install_jq
 
 NS=grpl-system
 DB_FILE_NS=grpl-dbfile
@@ -51,8 +52,6 @@ transform_model_input_to_yaml() {
 }
 
 transform_datasources_input_to_yaml() {
-
-    check_and_install_yq
 
     local ds=$1
     # Convert the JSON-like string to valid JSON by replacing single quotes with double quotes
