@@ -170,6 +170,9 @@ extract_input_params_from_cli() {
           arg1=$1
           if [[ $arg1 == $values_params ]]; then
             break
+          elif [[ $arg1 == $cli_params ]]; then
+            shift
+            arg1=$1
           fi
           shift
 
