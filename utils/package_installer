@@ -59,10 +59,10 @@ check_and_install_helm() {
         echo "helm is a prerequisite for this script to run."
         echo "installing helm..."
         if [ $OS == "mac" ]; then 
-            gum spin --title "a prerequisite helm is not installed, now installing helm" --show-output -- brew install helm
+            eval "$(getGumSpinnerOrLogger "a prerequisite helm is not installed, now installing helm") brew install helm"
         elif [ $OS == "gnu" ]; then
             sudo snap refresh >/dev/null 2>&1
-            gum spin --title "a prerequisite helm is not installed, now installing helm" --show-output -- sudo snap install helm --classic
+            eval "$(getGumSpinnerOrLogger "a prerequisite helm is not installed, now installing helm") sudo snap install helm --classic"
         else
             errMsg="Failed to install a prerequisite helm, OS ${OS} not supported at the moment"
             echo $errMsg
@@ -82,10 +82,10 @@ check_and_install_kubectl(){
         echo "kubectl is a prerequisite for this script to run."
         echo "installing kubectl..."
         if [ $OS == "mac" ]; then 
-            gum spin --title "a prerequisite kubectl is not installed, now installing kubectl" --show-output -- brew install kubectl
+            eval "$(getGumSpinnerOrLogger "a prerequisite kubectl is not installed, now installing kubectl") brew install kubectl"
         elif [ $OS == "gnu" ]; then
             sudo snap refresh >/dev/null 2>&1
-            gum spin --title "a prerequisite kubectl is not installed, now installing kubectl" --show-output -- sudo snap install kubectl --classic
+            eval "$(getGumSpinnerOrLogger "a prerequisite kubectl is not installed, now installing kubectl") sudo snap install kubectl --classic"
         else
             errMsg="Failed to install a prerequisite kubectl, OS ${OS} not supported at the moment"
             echo $errMsg
@@ -103,10 +103,10 @@ check_and_install_civo() {
         echo "civo cli is required"
         echo "installing civo cli..."
         if [ $OS == "mac" ]; then 
-            gum spin --title "a prerequisite civo is not installed, now tapping civo" --show-output -- brew tap civo/tools
-            gum spin --title "a prerequisite civo is not installed, now installing civo" --show-output -- brew install civo
+            eval "$(getGumSpinnerOrLogger "a prerequisite civo is not installed, now tapping civo") brew tap civo/tools"
+            eval "$(getGumSpinnerOrLogger "a prerequisite civo is not installed, now installing civo") brew install civo"
         elif [ $OS == "gnu" ]; then
-            gum spin --title "a prerequisite civo is not installed, now installing civo" --show-output -- curl -sL https://civo.com/get | sh
+            eval "$(getGumSpinnerOrLogger "a prerequisite civo is not installed, now installing civo") curl -sL https://civo.com/get | sh"
             status_log $TYPE_INFO "going to move /tmp/civo /usr/local/bin/civo this might take some time"
             sudo mv /tmp/civo /usr/local/bin/civo
         else
@@ -127,9 +127,9 @@ check_and_install_minikube() {
         echo "minikube cli is required"
         echo "installing minikube cli..."
         if [ "${OS}" == "mac" ]; then
-            gum spin --title "minikube is not installed, now installing minikube" --show-output --  brew install minikube
+            eval "$(getGumSpinnerOrLogger "a prerequisite minikube is not installed, now installing minikube") brew install minikube"
         elif [ "${OS}" == "gnu" ]; then
-            gum spin --title "minikube is not installed, now installing minikube" --show-output --  wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+            eval "$(getGumSpinnerOrLogger "a prerequisite minikube is not installed, now installing minikube") wget https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64"
             chmod +x minikube-linux-amd64
             sudo mv minikube-linux-amd64 /usr/local/bin/minikube
         else
@@ -151,10 +151,10 @@ check_and_install_kbcli() {
         echo "kbcli cli is required"
         echo "installing kbcli cli..."
         if [ "${OS}" == "mac" ]; then
-            gum spin --title "a prerequisite kbcli is not installed, now tapping kbcli" --show-output -- brew tap apecloud/tap
-            gum spin --title "a prerequisite kbcli is not installed, now installing kbcli" --show-output -- brew install kbcli
+            eval "$(getGumSpinnerOrLogger "a prerequisite kbcli is not installed, now tapping kbcli") brew tap apecloud/tap"
+            eval "$(getGumSpinnerOrLogger "a prerequisite kbcli is not installed, now installing kbcli") brew install kbcli"
          elif [ "${OS}" == "gnu" ]; then
-            gum spin --title "a prerequisite kbcli is not installed, now installing kbcli" --show-output -- curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash 
+            eval "$(getGumSpinnerOrLogger "a prerequisite kbcli is not installed, now installing kbcli") curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash "
         else
             errMsg="Failed to install kbcli, OS ${OS} not supported at the moment"
             echo $errMsg
@@ -171,7 +171,7 @@ check_and_install_kubeblocks() {
 
     # checks for checking and installing kubeblocks
     if ! kbcli cluster list 2>/dev/null || ! kbcli kubeblocks status; then
-        gum spin --title "installing kubeblocks" --show-output -- kbcli kubeblocks install --set image.registry="docker.io"
+        eval "$(getGumSpinnerOrLogger "installing kubeblocks") kbcli kubeblocks install --set image.registry=\"docker.io\""
     fi
    
     extract_kubeblocks_cli_version
@@ -185,12 +185,12 @@ check_and_install_asciidoc() {
         echo "asciidoctor cli is required"
         echo "installing asciidoctor cli..."
         if [ "${OS}" == "mac" ]; then
-            gum spin --title "asciidoctor is not installed, now installing asciidoctor" --show-output -- brew install asciidoctor
+            eval "$(getGumSpinnerOrLogger "asciidoctor is not installed, now installing asciidoctor") brew install asciidoctor"
         elif [ "${OS}" == "gnu" ]; then
             status_log $TYPE_INFO "going to refresh snap"
             sudo snap refresh 2>&1
-            gum spin --title "ruby is not installed, now installing ruby" --show-output -- sudo snap install ruby --classic
-            gum spin --title "asciidoctor is not installed, now installing asciidoctor" --show-output -- gem install asciidoctor
+            eval "$(getGumSpinnerOrLogger "ruby is not installed, now installing ruby") sudo snap install ruby --classic"
+            eval "$(getGumSpinnerOrLogger "asciidoctor is not installed, now installing asciidoctor") gem install asciidoctor"
             exe_file_path=$(gem which asciidoctor)
             extracted_version=$(echo "$string" | awk -F '/' '{print $6}')
             asciidoc_template_path="~/.gem/gems/{}/bin"
@@ -213,11 +213,11 @@ check_and_install_git() {
         echo "git cli is required"
         echo "installing git cli..."
         if [ "${OS}" == "mac" ]; then
-            gum spin --title "git is not installed, now installing git" --show-output -- brew install git
+            eval "$(getGumSpinnerOrLogger "git is not installed, now installing git") brew install git"
         elif [ "${OS}" == "gnu" ]; then
             status_log $TYPE_INFO "going to update apt"
             sudo apt update 2>&1
-            gum spin --title "git is not installed, now installing git" --show-output -- sudo apt install git
+            eval "$(getGumSpinnerOrLogger "git is not installed, now installing git") sudo apt install git"
         else
             errMsg="Failed to install git, OS ${OS} not supported at the moment"
             echo $errMsg
@@ -237,11 +237,11 @@ check_and_install_yq() {
         echo "yq cli is required"
         echo "installing yq cli..."
         if [ "${OS}" == "mac" ]; then
-            gum spin --title "yq is not installed, now installing yq" --show-output -- brew install yq
+            eval "$(getGumSpinnerOrLogger "yq is not installed, now installing yq") brew install yq"
         elif [ "${OS}" == "gnu" ]; then
             status_log $TYPE_INFO "going to refresh snap"
             sudo snap refresh >/dev/null 2>&1
-            gum spin --title "yq is not installed, now installing yq" --show-output -- sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq
+            eval "$(getGumSpinnerOrLogger "yq is not installed, now installing yq") sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq"
         else
             errMsg="Failed to install yq, OS ${OS} not supported at the moment"
             echo $errMsg
@@ -263,8 +263,8 @@ check_and_install_gettext() {
     if ! gettext --version  >/dev/null 2>&1; then
         echo "gettext cli is required"
         echo "installing gettext cli..."
-        gum spin --title "gettext is not installed, now installing gettext" --show-output -- brew install gettext
-        gum spin --title "linking gettext" --show-output -- brew link --force gettext
+        eval "$(getGumSpinnerOrLogger "gettext is not installed, now installing gettext") brew install gettext"
+        eval "$(getGumSpinnerOrLogger "linking gettext") brew link --force gettext"
     fi
     
 }
@@ -277,11 +277,11 @@ check_and_install_jq() {
         echo "jq cli is required"
         echo "installing jq cli..."
         if [ "${OS}" == "mac" ]; then
-            gum spin --title "jq is not installed, now installing jq" --show-output -- brew install jq
+            eval "$(getGumSpinnerOrLogger "jq is not installed, now installing jq") brew install jq"
         elif [ "${OS}" == "gnu" ]; then
             status_log $TYPE_INFO "going to refresh snap"
             sudo snap refresh >/dev/null 2>&1
-            gum spin --title "jq is not installed, now installing jq" --show-output -- sudo wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo chmod +x jq-linux64 && sudo mv jq-linux64 /usr/local/bin/jq
+            eval "$(getGumSpinnerOrLogger "jq is not installed, now installing jq") sudo wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo chmod +x jq-linux64 && sudo mv jq-linux64 /usr/local/bin/jq"
         else
             errMsg="Failed to install jq, OS ${OS} not supported at the moment"
             echo $errMsg

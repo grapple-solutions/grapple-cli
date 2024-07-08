@@ -35,6 +35,7 @@ valid_args=(
     "CIVO_CLUSTER_ID"
     "CIVO_MASTER_IP"
     "CIVO_EMAIL_ADDRESS"
+    "CIVO_API_KEY"
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
@@ -52,53 +53,52 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
+  # first check if civo is installed or not, if not? then install it
+  check_and_install_civo
 
-  if [ "${CIVO_CLUSTER_ID}" = "" ] || [ "${CIVO_MASTER_IP}" = "" ]; then
-    # first check if civo is installed or not, if not? then install it
-    check_and_install_civo
-
-    if grep '"apikeys":{}' ~/.civo.json; then
-      CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
-      civo apikey add grapple $CIVO_API_KEY
-      civo apikey current grapple
-    fi
-
-    if [ "${CIVO_REGION}" != "" ]; then 
-      is_correct_civo_region_provided $CIVO_REGION 
-    fi
-    CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
-    civo region use ${CIVO_REGION} | true
-
-    if [ "${CIVO_CLUSTER}" != "" ]; then 
-      is_correct_civo_cluster_provided $CIVO_CLUSTER 
-    fi
-    CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
-    echo "selected civo cluster: ${CIVO_CLUSTER}"
-
-    if ! gum spin --title "switching to ${CIVO_CLUSTER}" --show-output -- civo k8s config ${CIVO_CLUSTER} --save --switch; then
-      if ! gum spin --title "checking if cluster is accessible" --show-output -- kubectl get ns; then
-        status_log $TYPE_ERROR "Failed to switch to ${CIVO_CLUSTER}"
-        exit 1
-      fi
-    fi
-
-    extract_kubectl_cli_version
-
-    # if a CIVO cluster was selected, pre-set the configuration
-    CIVO_CLUSTER_ID=$(gum spin --title "fetching cluster id of ${CIVO_CLUSTER} cluster" --show-output -- civo k8s show ${CIVO_CLUSTER} -o custom -f ID)
-
-    GRAPPLE_DNS=${CIVO_CLUSTER}
-  else
-    GRAPPLE_DNS=${CIVO_CLUSTER}
+  if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [ $TTY == "enabled" ]; then
+    CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
   fi
+
+  if [ "${CIVO_API_KEY}" != "" ]; then
+    civo apikey add grapple $CIVO_API_KEY
+    civo apikey current grapple
+  fi
+
+  if [ "${CIVO_REGION}" != "" ]; then 
+    is_correct_civo_region_provided $CIVO_REGION 
+  fi
+
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else [ $TTY == "enabled" ] &&  gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
+  civo region use ${CIVO_REGION} | true
+
+  if [ "${CIVO_CLUSTER}" != "" ]; then 
+    is_correct_civo_cluster_provided $CIVO_CLUSTER 
+  fi
+  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if [ $TTY == "enabled" ] && gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+  echo "selected civo cluster: ${CIVO_CLUSTER}"
+
+  if ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
+    if ! eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl get ns"; then
+      status_log $TYPE_ERROR "Failed to switch to ${CIVO_CLUSTER}"
+      exit 1
+    fi
+  fi
+
+  extract_kubectl_cli_version
+
+  # if a CIVO cluster was selected, pre-set the configuration
+  CIVO_CLUSTER_ID=$(eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
+
+  GRAPPLE_DNS=${CIVO_CLUSTER}
 
   GRAPPLE_DOMAIN=".grapple-demo.com"
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
-  
-  CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+
+  CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "selected civo cluster ID: ${CIVO_CLUSTER_ID}"
 
-  CIVO_CLUSTER_NAME=$(if [ "${CIVO_CLUSTER_NAME}" != "" ]; then echo ${CIVO_CLUSTER_NAME}; else prompt_for_input_with_validation "Enter CIVO_CLUSTER_NAME: " "Provide an name for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  CIVO_CLUSTER_NAME=$(if [ "${CIVO_CLUSTER_NAME}" != "" ]; then echo ${CIVO_CLUSTER_NAME}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_CLUSTER_NAME: " "Provide an name for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "selected civo cluster name: ${CIVO_CLUSTER_NAME}"
 
   CIVO_MASTER_IP=$(if [ "${CIVO_MASTER_IP}" != "" ]; then echo ${CIVO_MASTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
@@ -108,8 +108,9 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then 
     is_value_correct_wrt_regex $CIVO_EMAIL_ADDRESS $email_regex "Invalid email address format. Please try again"
   fi
-  CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
+  CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
   echo "selected civo email address: ${CIVO_EMAIL_ADDRESS}"
+
 
 fi
 
@@ -127,7 +128,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
   # check if minikube cluster is running or not, if not? then start it
   if ! minikube status | grep "host: Running"; then
       echo "Minikube is not running. Starting Minikube..."
-      if ! gum spin --title "minikube is not running, now starting minikube" --show-output -- minikube start; then
+      if ! eval "$(getGumSpinnerOrLogger "minikube is not running, now starting minikube") minikube start"; then
         status_log $TYPE_ERROR "Error: minikube failed to start becasue docker or any driver service is not running. Details are listed below"
         minikube start >&2
       fi
@@ -179,14 +180,14 @@ fi
 
 # Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
 if [ "${TARGET_PLATFORM}" != $Minikube ]; then
-  GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
+  GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
   echo "installing dns: ${GRAPPLE_DNS}"
 fi
 
 if [ "${GRAPPLE_VERSION}" != "" ]; then 
   is_correct_grapple_version_provided $GRAPPLE_VERSION 
 fi 
-GRAPPLE_VERSION=$(if [ "${GRAPPLE_VERSION}" != "" ]; then echo ${GRAPPLE_VERSION}; else gum choose "${GRAPPLE_AVAILABLE_VERSIONS[@]}"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
+GRAPPLE_VERSION=$(if [ "${GRAPPLE_VERSION}" != "" ]; then echo ${GRAPPLE_VERSION}; else [ $TTY == "enabled" ] && gum choose "${GRAPPLE_AVAILABLE_VERSIONS[@]}"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
 echo "installing grapple version: ${GRAPPLE_VERSION}"
 
 # VERSION=$(prompt_for_input_with_validation "Enter version of the grapple solution framework: " "Semver version is expected. Default value if empty: 0.2.0" "$non_empty_regex" "Version cannot be empty." "0.2.0") || exit $?
@@ -259,7 +260,7 @@ helm_deploy() {
 
   echo "Deploying $i with version $version"
 
-  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names" >/dev/null; then
+  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names" >/dev/null 2>&1; then
     
     if [ "$loggedOut" = "true" ]; then
       exit 1

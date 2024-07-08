@@ -16,7 +16,7 @@ is_correct_target_platform_provided() {
 
 is_correct_civo_region_provided() {
 
-    output=$(gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code) 
+    output=$( eval "$(getGumSpinnerOrLogger "fetching civo regions") civo region ls -o custom -f code") 
     region=$1
 
 
@@ -39,7 +39,7 @@ is_correct_civo_region_provided() {
 
 is_correct_civo_cluster_provided() {
 
-    output=$(gum spin --title "fetching civo clusters"  --show-output -- civo k8s ls -o custom -f name)
+    output=$( eval "$(getGumSpinnerOrLogger "fetching civo clusters") civo k8s ls -o custom -f name")
     cluster=$1
 
     # Declare an empty array
