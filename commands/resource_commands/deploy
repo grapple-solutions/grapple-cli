@@ -69,6 +69,11 @@ transform_datasources_input_to_yaml() {
         
         connector=$(echo $properties | jq -r '.connector')
         DATABASE_SCHEMA=$(echo $properties | jq -r '.database')
+        host=$(echo $properties | jq -r '.host')
+        port=$(echo $properties | jq -r '.port')
+        user=$(echo $properties | jq -r '.user')
+        password=$(echo $properties | jq -r '.password')
+
         # Parse the properties JSON and format it as YAML
         yq eval ".grapi.datasources[$index].spec.$connector += $properties" -i $template_file_dest
         ((index+=1))
@@ -263,33 +268,33 @@ take_datasource_input_from_cli() {
     local ds_type=$1
     index=0
 
-        local datasource=$(prompt_for_input_with_validation "datasource: " "please provide datasource name: " "$non_empty_regex" "datasource name can't be empty")
-        status_log $TYPE_DEFAULT "datasource: ${datasource}"    
- 
-        local url=$(prompt_for_explicit_input_with_validation "url: " "please provide url (optional): " ".*" "")
-        status_log $TYPE_DEFAULT "url: ${url}"    
+    local datasource=$(prompt_for_input_with_validation "datasource: " "please provide datasource name: " "$non_empty_regex" "datasource name can't be empty")
+    status_log $TYPE_DEFAULT "datasource: ${datasource}"    
 
-        local host=$(prompt_for_input_with_validation "host: " "please provide host: " "$non_empty_regex" "host name can't be empty")
-        status_log $TYPE_DEFAULT "host: ${host}"    
+    local url=$(prompt_for_explicit_input_with_validation "url: " "please provide url (optional): " ".*" "")
+    status_log $TYPE_DEFAULT "url: ${url}"    
 
-        local port=$(prompt_for_input_with_validation "port: " "please provide port: " "$non_empty_regex" "port name can't be empty")
-        status_log $TYPE_DEFAULT "port: ${port}"   
+    host=$(prompt_for_input_with_validation "host: " "please provide host: " "$non_empty_regex" "host name can't be empty")
+    status_log $TYPE_DEFAULT "host: ${host}"    
 
-        local user=$(prompt_for_input_with_validation "user: " "please provide user: " "$non_empty_regex" "user name can't be empty")
-        status_log $TYPE_DEFAULT "user: ${user}"
+    port=$(prompt_for_input_with_validation "port: " "please provide port: " "$non_empty_regex" "port name can't be empty")
+    status_log $TYPE_DEFAULT "port: ${port}"   
 
-        read -s -p "password: " password
-        echo ""
+    user=$(prompt_for_input_with_validation "user: " "please provide user: " "$non_empty_regex" "user name can't be empty")
+    status_log $TYPE_DEFAULT "user: ${user}"
 
-        yq -i ".grapi.datasources[$index].name=\"$datasource\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
-        yq -i ".grapi.datasources[$index].spec.$ds_type.name=\"$datasource\" | .grapi.datasources[$index].spec.$ds_type.name style=\"double\"" $template_file_dest
-        yq -i ".grapi.datasources[$index].spec.$ds_type.url=\"$url\" | .grapi.datasources[$index].spec.$ds_type.url style=\"double\"" $template_file_dest
-        yq -i ".grapi.datasources[$index].spec.$ds_type.host=\"$host\" | .grapi.datasources[$index].spec.$ds_type.host style=\"double\"" $template_file_dest
-        yq -i ".grapi.datasources[$index].spec.$ds_type.port=\"$port\" | .grapi.datasources[$index].spec.$ds_type.port style=\"double\" " $template_file_dest
-        yq -i ".grapi.datasources[$index].spec.$ds_type.user=\"$user\" | .grapi.datasources[$index].spec.$ds_type.user style=\"double\"" $template_file_dest
-        yq -i ".grapi.datasources[$index].spec.$ds_type.password=\"$password\" | .grapi.datasources[$index].spec.$ds_type.password style=\"double\"" $template_file_dest
-        yq -i ".grapi.datasources[$index].spec.$ds_type.database=\"\$DATABASE_SCHEMA\"" $template_file_dest
-    
+    read -s -p "password: " password
+    echo ""
+
+    yq -i ".grapi.datasources[$index].name=\"$datasource\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.name=\"$datasource\" | .grapi.datasources[$index].spec.$ds_type.name style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.url=\"$url\" | .grapi.datasources[$index].spec.$ds_type.url style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.host=\"$host\" | .grapi.datasources[$index].spec.$ds_type.host style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.port=\"$port\" | .grapi.datasources[$index].spec.$ds_type.port style=\"double\" " $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.user=\"$user\" | .grapi.datasources[$index].spec.$ds_type.user style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.password=\"$password\" | .grapi.datasources[$index].spec.$ds_type.password style=\"double\"" $template_file_dest
+    yq -i ".grapi.datasources[$index].spec.$ds_type.database=\"\$DATABASE_SCHEMA\"" $template_file_dest
+
 }
 
 take_discovery_input_from_cli() {
@@ -679,7 +684,12 @@ export DATABASE_SCHEMA=$DATABASE_SCHEMA
 # check for init-containers
 cli_args=$@
 if [[ "${cli_args[@]}" =~ "--SOURCE_DATA" ]] && [[ $SOURCE_DATA == "" ]] ; then
-    mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"CREATE DATABASE IF NOT EXISTS ${DATABASE_SCHEMA};\\\";"
+    mysql_init_container_bash_script=""
+    if [[ $host != "" ]] && [[ $port != "" ]] && [[ $user != "" ]] && [[ $password != "" ]]; then
+        mysql_init_container_bash_script="sleep 5; while ! mysql -h $host -P $port -u $user -p$password -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h $host -P $port -u $user -p$password -e \\\"CREATE DATABASE IF NOT EXISTS ${DATABASE_SCHEMA};\\\";"
+    else
+        mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"CREATE DATABASE IF NOT EXISTS ${DATABASE_SCHEMA};\\\";"
+    fi
     yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
     export command=$mysql_init_container_bash_script
 else
@@ -695,7 +705,12 @@ else
         yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
         export command=$mysql_init_container_bash_script
     else
-        mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"CREATE DATABASE IF NOT EXISTS ${DATABASE_SCHEMA};\\\";"
+        mysql_init_container_bash_script=""
+        if [[ $host != "" ]] && [[ $port != "" ]] && [[ $user != "" ]] && [[ $password != "" ]]; then
+            mysql_init_container_bash_script="sleep 5; while ! mysql -h $host -P $port -u $user -p$password -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h $host -P $port -u $user -p$password -e \\\"CREATE DATABASE IF NOT EXISTS ${DATABASE_SCHEMA};\\\";"
+        else
+            mysql_init_container_bash_script="sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"show databases;\\\" 2>/dev/null; do echo -n .; sleep 2; done; mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e \\\"CREATE DATABASE IF NOT EXISTS ${DATABASE_SCHEMA};\\\";"
+        fi
         yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
         export command=$mysql_init_container_bash_script
     fi
