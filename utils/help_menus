@@ -23,6 +23,9 @@ generate_cli_web_doc() {
     grpl_example_status_cli_help $WEB_DOC
     grpl_resource_cli_help $WEB_DOC
     grpl_resource_deploy_cli_help $WEB_DOC
+    grpl_dev_cli_help $WEB_DOC
+    grpl_grapi_cli_help $WEB_DOC
+    grpl_gruim_cli_help $WEB_DOC
      doc="
 = grpl cli Documentation
 :toc: 
@@ -51,6 +54,9 @@ $grpl_resource_deploy_doc
 $grpl_install_doc
 $grpl_upgrade_doc
 $grpl_version_doc
+$grpl_dev_doc
+$grpl_grapi_doc
+$grpl_gruim_doc
 "
 echo "$doc" > "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
         asciidoctor "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
@@ -174,6 +180,10 @@ Commands:
     v or version                List version
     u or upgrade                Upgrade grpl
     a or app or application     Initialize grpl application
+    d or doc                    Documentation
+    dev                         Devspace Dev
+    grapi                       Grapi commands
+    gruim                       Gruim commands
     *                           Help menu
     
 Examples:    
@@ -184,6 +194,10 @@ Examples:
     grpl v [commands]    or    grpl version [commands]     
     grpl u [commands]    or    grpl upgrade [commands]  
     grpl a [commands]    or    grpl app     [commands]    or    grpl application [commands] 
+    grpl d [commands]    or    grpl doc     [commands]
+    grpl dev [commands]
+    grpl grapi [commands]
+    grpl gruim [commands]
     grpl *
 
 "
@@ -927,5 +941,164 @@ Variable:
         return 0
     else
         echo "$grpl_resource_deploy_doc"  >&2
+    fi
+}
+
+
+grpl_dev_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl dev"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl dev"
+        meta=""
+    fi
+
+    grpl_dev_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl dev [command]
+
+Commands:
+
+    h or help                           Help menu
+    dev                                 to run to start grapple
+    dev ns <namespace>                  to set namespace for grapple
+    dev enter grapi                     to enter grapi container
+    dev enter gruim                     to enter grapi container
+    dev <any command>                   to run any devspace <command>
+    
+Examples:    
+
+    grpl dev h    or    grpl dev help
+    grpl dev
+    grpl dev ns grapple-namespace
+    grpl enter grapi
+    grpl enter gruim
+    grpl dev <any comamnd>   
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_dev_doc"  >&2
+    fi
+}
+
+
+
+grpl_grapi_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl grapi"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl grapi"
+        meta=""
+    fi
+
+    grpl_grapi_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl dev [command]
+
+Commands:
+
+    h or help                           Help menu
+    grapi migrate-db                    to migrate db
+    grapi --help                        to get list of grapi commands
+    grapi <any command>                 to run any grapi command
+    
+Examples:    
+
+    grpl dev h    or    grpl dev help
+    grpl grapi migrate-db 
+    grpl grapi --help
+    grpl grapi <any comamnd>   
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_grapi_doc"  >&2
+    fi
+}
+
+
+
+grpl_gruim_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl gruim"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl gruim"
+        meta=""
+    fi
+
+    grpl_gruim_doc="
+$cli_name
+$meta
+
+Usage: 
+
+    grpl dev [command]
+
+Commands:
+
+    h or help                           Help menu
+    gruim rebuild                       to rebuild gruim
+    gruim --help                        to get list of gruim commands
+    gruim <any command>                 to run any gruim command
+    
+Examples:    
+
+    grpl dev h    or    grpl dev help
+    grpl gruim rebuild 
+    grpl gruim --help
+    grpl gruim <any comamnd>   
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_gruim_doc"  >&2
     fi
 }

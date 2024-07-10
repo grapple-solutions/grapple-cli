@@ -5,7 +5,7 @@ set -e
 . "$GRPL_WORKDIR/utils/help_menus"
 
 cli_help() {
-  #grpl_grapi_cli_help
+  grpl_grapi_cli_help
   exit 0
 }
 
