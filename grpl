@@ -45,6 +45,15 @@ case "$command" in
   resource|r)
     "$GRPL_WORKDIR/commands/resource" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/resource.log" >/dev/null
     ;;
+  dev)
+    "$GRPL_WORKDIR/commands/dev" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/dev.log"
+    ;;
+  grapi)
+    "$GRPL_WORKDIR/commands/grapi" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/grapi.log"
+    ;;
+  gruim)
+    "$GRPL_WORKDIR/commands/gruim" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/gruim.log"
+    ;;
   *)
     cli_help
     ;;

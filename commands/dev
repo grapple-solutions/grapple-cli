@@ -5,13 +5,38 @@ set -e
 . "$GRPL_WORKDIR/utils/help_menus"
 
 cli_help() {
-  grpl_dev_cli_help
+  #grpl_dev_cli_help
   exit 0
 }
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
+install_prerequisite
 check_and_install_devspace
 
+cli_args=$@
+PROJECT_NAME=$(cat "/tmp/grpl_project_name.txt")
+cd "$GRPL_WORKDIR/$PROJECT_NAME"
+
+# devspace dev command
+if [[ "$1" == "" ]]; then
+  devspace dev
+  exit 0
+fi
+
+# devspace use namespace command
+if [[ $1 == "ns" ]]; then
+  shift
+  cli_args=$@
+  devspace use namespace $cli_args
+  exit 0
+fi
+
+# devspace enter grapi/gruim command
+if [[ ${#cli_args[@]} == 2 ]] && [[ $1 == "enter" ]] && ( [[ $2 == "grapi" ]] || [[ $2 == "gruim" ]] ) ; then
+  devspace enter -l app.kubernetes.io/name=$2
+fi
+
+devspace $cli_args
 
 
