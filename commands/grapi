@@ -9,7 +9,7 @@ cli_help() {
   exit 0
 }
 
-[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+[ "$1" = "help" ] || [ "$1" = "h" ] || [ $# = 0 ]  && cli_help
 
 install_prerequisite
 check_and_install_devspace
@@ -17,8 +17,9 @@ check_and_install_devspace
 cli_args=$@
 
 # "grpl grapi migrate-db" case
-if [[ ${#cli_args[@]} == 1 ]] && [[ "$1" == "migrate-db" ]]; then
+if [[ $# == 1 ]] && [[ "$1" == "migrate-db" ]]; then
     devspace run migrate-db
+    exit 0
 fi
 
 # check to see if grapi prefex needs to be added or not
