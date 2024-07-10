@@ -15,8 +15,16 @@ install_prerequisite
 check_and_install_devspace
 
 cli_args=$@
+
+# TODO: please handle case, if file is not present
+# 1) read from current folder?
+# 2) store history of projects to be re-used?
+# 3) ask for project name if new
 PROJECT_NAME=$(cat "/tmp/grpl_project_name.txt")
-cd "$GRPL_WORKDIR/$PROJECT_NAME"
+# I think cd is not necessary - let's assume we are in the correct folder
+# verify, that we are in the right folder. we should know the structure
+# responde with an error, if we are not in the right folder (if required for the command to run - for many comamnds that's not required)
+#cd "$GRPL_WORKDIR/$PROJECT_NAME"
 
 # devspace dev command
 if [[ "$1" == "" ]]; then
