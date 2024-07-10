@@ -15,8 +15,6 @@ install_prerequisite
 check_and_install_devspace
 
 cli_args=$@
-PROJECT_NAME=$(cat "/tmp/grpl_project_name.txt")
-cd "$GRPL_WORKDIR/$PROJECT_NAME"
 
 # devspace dev command
 if [[ "$1" == "" ]]; then

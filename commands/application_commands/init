@@ -50,5 +50,3 @@ awk -v repl="$PROJECT_NAME" '{gsub("grapple-template", repl)}1' "$PROJECT_NAME/R
 
 cli_log "application init COMPLETED"
 status_log $TYPE_SUCCESS "application initialization is complete"
-
-echo "$PROJECT_NAME" > "/tmp/grpl_project_name.txt"
