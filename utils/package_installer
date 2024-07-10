@@ -295,6 +295,31 @@ check_and_install_jq() {
 }
 
 
+check_and_install_devspace() {
+
+    # checks for checking and installing devspace
+    if ! devspace --version  >/dev/null 2>&1; then
+        echo "devspace cli is required"
+        echo "installing devspace cli..."
+        if [ "${OS}" == "mac" ]; then
+            eval "$(getGumSpinnerOrLogger "devspace is not installed, now installing devspace") brew install devspace"
+        elif [ "${OS}" == "gnu" ]; then
+            status_log $TYPE_INFO "going to refresh snap"
+            sudo snap refresh >/dev/null 2>&1
+            eval "$(getGumSpinnerOrLogger "devspace is not installed, now installing devspace") curl -L -o devspace "https://github.com/loft-sh/devspace/releases/latest/download/devspace-linux-amd64" && sudo install -c -m 0755 devspace /usr/local/bin"
+        else
+            errMsg="Failed to install devspace, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    extract_devspace_cli_version
+    
+}
+
+
 extract_helm_cli_version(){
 
     if ! grep -q "helm" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
@@ -474,6 +499,19 @@ extract_yq_cli_version(){
 
         # Output the latest version
         echo "      $yq_version - yq" >> "$GRPL_WORKDIR/dependency_versions"
+    fi
+
+}
+
+extract_devspace_cli_version(){
+
+    if ! grep -q "devspace" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
+
+        # Get yq version
+        devspace_version=$(devspace version | awk -F ': ' '/DevSpace version/{print $2}')
+
+        # Output the latest version
+        echo "      $devspace_version - devspace" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }

@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -e
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/help_menus"
+
+cli_help() {
+  grpl_gruim_cli_help
+  exit 0
+}
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+install_prerequisite
+check_and_install_devspace
+
+cli_args=$@
+
+# "grpl grapi migrate-db" case
+if [[ ${#cli_args[@]} == 1 ]] && [[ "$1" == "rebuild" ]]; then
+    devspace run gruim rebuild
+fi
+
+# check to see if gruim prefex needs to be added or not
+if devspace enter --label-selector app.kubernetes.io/name=gruim -- gruim --help | grep $1 >/dev/null 2>&1; then
+    devspace enter --label-selector app.kubernetes.io/name=gruim -- gruim $cli_args
+else 
+    devspace enter --label-selector app.kubernetes.io/name=gruim -- $cli_args
+fi
