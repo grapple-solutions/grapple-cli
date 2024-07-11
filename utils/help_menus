@@ -977,6 +977,7 @@ Commands:
 
     h or help                           Help menu
     dev                                 to run to start grapple
+    dev ns                              to get namespace help menu
     dev ns <namespace>                  to set namespace for grapple
     dev enter grapi                     to enter grapi container
     dev enter gruim                     to enter grapi container
@@ -986,9 +987,10 @@ Examples:
 
     grpl dev h    or    grpl dev help
     grpl dev
+    grpl dev ns
     grpl dev ns grapple-namespace
-    grpl enter grapi
-    grpl enter gruim
+    grpl dev enter grapi
+    grpl dev enter gruim
     grpl dev <any comamnd>   
 
 "
@@ -1038,7 +1040,7 @@ Commands:
     
 Examples:    
 
-    grpl dev h    or    grpl dev help
+    grpl grapi h    or    grpl grapi help    or    grpl grapi
     grpl grapi migrate-db 
     grpl grapi --help
     grpl grapi <any comamnd>   
@@ -1090,7 +1092,7 @@ Commands:
     
 Examples:    
 
-    grpl dev h    or    grpl dev help
+    grpl gruim h    or    grpl gruim help    or    grpl gruim
     grpl gruim rebuild 
     grpl gruim --help
     grpl gruim <any comamnd>   

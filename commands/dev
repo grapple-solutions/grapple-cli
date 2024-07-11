@@ -20,14 +20,14 @@ cli_args=$@
 # 1) read from current folder?
 # 2) store history of projects to be re-used?
 # 3) ask for project name if new
-PROJECT_NAME=$(cat "/tmp/grpl_project_name.txt")
+# PROJECT_NAME=$(cat "/tmp/grpl_project_name.txt")
 # I think cd is not necessary - let's assume we are in the correct folder
 # verify, that we are in the right folder. we should know the structure
 # responde with an error, if we are not in the right folder (if required for the command to run - for many comamnds that's not required)
 #cd "$GRPL_WORKDIR/$PROJECT_NAME"
 
 # devspace dev command
-if [[ "$1" == "" ]]; then
+if [[ $# == 0 ]]; then
   devspace dev
   exit 0
 fi
@@ -36,13 +36,17 @@ fi
 if [[ $1 == "ns" ]]; then
   shift
   cli_args=$@
+  if [[ "$1" == "" ]]; then
+    cli_args="--help"
+  fi
   devspace use namespace $cli_args
   exit 0
 fi
 
 # devspace enter grapi/gruim command
-if [[ ${#cli_args[@]} == 2 ]] && [[ $1 == "enter" ]] && ( [[ $2 == "grapi" ]] || [[ $2 == "gruim" ]] ) ; then
-  devspace enter -l app.kubernetes.io/name=$2
+if [[ $# == 2 ]] && [[ $1 == "enter" ]] && ( [[ $2 == "grapi" ]] || [[ $2 == "gruim" ]] ) ; then
+  echo "here"
+  devspace enter  --label-selector app.kubernetes.io/name=$2
 fi
 
 devspace $cli_args
