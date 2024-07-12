@@ -39,13 +39,13 @@ case "$command" in
   application|app|a)
     "$GRPL_WORKDIR/commands/application" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/application.log" >/dev/null
     ;;
-  doc|d)
+  doc)
     "$GRPL_WORKDIR/commands/doc" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/doc.log" >/dev/null
     ;;
   resource|r)
     "$GRPL_WORKDIR/commands/resource" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/resource.log" >/dev/null
     ;;
-  dev)
+  dev|d)
     "$GRPL_WORKDIR/commands/dev" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/dev.log"
     ;;
   grapi)
