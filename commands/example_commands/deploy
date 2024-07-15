@@ -3,135 +3,35 @@ set -e
 . "$GRPL_WORKDIR/utils/common"
 . "$GRPL_WORKDIR/utils/help_menus"
 
-# NS=$(prompt_for_input_with_validation "Enter namespace: " "grapple-demo-namspace" "$non_empty_regex" "Namespace cannot be empty.") || exit $?
-# TESTNS=$(prompt_for_input_with_validation "Enter namespace for test case: " "grapple-test-demo-namspace: " "$non_empty_regex" "Namespace for test case cannot be empty.") || exit $?
-# TESTNSDB=$(prompt_for_input_with_validation "Enter namespace for test case with DB: " "grapple-testdb-demo-namspace" "$non_empty_regex" "Namespace for test case with DB cannot be empty.") || exit $?
-NS=grpl-system
-TESTNS=grpl-dbfile
-TESTNSDB=grpl-db
-awsregistry="p7h7z5g3"
 
-cli_help() {
-  grpl_example_status_cli_help
+# valid arguments array
+valid_args=(
+    "GRAS_TEMPLATE"
+    "DB_TYPE"
+  )
+
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@")
+
+
+#check if input from params is valid or not
+if [ "${GRAS_TEMPLATE}" != "" ]; then 
+  is_correct_grapple_applicationsets_provided $GRAS_TEMPLATE 
+fi
+GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED; fi) || exit $?
+status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
+
+
+if [[ "${GRAS_TEMPLATE}" == $DB_FILE ]]; then
+  ./grpl r d --params --KUBECTL_CONTEXT=grpl-ekekenta --GRAS_NAME=gras-patrick --GRAS_TEMPLATE=db-file --DATA_SOURCE="https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/db.json" --MODELS='customers:{"base":"Entity","name":"customers","properties":{"addressLine1":{"type":"string"},"addressLine2":{"type":"string"},"city":{"type":"string"},"contactFirstName":{"type":"string"},"contactLastName":{"type":"string"},"country":{"type":"string"},"creditLimit":{"type":"number"},"customerName":{"type":"string"},"id":{"generated":true,"defaultFn":"uuid","id":true,"required":true,"type":"string"},"generatedValue":{"generated":true,"defaultFn":999,"id":false,"required":true,"type":"number"},"phone":{"type":"string"},"postalCode":{"type":"string"},"state":{"type":"string"}}}|employees:{"base":"Entity","name":"employees","properties":{"country":{"type":"string"},"creditLimit":{"type":"number"},"email":{"type":"string"},"extension":{"type":"string"},"firstName":{"type":"string"},"id":{"generated":true,"defaultFn":"uuid","id":true,"required":true,"type":"string"},"jobTitle":{"type":"string"},"lastName":{"type":"string"},"officesId":{"type":"string"},"postalCode":{"type":"string"},"reportsTo":{"type":"number"},"state":{"type":"string"},"createdAt":{"generated":true,"defaultFn":"now"}}}' --DB_FILE_PATH=/tmp/data.json --ENABLE_GRUIM=false  --RELATIONS=""
   exit 0
-}
-
-[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
-
-
-cli_log "example deploy BEGIN"
-install_prerequisite
-
-
-EDITION=$(if [ "${EDITION}" != "" ]; then echo ${EDITION}; else gum choose "grpl-basic-all" "grpl-basic" "grpl-basic-db" "grpl-basic-dbfile"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
-echo "installing grapple edition: ${EDITION}"
-
-status_log $TYPE_INFO "${EDITION} deployment is in progress"
-
-if [ "$(kubectl config current-context)" = "minikube" ]; then
-  echo "patching for minikube..."
-  MINIKUBE_PATCH=" --set gras.ssl=false --set grapi.ssl=false --set gruim.ssl=false "
-else
-  MINIKUBE_PATCH=""
 fi
 
 
-if [ "${EDITION}" = "grpl-basic-dbfile" ] || [ "${EDITION}" = "grpl-basic-all" ]; then
-
-  echo 
-  echo ----
-  echo "deploy test case: dbfile"
-
-  echo "check xrds are available"
-  status_log $TYPE_INFO "wait for grapi to be deployed"
-  CRD=grapi && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
-  status_log $TYPE_SUCCESS "grapi is deployed"
-  status_log $TYPE_INFO "wait for compositegrappleapis to be deployed"
-  CRD=compositegrappleapis && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
-  status_log $TYPE_SUCCESS "compositegrappleapis is deployed"
-  status_log $TYPE_INFO "wait for composition/grapi.grsf.grpl.io to be deployed"
-  CRD=composition/grapi.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
-  status_log $TYPE_SUCCESS "composition/grapi.grsf.grpl.io is deployed"
-  status_log $TYPE_INFO "wait for composition/muim.grsf.grpl.io to be deployed"
-  CRD=composition/muim.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl get $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
-  status_log $TYPE_SUCCESS "composition/muim.grsf.grpl.io is deployed"
-
-  eval "$(getGumSpinnerOrLogger "Deploying ${EDITION}") helm upgrade --install ${TESTNS} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNS} -f $GRPL_WORKDIR/files/test.yaml ${MINIKUBE_PATCH} --create-namespace "
-  
-  # not required anymore since downloading the file from the git repo
-  # while ! kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
-
-  # sleep 10
-
-  # if [ "$(kubectl get -n ${TESTNS} $(kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi -o name) --template '{{(index .status.initContainerStatuses 0).ready}}')" = "false" ]; then
-  #   kubectl cp -n ${TESTNS} $GRPL_WORKDIR/files/db.json $(kubectl get po -n ${TESTNS} -l app.kubernetes.io/name=grapi -o name | sed "s,pod/,,g"):/tmp/db.json -c init-db
-  # fi
-
-  # wait for the grapi of the first test case to be deployed
-  # while ! kubectl wait deployment -n ${TESTNS} ${TESTNS}-${TESTNS}-grapi --for condition=Progressing=True 2>/dev/null; do echo -n .; sleep 2; done
-
+#check if input from params is valid or not
+if [ "${DB_TYPE}" != "" ]; then 
+  is_correct_db_type_provided $DB_TYPE 
 fi
-
-
-if [ "${EDITION}" = "grpl-basic-db" ] || [ "${EDITION}" = "grpl-basic-all" ]; then
-
-  check_and_install_kbcli
-
-  check_and_install_kubeblocks
-
-  echo 
-  echo ----
-  echo "deploy test case: db"
-
-
-  status_log $TYPE_INFO "waiting for configs to apply"
-  for i in $(kubectl get clusterversion -o name); do 
-    kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
-  done
-
-  kubectl create ns ${TESTNSDB} 2>/dev/null || true
-
-  kubectl apply -n ${TESTNSDB} -f $GRPL_WORKDIR/files/db.yaml
-
-  status_log $TYPE_SUCCESS "all configs are applied"
-
-  # previously we were running
-  # kubectl rollout status -n grpl-db --watch --timeout=600s sts grappledb-mysql
-  # and getting "error: rollout status is only available for RollingUpdate strategy type"
-  # because grappledb-mysql is of type statefulset not deployment
-  # and rollour status is only avaialble for deployments
-  # so now we'll directly check of the status of statefulset
-  status_log $TYPE_INFO "wating for StatefulSet grappledb-mysql to be in running state"
-  sleep 5
-  timedOut=true
-  for _ in {1..120}; do  # 120 iterations for 10 minutes with 5 seconds interval
-      kubectl get statefulset grappledb-mysql -n grpl-db | grep '1/1' >/dev/null 2>&1 && {
-          echo "StatefulSet grappledb-mysql is now running. Proceeding."
-          status_log $TYPE_SUCCESS "StatefulSet grappledb-mysql is now running. Proceeding."
-          timedOut=false
-          break
-      }
-      sleep 5
-  done
-  if ${timedOut}; then
-    echo "StatefulSet $STATEFULSET_NAME did not start within 10 minutes. Exiting."
-    status_log $TYPE_ERROR "${EDITION} Failed to Deploy"
-    exit 1
-  fi
-
-
-  eval "$(getGumSpinnerOrLogger "Deploying ${EDITION}") helm upgrade --install ${TESTNSDB} oci://public.ecr.aws/${awsregistry}/gras-deploy -n ${TESTNSDB} -f $GRPL_WORKDIR/files/testdb.yaml ${MINIKUBE_PATCH} --create-namespace "
-
-  # not required anymore since downloading the file from the git repo
-  # while ! kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi 2>/dev/null | grep grapi; do echo -n .; sleep 1; done
-
-  # sleep 30
-
-  # if [ "$(kubectl get -n ${TESTNSDB} $(kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi -o name) --template '{{(index .status.initContainerStatuses 0).ready}}')" = "false" ]; then
-  #   kubectl cp -n ${TESTNSDB} $GRPL_WORKDIR/files/classicmodelsid.tgz $(kubectl get po -n ${TESTNSDB} -l app.kubernetes.io/name=grapi -o name | sed "s,pod/,,g"):/tmp/classicmodelsid.tgz -c init-db
-  # fi
-
-fi
-
-status_log $TYPE_SUCCESS "${EDITION} is successfuly deployed"
-cli_log "example deploy END"
+DB_TYPE=$(if [ "${DB_TYPE}" != "" ]; then echo ${DB_TYPE}; else gum choose  --header "Please select the database type you want" $INTERNAL_DB $EXTERNAL_DB; fi) || exit $?
+status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
