@@ -130,9 +130,9 @@ Commands:
     
 Examples:
 
-    grpl d h        or        grpl doc help
-    grpl d cli      or        grpl doc cli
-    grpl d crds     or        grpl doc crds
+    grpl doc help
+    grpl doc cli
+    grpl doc crds
 "
 
     if [ "$type" == $WEB_DOC ]; then
@@ -180,8 +180,8 @@ Commands:
     v or version                List version
     u or upgrade                Upgrade grpl
     a or app or application     Initialize grpl application
-    d or doc                    Documentation
-    dev                         Devspace Dev
+    d or dev                    Devspace Dev
+    doc                         Documentation
     grapi                       Grapi commands
     gruim                       Gruim commands
     *                           Help menu
@@ -194,10 +194,10 @@ Examples:
     grpl v [commands]    or    grpl version [commands]     
     grpl u [commands]    or    grpl upgrade [commands]  
     grpl a [commands]    or    grpl app     [commands]    or    grpl application [commands] 
-    grpl d [commands]    or    grpl doc     [commands]
-    grpl dev [commands]
+    grpl d [commands]    or    grpl dev [commands]
     grpl grapi [commands]
     grpl gruim [commands]
+    grpl doc   [commands]
     grpl *
 
 "
@@ -976,22 +976,91 @@ Usage:
 Commands:
 
     h or help                           Help menu
-    dev                                 to run to start grapple
-    dev ns                              to get namespace help menu
-    dev ns <namespace>                  to set namespace for grapple
-    dev enter grapi                     to enter grapi container
-    dev enter gruim                     to enter grapi container
-    dev <any command>                   to run any devspace <command>
+    add                                 Adds something to devspace.yaml
+    analyze                             Analyzes a kubernetes namespace and checks for potential problems
+    attach                              Attaches to a container
+    build                               Builds all defined images and pushes them
+    cleanup                             Cleans up resources
+    completion                          Outputs shell completion for the given shell (bash or zsh)
+    deploy                              Deploys the project
+    enter                               Open a shell to a container
+    init                                Initializes DevSpace in the current folder
+    list                                Lists configuration
+    logs                                Prints the logs of a pod and attaches to it
+    open                                Opens the space in the browser
+    print                               Prints displays the configuration
+    purge                               Deletes deployed resources
+    remove                              Removes devspace configuration
+    render                              Builds all defined images and shows the yamls that would be deployed
+    reset                               Resets an cluster token
+    restart                             Restarts containers where the sync restart helper is injected
+    run                                 Executes a predefined command
+    run-pipeline                        Starts a DevSpace pipeline
+    set                                 Sets global configuration changes
+    sync                                Starts a bi-directional sync between the target container and the local path
+    ui                                  Opens the localhost UI in the browser
+    update                              Updates the current config
+    upgrade                             Upgrades the DevSpace CLI to the newest version
+    use                                 Uses specific config
+    version                             Prints version of devspace
+    ns                                  to get namespace help menu
+    ns <namespace>                      to set namespace for grapple
+    enter grapi                         to enter grapi container
+    enter gruim                         to enter grapi container      
+
+Flags:
+        --debug                        Prints the stack trace if an error occurs
+        --disable-profile-activation   If true will ignore all profile activations
+    -h, --help                         help for devspace
+        --inactivity-timeout int       Minutes the current user is inactive (no mouse or keyboard interaction) until DevSpace will exit automatically. 0 to disable. Only supported on windows and mac operating systems
+        --kube-context string          The kubernetes context to use
+        --kubeconfig string            The kubeconfig path to use
+    -n, --namespace string             The kubernetes namespace to use
+        --no-colors                    Do not show color highlighting in log output. This avoids invisible output with different terminal background colors
+        --no-warn                      If true does not show any warning when deploying into a different namespace or kube-context than before
+        --override-name string         If specified will override the DevSpace project name provided in the devspace.yaml
+    -p, --profile strings              The DevSpace profiles to apply. Multiple profiles are applied in the order they are specified
+        --silent                       Run in silent mode and prevents any devspace log output except panics & fatals
+    -s, --switch-context               Switches and uses the last kube context and namespace that was used to deploy the DevSpace project
+        --var strings                  Variables to override during execution (e.g. --var=MYVAR=MYVALUE)
+    -v, --version                      version for devspace
+  
     
 Examples:    
 
     grpl dev h    or    grpl dev help
     grpl dev
+    grpl dev add
+    grpl dev analyze
+    grpl dev attach
+    grpl dev build
+    grpl dev cleanup
+    grpl dev completion
+    grpl dev deploy
+    grpl dev enter
+    grpl dev init
+    grpl dev list
+    grpl dev logs
+    grpl dev open
+    grpl dev print
+    grpl dev purge
+    grpl dev remove
+    grpl dev render
+    grpl dev reset
+    grpl dev restart
+    grpl dev run
+    grpl dev run-pipeline
+    grpl dev set
+    grpl dev sync
+    grpl dev ui
+    grpl dev update
+    grpl dev upgrade
+    grpl dev use
+    grpl dev version
     grpl dev ns
     grpl dev ns grapple-namespace
     grpl dev enter grapi
     grpl dev enter gruim
-    grpl dev <any comamnd>   
 
 "
     if [ "$type" == $WEB_DOC ]; then
@@ -1029,7 +1098,7 @@ $meta
 
 Usage: 
 
-    grpl dev [command]
+    grpl grapi [command]
 
 Commands:
 
@@ -1081,7 +1150,7 @@ $meta
 
 Usage: 
 
-    grpl dev [command]
+    grpl gruim [command]
 
 Commands:
 
