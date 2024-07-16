@@ -22,9 +22,36 @@ if [[ $# == 1 ]] && [[ "$1" == "migrate-db" ]]; then
     exit 0
 fi
 
+# "grpl grapi export" case
+if [[ $1 == "export" ]]; then
+
+    IFS='=' read -r var_name var_value <<< "$2"
+    env_var="grapi_env_var_$var_name='$var_value'"
+    echo "$env_var" >> ~/.bashrc
+    echo "exported $var_name successfully"
+    exit 0
+fi
+
 # enter grapi container case
 if [[ $# == 1 ]] && [[ "$1" == "enter" ]]; then
-    devspace enter  --label-selector app.kubernetes.io/name=grapi
+    
+    if grep "grapi_env_var" ~/.bashrc >/dev/null; then {
+        grapi_vars=$(grep "grapi_env_var" ~/.bashrc)
+        mapfile -t grapi_vars < <(grep "grapi_env_var" ~/.bashrc)
+
+        env_vars=""
+        for var in "${grapi_vars[@]}"
+        do
+            result="${var#grapi_env_var_}"
+            env_vars="$env_vars $result"
+        done
+
+        devspace enter  --label-selector app.kubernetes.io/name=grapi -- env $env_vars /bin/bash 
+    } else {
+        devspace enter  --label-selector app.kubernetes.io/name=grapi
+    }
+    fi
+
     exit 0
 fi
 

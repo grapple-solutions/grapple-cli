@@ -16,17 +16,47 @@ check_and_install_devspace
 
 cli_args=$@
 
-# "grpl grapi migrate-db" case
+# "grpl gruim migrate-db" case
 if [[ $# == 1 ]] && [[ "$1" == "rebuild" ]]; then
     devspace run gruim rebuild
     exit 0
 fi
 
-# enter gruim container case
-if [[ $# == 1 ]] && [[ "$1" == "enter" ]]; then
-    devspace enter  --label-selector app.kubernetes.io/name=gruim
+# "grpl gruim export" case
+if [[ $1 == "export" ]]; then
+
+    IFS='=' read -r var_name var_value <<< "$2"
+    env_var="gruim_env_var_$var_name='$var_value'"
+    echo "$env_var" >> ~/.bashrc
+    echo "exported $var_name successfully"
     exit 0
 fi
+
+# enter gruim container case
+if [[ $# == 1 ]] && [[ "$1" == "enter" ]]; then
+    
+    if grep "gruim_env_var" ~/.bashrc; then {
+        gruim_vars=$(grep "gruim_env_var" ~/.bashrc)
+        mapfile -t gruim_vars < <(grep "gruim_env_var" ~/.bashrc)
+
+        env_vars=""
+        for var in "${gruim_vars[@]}"
+        do
+            result="${var#gruim_env_var_}"
+            env_vars="$env_vars $result"
+        done
+
+        echo "$env_vars"
+
+        devspace enter  --label-selector app.kubernetes.io/name=gruim -- env $env_vars /bin/sh
+    } else {
+        devspace enter  --label-selector app.kubernetes.io/name=gruim
+    }
+    fi
+
+    exit 0
+fi
+
 
 # check to see if gruim prefex needs to be added or not
 if devspace enter --label-selector app.kubernetes.io/name=gruim -- gruim --help | grep $1 >/dev/null 2>&1; then
