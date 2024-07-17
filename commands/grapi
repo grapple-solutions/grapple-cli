@@ -30,6 +30,7 @@ if [[ $1 == "export" ]]; then
     echo "$env_var" >> ~/.bashrc
     echo "exported $var_name successfully"
     exit 0
+
 fi
 
 # enter grapi container case
