@@ -309,6 +309,21 @@ getGumSpinnerOrLogger() {
 
 }
 
+remove_spaces() {
+  local input_string="$1"
+  local output_string="${input_string// /}"
+  echo "$output_string"
+}
+
+process_parameters() {
+  local updated_params=()
+  for param in "$@"; do
+    param_no_spaces=$(remove_spaces "$param")
+    updated_params+=("$param_no_spaces")
+  done
+  echo "${updated_params[@]}"
+}
+
 setTTYModeState() {
   if [ -t 0 ]; then
     TTY="enabled"
