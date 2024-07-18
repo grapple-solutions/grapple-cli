@@ -694,6 +694,16 @@ Usage:
 
     grpl example deploy [command]
 
+Usage with params from cli:
+
+    grpl example deploy --params --<variable-name>=<variable value>
+    e.g grpl example deploy --params --GRAS_TEMPLATE=db-file 
+
+Usage with params from configfile:
+
+    grpl example deploy --configfile <file-name>.json
+    e.g grpl example deploy --configfile grpl-config.json
+
 Commands:
 
     h or help     Help menu
@@ -706,8 +716,9 @@ Examples:
 
 Variables:
 
-  example   all / db / dbfile
-  EDITION="grpl-basic-all" / "grpl-basic" / "grpl-basic-db" / "grpl-basic-dbfile"
+    GRAS_TEMPLATE: gras template e.g db-file, etc
+    DB_TYPE: db type it can either internal or external
+
 " 
 
     if [ "$type" == $WEB_DOC ]; then
