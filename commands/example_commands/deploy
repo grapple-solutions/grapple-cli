@@ -17,6 +17,7 @@ cli_help() {
 valid_args=(
     "GRAS_TEMPLATE"
     "DB_TYPE"
+    "KUBECTL_CONTEXT"
   )
 
 # check if values are already passed form terminal
@@ -32,7 +33,13 @@ GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; els
 status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 
-KUBECTL_CONTEXT=$(kubectl config get-contexts --no-headers -o name)
+
+is_correct_kubectl_context_provided $KUBECTL_CONTEXT
+if [ "${KUBECTL_CONTEXT}" == "" ]; then 
+  KUBECTL_CONTEXT=$(kubectl config current-context)
+fi
+
+status_log $TYPE_DEFAULT "KUBECTL_CONTEXT: ${KUBECTL_CONTEXT}"
 
 MODELS='customer:{"base":"Entity","name":"customer","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"customername":{"type":"string"},"emaildomain":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}|email:{"base":"Entity","name":"email","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"emaildomain":{"type":"string","required":true},"email":{"type":"string","required":true}}}|cluster:{"base":"Entity","name":"cluster","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"clustername":{"type":"string"},"clusteridentifier":{"type":"string"},"clusterdns":{"type":"string"},"customerId":{"type":"string"},"emailId":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}'
 
