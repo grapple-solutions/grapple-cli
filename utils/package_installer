@@ -438,9 +438,6 @@ extract_grapple_cli_version(){
 
     if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
 
-        # Run kbcli version command and capture its output
-        output=$(brew info --json grapple-cli)
-
         # Extract grpl-cli version number
         grpl_version=$(brew list --versions grapple-cli | grep grapple-cli | awk '{print $2}')
         # Output the latest version
