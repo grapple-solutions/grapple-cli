@@ -441,9 +441,8 @@ extract_grapple_cli_version(){
         # Run kbcli version command and capture its output
         output=$(brew info --json grapple-cli)
 
-        # Extract KubeBlocks version number
-        grpl_version=$(echo "$output" | grep -o '"version": "[^"]*' | sed 's/"version": "//')
-
+        # Extract grpl-cli version number
+        grpl_version=$(brew list --versions grapple-cli | grep grapple-cli | awk '{print $2}')
         # Output the latest version
         echo "$grpl_version" > "$GRPL_WORKDIR/VERSION"
     fi
