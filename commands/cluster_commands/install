@@ -271,8 +271,8 @@ helm_deploy() {
       status_log $TYPE_INFO "logged out of public.ecr.aws/${awsregistry} registry"
       helm_deploy $i
     else 
-      status_log $TYPE_ERROR "${i} Failed to Installed"
-      echo "${i} Failed to Installed due to following error"
+      echo "${i} Failed to Installed"
+      status_log $TYPE_ERROR "${i} Failed to Installed due to following error"
       eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names"  >&2    
       exit 1
     fi
