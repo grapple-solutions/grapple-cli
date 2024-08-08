@@ -70,9 +70,30 @@ echo "$doc" > "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
 
 generate_crds_web_doc() {
 
-    gras_doc=$(kubectl explain gras.spec)
-    grapi_doc=$(kubectl explain grapi.spec)
-    gruim_doc=$(kubectl explain gruim.spec)
+    failure=0
+    if kubectl explain gras.spec >/dev/null 2>&1; then
+        gras_doc=$(kubectl explain gras.spec)
+    else 
+        status_log "$TYPE_ERROR" "Web doc won't include documentation for gras because its not deployed on the cluster"
+        ((failure++))
+    fi
+    if kubectl explain grapi.spec >/dev/null 2>&1; then
+        grapi_doc=$(kubectl explain grapi.spec)
+    else 
+        status_log "$TYPE_ERROR" "Web doc won't include documentation for grapi because its not deployed on the cluster"
+        ((failure++))
+    fi
+    if kubectl explain gruim.spec >/dev/null 2>&1; then
+        gruim_doc=$(kubectl explain gruim.spec)
+    else
+        status_log "$TYPE_ERROR" "Web doc won't include documentation for gruim because its not deployed on the cluster"
+        ((failure++))
+    fi
+    if [ $failure -eq 3 ]; then
+      status_log $TYPE_ERROR "Failed to generate CRDs web doc, because no resource is deployed on the cluster"
+      exit 1
+    fi
+
     status_log $TYPE_INFO "Going to generate grapple web doc. This might take some time"
     crds_doc="
 = grpl CRDs Documentation
