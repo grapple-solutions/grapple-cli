@@ -597,7 +597,7 @@ Variables:
   GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.0' or '0.2.1')
   AUTO_CONFIRM='false' / 'true'
   # kubernetes related configurations
-  KUBE_CONTEXT=kubernetes context
+  KUBE_CONTEXT=kubernetes context, if its set to "currnet" then it will use current kubectl context
   # minikube related configurations
   # no additional configurations
   # CIVO related configurations
@@ -718,7 +718,7 @@ Variables:
 
     GRAS_TEMPLATE: gras template e.g db-file, etc
     DB_TYPE: db type it can either internal or external
-    KUBE_CONTEXT: kubectl context you want to use
+    KUBE_CONTEXT: kubectl context you want to use, if its set to "current" then it will use current kubectl context
 
 " 
 
@@ -932,7 +932,7 @@ Examples:
 
 Variable:
 
-    KUBE_CONTEXT: kubectl context you want to use
+    KUBE_CONTEXT: kubectl context you want to use, if its set to "current" then it will use current kubectl context
     GRAS_NAME: name of the project
     GRAS_TEMPLATE: gras template e.g db-file, etc
     SOURCE_DATA: source of the data
