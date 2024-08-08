@@ -198,7 +198,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays help menu of grpl cli
+Description: 
+
+    Displays help menu of grpl cli
 
 Usage: 
 
@@ -264,7 +266,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays help menu of grpl application
+Description: 
+
+    Displays help menu of grpl application
 
 Usage: 
 
@@ -313,7 +317,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays help menu of grpl cluster
+Description: 
+
+    Displays help menu of grpl cluster
 
 Usage: 
 
@@ -365,7 +371,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays help menu of grpl example
+Description: 
+
+    Displays help menu of grpl example
 
 Usage: 
 
@@ -416,7 +424,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays help menu of grpl install
+Description: 
+
+    Displays help menu of grpl install
 
 Usage: 
 
@@ -455,7 +465,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays help menu of grpl upgrade
+Description: 
+
+    Displays help menu of grpl upgrade
 
 Usage: 
     
@@ -504,7 +516,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays help menu of grpl version
+Description: 
+
+    Displays help menu of grpl version
 
 Usage: 
 
@@ -554,7 +568,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Creates cluster in specificed provider
+Description: 
+
+    Creates cluster in specificed provider
 
 Usage: 
 
@@ -603,7 +619,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Installs grapple in specificed cluster
+Description: 
+
+    Installs grapple in specificed cluster
 
 Usage: 
 
@@ -690,7 +708,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays status of the cluster
+Description: 
+
+    Displays status of the cluster
 
 Usage: 
 
@@ -740,7 +760,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Deploys grapple example using specified template
+Description: 
+
+    Deploys grapple example using specified template
 
 Usage: 
 
@@ -807,7 +829,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays status of the grapple example deployment
+Description: 
+
+    Displays status of the grapple example deployment
 
 Usage: 
 
@@ -857,7 +881,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Initializes a new grapple application
+Description: 
+
+    Initializes a new grapple application
 
 Usage: 
 
@@ -911,7 +937,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays help menu for grpl resource
+Description: 
+
+    Displays help menu for grpl resource
 
 Usage: 
 
@@ -961,7 +989,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Deploy a grapple resource with respect to specified gras template
+Description: 
+
+    Deploy a grapple resource with respect to specified gras template
 
 Usage: 
 
@@ -1041,7 +1071,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays help menu for grpl dev
+Description: 
+
+    Displays help menu for grpl dev
 
 Usage: 
 
@@ -1170,7 +1202,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays help menu for grpl grapi
+Description: 
+
+    Displays help menu for grpl grapi
 
 Usage: 
 
@@ -1224,7 +1258,9 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
-Displays help menu for grpl gruim
+Description: 
+
+    Displays help menu for grpl gruim
 
 Usage: 
 
