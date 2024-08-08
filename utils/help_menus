@@ -718,7 +718,7 @@ Variables:
 
     GRAS_TEMPLATE: gras template e.g db-file, etc
     DB_TYPE: db type it can either internal or external
-    KUBECTL_CONTEXT: kubectl context you want to use
+    KUBE_CONTEXT: kubectl context you want to use
 
 " 
 
@@ -932,7 +932,7 @@ Examples:
 
 Variable:
 
-    KUBECTL_CONTEXT: kubectl context you want to use
+    KUBE_CONTEXT: kubectl context you want to use
     GRAS_NAME: name of the project
     GRAS_TEMPLATE: gras template e.g db-file, etc
     SOURCE_DATA: source of the data
