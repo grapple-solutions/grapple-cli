@@ -72,15 +72,18 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else [ $TTY == "enabled" ] &&  gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
 
-  if [ "${CIVO_CLUSTER}" != "" ]; then 
-    is_correct_civo_cluster_provided $CIVO_CLUSTER 
-  fi
+  # if [ "${CIVO_CLUSTER}" != "" ]; then 
+  #   is_correct_civo_cluster_provided $CIVO_CLUSTER 
+  # fi
   CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if [ $TTY == "enabled" ] && gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name > /dev/null; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
   echo "selected civo cluster: ${CIVO_CLUSTER}"
 
   if ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
     if ! eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl get ns"; then
       status_log $TYPE_ERROR "Failed to switch to ${CIVO_CLUSTER}"
+      # following is to show the reason for failure
+      reason=$(civo k8s config ${CIVO_CLUSTER} --save --switch)
+      status_log $TYPE_ERROR "${reason}"
       exit 1
     fi
   fi
