@@ -28,7 +28,11 @@ generate_cli_web_doc() {
     grpl_gruim_cli_help $WEB_DOC
      doc="
 = grpl cli Documentation
-:toc: 
+:toc: left
+:toclevels: 3
+:sectanchors:
+:sectlinks:
+:sectnums:
 
 == Introduction
 
@@ -72,7 +76,11 @@ generate_crds_web_doc() {
     status_log $TYPE_INFO "Going to generate grapple web doc. This might take some time"
     crds_doc="
 = grpl CRDs Documentation
-:toc: 
+:toc: left
+:toclevels: 3
+:sectanchors:
+:sectlinks:
+:sectnums:
 
 == Introduction
 
@@ -168,6 +176,9 @@ https://grapple-solutions.com/
     grpl_cli_doc="
 $cli_name
 $meta
+
+Displays help menu of grpl cli
+
 Usage: 
 
     grpl [command]
@@ -232,6 +243,8 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Displays help menu of grpl application
+
 Usage: 
 
     grpl application [command]
@@ -278,6 +291,8 @@ https://grapple-solutions.com/
     grpl_cluster_doc="
 $cli_name
 $meta
+
+Displays help menu of grpl cluster
 
 Usage: 
 
@@ -329,6 +344,8 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Displays help menu of grpl example
+
 Usage: 
 
     grpl example [command]
@@ -378,6 +395,8 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Displays help menu of grpl install
+
 Usage: 
 
     grpl install [command]
@@ -414,6 +433,8 @@ https://grapple-solutions.com/
     grpl_upgrade_doc="
 $cli_name
 $meta
+
+Displays help menu of grpl upgrade
 
 Usage: 
     
@@ -461,6 +482,8 @@ https://grapple-solutions.com/
     grpl_version_doc="
 $cli_name
 $meta
+
+Displays help menu of grpl version
 
 Usage: 
 
@@ -510,6 +533,8 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Creates cluster in specificed provider
+
 Usage: 
 
     grpl cluster create [command]
@@ -556,6 +581,8 @@ https://grapple-solutions.com/
     grpl_cluster_install_doc="
 $cli_name
 $meta
+
+Installs grapple in specificed cluster
 
 Usage: 
 
@@ -642,6 +669,8 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Displays status of the cluster
+
 Usage: 
 
     grpl cluster status [command]
@@ -689,6 +718,8 @@ https://grapple-solutions.com/
     grpl_example_deploy_doc="
 $cli_name
 $meta
+
+Deploys grapple example using specified template
 
 Usage: 
 
@@ -755,6 +786,8 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Displays status of the grapple example deployment
+
 Usage: 
 
     grpl example status [command]
@@ -802,6 +835,8 @@ https://grapple-solutions.com/
     grpl_application_init_doc="
 $cli_name
 $meta
+
+Initializes a new grapple application
 
 Usage: 
 
@@ -855,6 +890,8 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Displays help menu for grpl resource
+
 Usage: 
 
     grpl resource [command]
@@ -902,6 +939,8 @@ https://grapple-solutions.com/
     grpl_resource_deploy_doc="
 $cli_name
 $meta
+
+Deploy a grapple resource with respect to specified gras template
 
 Usage: 
 
@@ -980,6 +1019,8 @@ https://grapple-solutions.com/
     grpl_dev_doc="
 $cli_name
 $meta
+
+Displays help menu for grpl dev
 
 Usage: 
 
@@ -1108,6 +1149,8 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Displays help menu for grpl grapi
+
 Usage: 
 
     grpl grapi [command]
@@ -1159,6 +1202,8 @@ https://grapple-solutions.com/
     grpl_gruim_doc="
 $cli_name
 $meta
+
+Displays help menu for grpl gruim
 
 Usage: 
 
