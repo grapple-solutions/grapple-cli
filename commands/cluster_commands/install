@@ -114,11 +114,8 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
 fi
 
-# if Kubernetes, then pre-set the configuration params
+# if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
-  if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ]; then
-    KUBE_CONTEXT=$(kubectl config current-context)
-  fi
   KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else kubectl config get-contexts -o name | gum choose; fi)
 fi
 

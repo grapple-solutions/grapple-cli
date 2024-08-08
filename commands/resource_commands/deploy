@@ -487,7 +487,7 @@ added_internal_datasource_config_to_template() {
 
 # valid arguments array
 valid_args=(
-    "KUBE_CONTEXT"
+    "KUBECTL_CONTEXT"
     "GRAS_NAME"
     "GRAS_TEMPLATE"
     "SOURCE_DATA"
@@ -507,15 +507,12 @@ valid_args=(
 # if yes? then store then in the respective vars
 extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@")
 
-if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ]; then 
-  KUBE_CONTEXT=$(kubectl config current-context)
-fi
 #check if input from params is valid or not
-is_correct_kubectl_context_provided $KUBE_CONTEXT
+is_correct_kubectl_context_provided $KUBECTL_CONTEXT
 contexts=$(kubectl config get-contexts -o name)
-KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else gum choose  --header "Please select kubectl context you want to use" $contexts ; fi) || exit $?
-kubectl config use-context $KUBE_CONTEXT
-status_log $TYPE_DEFAULT "KUBE_CONTEXT: ${KUBE_CONTEXT}"
+KUBECTL_CONTEXT=$(if [ "${KUBECTL_CONTEXT}" != "" ]; then echo ${KUBECTL_CONTEXT}; else gum choose  --header "Please select kubectl context you want to use" $contexts ; fi) || exit $?
+kubectl config use-context $KUBECTL_CONTEXT
+status_log $TYPE_DEFAULT "KUBECTL_CONTEXT: ${KUBECTL_CONTEXT}"
 
 
 #check if input from params is valid or not
