@@ -125,10 +125,7 @@ extract_input_params_from_cli() {
 
   if [[ $# -eq 1 ]] && ( [[ $1 == $config_file_params ]] || [[ $1 == $values_params ]] || [[ $1 == $cli_params ]] ); then
     status_log $TYPE_ERROR "Error: $1 require subsequent agruments, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
-    return 1
-  elif [[ $# -eq 1 ]]; then 
-    status_log $TYPE_ERROR "Error: $1 is not a valid agrument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
-    return 1    
+    exit 1 
   fi
 
   while [[ $# -gt 0 ]]; do
