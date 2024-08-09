@@ -28,11 +28,11 @@ valid_args=(
 extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@")
 
 #check if input from params is valid or not
-# if [ "${PROJECT_NAME}" != "" ]; then 
-#   is_value_correct_wrt_regex $PROJECT_NAME $alphaNum_plus_hyphen_and_underscope_regex "Project name can only contain alpha numaric characters, '-'and '_' as special characters"
-# fi
-# PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
-# echo "project name: ${PROJECT_NAME}"
+if [ "${PROJECT_NAME}" != "" ]; then 
+  is_value_correct_wrt_regex $PROJECT_NAME $alphaNum_plus_hyphen_and_underscope_regex "Project name can only contain alpha numaric characters, '-'and '_' as special characters"
+fi
+PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
+echo "project name: ${PROJECT_NAME}"
 
 # ----------------------- params code ended ---------------------------
 
