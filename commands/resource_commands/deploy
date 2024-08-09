@@ -283,8 +283,8 @@ take_datasource_input_from_cli() {
     user=$(prompt_for_input_with_validation "user: " "please provide user: " "$non_empty_regex" "user name can't be empty")
     status_log $TYPE_DEFAULT "user: ${user}"
 
-    read -s -p "password: " password
-    echo ""
+    read -s -p " password: " password
+    status_log $TYPE_DEFAULT 
 
     yq -i ".grapi.datasources[$index].name=\"$datasource\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
     yq -i ".grapi.datasources[$index].spec.$ds_type.name=\"$datasource\" | .grapi.datasources[$index].spec.$ds_type.name style=\"double\"" $template_file_dest
@@ -420,9 +420,10 @@ check_and_create_kubens() {
         if [ "$another_rule" == "Select from existing" ]; then
             namespaces=$(kubectl get namespaces -o name | awk -F'/' '{print $2}')
             current_ns="default"
-            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else gum choose  --header "Please select kubectl namespace you want to use, default value is '$current_ns'" $namespaces --selected=$current_ns ; fi) || exit $?
+            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else gum choose  --header "Please select kubectl namespace you want to use" $namespaces --selected=$current_ns ; fi) || exit $?
         else
-            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else prompt_for_input_with_validation "Enter KUBE_NS: " "Provide kube ns" "$non_empty_regex" "kube ns can't be empty"; fi) || exit $?
+            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else prompt_for_explicit_input_with_validation "Enter KUBE_NS: " "default value is '$GRAS_NAME'" ".*" "kube ns can't be empty"; fi) || exit $?
+            if [ "${KUBE_NS}" == "" ]; then KUBE_NS=$GRAS_NAME; fi
             if ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
                     status_log $TYPE_INFO "namespace $KUBE_NS doesn't exist, now creating"
                     kubectl create namespace "$KUBE_NS"
