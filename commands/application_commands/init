@@ -28,11 +28,11 @@ valid_args=(
 extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@")
 
 #check if input from params is valid or not
-if [ "${PROJECT_NAME}" != "" ]; then 
-  is_value_correct_wrt_regex $PROJECT_NAME $alphaNum_plus_hyphen_and_underscope_regex "Project name can only contain alpha numaric characters, '-'and '_' as special characters"
-fi
-PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
-echo "project name: ${PROJECT_NAME}"
+# if [ "${PROJECT_NAME}" != "" ]; then 
+#   is_value_correct_wrt_regex $PROJECT_NAME $alphaNum_plus_hyphen_and_underscope_regex "Project name can only contain alpha numaric characters, '-'and '_' as special characters"
+# fi
+# PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
+# echo "project name: ${PROJECT_NAME}"
 
 # ----------------------- params code ended ---------------------------
 
@@ -40,13 +40,23 @@ echo "project name: ${PROJECT_NAME}"
 if ! ls $GRPL_WORKDIR | grep "$PROJECT_NAME" >/dev/null 2>&1; then
   # clone the grapple-template repo
   check_and_install_git
-  eval "$(getGumSpinnerOrLogger "cloning grapple template" ) git clone \"https://github.com/grapple-solutions/grapple-template.git\" $PROJECT_NAME"
+  if ! eval "$(getGumSpinnerOrLogger "cloning grapple template" ) git clone \"https://github.com/grapple-solutions/grapple-template.git\" $PROJECT_NAME >/dev/null 2>&1"; then
+    status_log $TYPE_ERROR "failed to clone grapple template due to following error"
+    errMsg=$(git clone "https://github.com/grapple-solutions/grapple-template.git" $PROJECT_NAME)
+    status_log $TYPE_ERROR "$errMsg"
+    exit 1
+  fi
 else
-  status_log $TYPE_ERROR "failed to clone grapple template"
+  status_log $TYPE_ERROR "failed to clone grapple template because a folder with this name already exist in the current directory"
   exit 1
 fi
 
-awk -v repl="$PROJECT_NAME" '{gsub("grapple-template", repl)}1' "$PROJECT_NAME/README.md" > temp && mv temp "$PROJECT_NAME/README.md"
+if ! awk -v repl="$PROJECT_NAME" '{gsub("grapple-template", repl)}1' "$PROJECT_NAME/README.md" > temp && mv temp "$PROJECT_NAME/README.md" >/dev/null 2>&1; then
+  status_log $TYPE_ERROR "failed to replace $PROJECT_NAME with 'grapple-template' in README.md file of the  project '$PROJECT_NAME' due to following error"
+  errMsg=$(awk -v repl="$PROJECT_NAME" '{gsub("grapple-template", repl)}1' "$PROJECT_NAME/README.md")
+  status_log $TYPE_ERROR "$errMsg"
+  exit 1
+fi
 
 cli_log "application init COMPLETED"
 status_log $TYPE_SUCCESS "application initialization is complete"
