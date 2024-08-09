@@ -396,7 +396,9 @@ deploy_template() {
     fi
 
     if ! eval "$(getGumSpinnerOrLogger "Deploying template") helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f $template_file_dest ${MINIKUBE_PATCH}"; then
-        status_log $TYPE_ERROR "Failed to deploy template, configs might be invalid"
+        status_log $TYPE_ERROR "Failed to deploy template due to following error"
+        errMsg=$(helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f $template_file_dest ${MINIKUBE_PATCH})
+        status_log $TYPE_ERROR "${errMsg}"
         exit 1
     fi
     
