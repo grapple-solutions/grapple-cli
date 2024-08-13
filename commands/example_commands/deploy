@@ -34,7 +34,7 @@ status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 
 
-if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ]; then 
+if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then 
   KUBE_CONTEXT=$(kubectl config current-context)
 fi
 is_correct_kubectl_context_provided $KUBE_CONTEXT

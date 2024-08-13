@@ -510,7 +510,7 @@ valid_args=(
 # if yes? then store then in the respective vars
 extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@")
 
-if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ]; then 
+if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then 
   KUBE_CONTEXT=$(kubectl config current-context)
 fi
 #check if input from params is valid or not
