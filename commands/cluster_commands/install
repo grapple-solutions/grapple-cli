@@ -91,14 +91,17 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   # if a CIVO cluster was selected, pre-set the configuration
   CIVO_CLUSTER_ID=$(eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
 
-  if [ "${GRAPPLE_DNS}" == "" ]; then 
-      GRAPPLE_DNS=${CIVO_CLUSTER}
+  # check if a full domain-name was passed in GRAPPLE_DNS
+  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
+    status_log $TYPE_ERROR "Invalid DNS name ${GRAPPLE_DNS} was provided"
+    exit 1
   fi
 
-  # check if the GRAPPLE_DNS ends with .com to confirm a full domain-name was passed in GRAPPLE_DNS
-  if ! [[ $GRAPPLE_DNS =~ \.com$ ]]; then
-    GRAPPLE_DOMAIN=".grapple-demo.com"
+  if [ "${GRAPPLE_DNS}" == "" ]; then 
+      GRAPPLE_DNS=${CIVO_CLUSTER}
+      GRAPPLE_DOMAIN=".grapple-demo.com"
   fi
+  
 
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
 
@@ -180,12 +183,18 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
     fi
   fi 
 
+  # check if a full domain-name was passed in GRAPPLE_DNS
+  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
+    status_log $TYPE_ERROR "Invalid DNS name ${GRAPPLE_DNS} was provided"
+    exit 1
+  fi
+
   if [ "${GRAPPLE_DNS}" == "" ]; then 
     GRAPPLE_DNS=test
   fi
 
-  # check if the GRAPPLE_DNS ends with .com to confirm a full domain-name was passed in GRAPPLE_DNS
-  if ! [[ $GRAPPLE_DNS =~ \.com$ ]]; then
+  # check if a full domain-name was passed in GRAPPLE_DNS
+  if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
     GRAPPLE_DOMAIN=""
   fi
   GRAPPLE_DOMAIN=""
@@ -210,7 +219,7 @@ echo "installing grapple version: ${GRAPPLE_VERSION}"
 # The script then proceeds to dynamically generate values-override.yaml with user inputs
 
 complete_domain="" 
-if [[ $GRAPPLE_DNS =~ \.com$ ]]; then
+if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
   complete_domain=$GRAPPLE_DNS
 else 
   complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
@@ -301,7 +310,7 @@ helm_deploy() {
 
 }
 
-if [ "${TARGET_PLATFORM}" = $CIVO ] && ! [[ $GRAPPLE_DNS =~ \.com$ ]]; then
+if [ "${TARGET_PLATFORM}" = $CIVO ] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
   kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${GRAPPLE_DNS}" --env="CIVO_MASTER_IP=${CIVO_MASTER_IP}" --restart=Never
@@ -323,7 +332,7 @@ if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; the
 fi
 
 # remove the DNS job again
-if [ "${TARGET_PLATFORM}" = $CIVO ]  && ! [[ $GRAPPLE_DNS =~ \.com$ ]]; then
+if [ "${TARGET_PLATFORM}" = $CIVO ]  && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
 fi
 
