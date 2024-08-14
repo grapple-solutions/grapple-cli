@@ -283,8 +283,8 @@ take_datasource_input_from_cli() {
     user=$(prompt_for_input_with_validation "user: " "please provide user: " "$non_empty_regex" "user name can't be empty")
     status_log $TYPE_DEFAULT "user: ${user}"
 
-    read -s -p "password: " password
-    echo ""
+    read -s -p " password: " password
+    status_log $TYPE_DEFAULT 
 
     yq -i ".grapi.datasources[$index].name=\"$datasource\" | .grapi.datasources[$index].name style=\"double\"" $template_file_dest
     yq -i ".grapi.datasources[$index].spec.$ds_type.name=\"$datasource\" | .grapi.datasources[$index].spec.$ds_type.name style=\"double\"" $template_file_dest
@@ -396,7 +396,9 @@ deploy_template() {
     fi
 
     if ! eval "$(getGumSpinnerOrLogger "Deploying template") helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f $template_file_dest ${MINIKUBE_PATCH}"; then
-        status_log $TYPE_ERROR "Failed to deploy template, configs might be invalid"
+        status_log $TYPE_ERROR "Failed to deploy template due to following error"
+        errMsg=$(helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f $template_file_dest ${MINIKUBE_PATCH})
+        status_log $TYPE_ERROR "${errMsg}"
         exit 1
     fi
     
@@ -418,9 +420,10 @@ check_and_create_kubens() {
         if [ "$another_rule" == "Select from existing" ]; then
             namespaces=$(kubectl get namespaces -o name | awk -F'/' '{print $2}')
             current_ns="default"
-            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else gum choose  --header "Please select kubectl namespace you want to use, default value is '$current_ns'" $namespaces --selected=$current_ns ; fi) || exit $?
+            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else gum choose  --header "Please select kubectl namespace you want to use" $namespaces --selected=$current_ns ; fi) || exit $?
         else
-            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else prompt_for_input_with_validation "Enter KUBE_NS: " "Provide kube ns" "$non_empty_regex" "kube ns can't be empty"; fi) || exit $?
+            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else prompt_for_explicit_input_with_validation "Enter KUBE_NS: " "default value is '$GRAS_NAME'" ".*" "kube ns can't be empty"; fi) || exit $?
+            if [ "${KUBE_NS}" == "" ]; then KUBE_NS=$GRAS_NAME; fi
             if ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
                     status_log $TYPE_INFO "namespace $KUBE_NS doesn't exist, now creating"
                     kubectl create namespace "$KUBE_NS"
@@ -487,7 +490,7 @@ added_internal_datasource_config_to_template() {
 
 # valid arguments array
 valid_args=(
-    "KUBECTL_CONTEXT"
+    "KUBE_CONTEXT"
     "GRAS_NAME"
     "GRAS_TEMPLATE"
     "SOURCE_DATA"
@@ -507,12 +510,15 @@ valid_args=(
 # if yes? then store then in the respective vars
 extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@")
 
+if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then 
+  KUBE_CONTEXT=$(kubectl config current-context)
+fi
 #check if input from params is valid or not
-is_correct_kubectl_context_provided $KUBECTL_CONTEXT
+is_correct_kubectl_context_provided $KUBE_CONTEXT
 contexts=$(kubectl config get-contexts -o name)
-KUBECTL_CONTEXT=$(if [ "${KUBECTL_CONTEXT}" != "" ]; then echo ${KUBECTL_CONTEXT}; else gum choose  --header "Please select kubectl context you want to use" $contexts ; fi) || exit $?
-kubectl config use-context $KUBECTL_CONTEXT
-status_log $TYPE_DEFAULT "KUBECTL_CONTEXT: ${KUBECTL_CONTEXT}"
+KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else gum choose  --header "Please select kubectl context you want to use" $contexts ; fi) || exit $?
+kubectl config use-context $KUBE_CONTEXT
+status_log $TYPE_DEFAULT "KUBE_CONTEXT: ${KUBE_CONTEXT}"
 
 
 #check if input from params is valid or not

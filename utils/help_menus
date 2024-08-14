@@ -28,7 +28,11 @@ generate_cli_web_doc() {
     grpl_gruim_cli_help $WEB_DOC
      doc="
 = grpl cli Documentation
-:toc: 
+:toc: left
+:toclevels: 3
+:sectanchors:
+:sectlinks:
+:sectnums:
 
 == Introduction
 
@@ -66,13 +70,38 @@ echo "$doc" > "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
 
 generate_crds_web_doc() {
 
-    gras_doc=$(kubectl explain gras.spec)
-    grapi_doc=$(kubectl explain grapi.spec)
-    gruim_doc=$(kubectl explain gruim.spec)
+    failure=0
+    if kubectl explain gras.spec >/dev/null 2>&1; then
+        gras_doc=$(kubectl explain gras.spec)
+    else 
+        status_log "$TYPE_ERROR" "Web doc won't include documentation for gras because its not deployed on the cluster"
+        ((failure++))
+    fi
+    if kubectl explain grapi.spec >/dev/null 2>&1; then
+        grapi_doc=$(kubectl explain grapi.spec)
+    else 
+        status_log "$TYPE_ERROR" "Web doc won't include documentation for grapi because its not deployed on the cluster"
+        ((failure++))
+    fi
+    if kubectl explain gruim.spec >/dev/null 2>&1; then
+        gruim_doc=$(kubectl explain gruim.spec)
+    else
+        status_log "$TYPE_ERROR" "Web doc won't include documentation for gruim because its not deployed on the cluster"
+        ((failure++))
+    fi
+    if [ $failure -eq 3 ]; then
+      status_log $TYPE_ERROR "Failed to generate CRDs web doc, because no resource is deployed on the cluster"
+      exit 1
+    fi
+
     status_log $TYPE_INFO "Going to generate grapple web doc. This might take some time"
     crds_doc="
 = grpl CRDs Documentation
-:toc: 
+:toc: left
+:toclevels: 3
+:sectanchors:
+:sectlinks:
+:sectnums:
 
 == Introduction
 
@@ -168,6 +197,11 @@ https://grapple-solutions.com/
     grpl_cli_doc="
 $cli_name
 $meta
+
+Description: 
+
+    Displays help menu of grpl cli
+
 Usage: 
 
     grpl [command]
@@ -232,6 +266,10 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Description: 
+
+    Displays help menu of grpl application
+
 Usage: 
 
     grpl application [command]
@@ -278,6 +316,10 @@ https://grapple-solutions.com/
     grpl_cluster_doc="
 $cli_name
 $meta
+
+Description: 
+
+    Displays help menu of grpl cluster
 
 Usage: 
 
@@ -329,6 +371,10 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Description: 
+
+    Displays help menu of grpl example
+
 Usage: 
 
     grpl example [command]
@@ -378,6 +424,10 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Description: 
+
+    Displays help menu of grpl install
+
 Usage: 
 
     grpl install [command]
@@ -414,6 +464,10 @@ https://grapple-solutions.com/
     grpl_upgrade_doc="
 $cli_name
 $meta
+
+Description: 
+
+    Displays help menu of grpl upgrade
 
 Usage: 
     
@@ -461,6 +515,10 @@ https://grapple-solutions.com/
     grpl_version_doc="
 $cli_name
 $meta
+
+Description: 
+
+    Displays help menu of grpl version
 
 Usage: 
 
@@ -510,6 +568,10 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Description: 
+
+    Creates cluster in specificed provider
+
 Usage: 
 
     grpl cluster create [command]
@@ -557,6 +619,10 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Description: 
+
+    Installs grapple in specificed cluster
+
 Usage: 
 
   grpl cluster install [command]
@@ -597,7 +663,7 @@ Variables:
   GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.0' or '0.2.1')
   AUTO_CONFIRM='false' / 'true'
   # kubernetes related configurations
-  KUBE_CONTEXT=kubernetes context
+  KUBE_CONTEXT=kubernetes context, if its set to "currnet" then it will use current kubectl context
   # minikube related configurations
   # no additional configurations
   # CIVO related configurations
@@ -641,6 +707,10 @@ https://grapple-solutions.com/
     grpl_cluster_status_doc="
 $cli_name
 $meta
+
+Description: 
+
+    Displays status of the cluster
 
 Usage: 
 
@@ -690,6 +760,10 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Description: 
+
+    Deploys grapple example using specified template
+
 Usage: 
 
     grpl example deploy [command]
@@ -718,7 +792,7 @@ Variables:
 
     GRAS_TEMPLATE: gras template e.g db-file, etc
     DB_TYPE: db type it can either internal or external
-    KUBECTL_CONTEXT: kubectl context you want to use
+    KUBE_CONTEXT: kubectl context you want to use, if its set to "current" then it will use current kubectl context
 
 " 
 
@@ -754,6 +828,10 @@ https://grapple-solutions.com/
     grpl_example_status_doc="
 $cli_name
 $meta
+
+Description: 
+
+    Displays status of the grapple example deployment
 
 Usage: 
 
@@ -802,6 +880,10 @@ https://grapple-solutions.com/
     grpl_application_init_doc="
 $cli_name
 $meta
+
+Description: 
+
+    Initializes a new grapple application
 
 Usage: 
 
@@ -855,6 +937,10 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Description: 
+
+    Displays help menu for grpl resource
+
 Usage: 
 
     grpl resource [command]
@@ -903,6 +989,10 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Description: 
+
+    Deploy a grapple resource with respect to specified gras template
+
 Usage: 
 
     grpl resource deploy [command]
@@ -932,7 +1022,7 @@ Examples:
 
 Variable:
 
-    KUBECTL_CONTEXT: kubectl context you want to use
+    KUBE_CONTEXT: kubectl context you want to use, if its set to "current" then it will use current kubectl context
     GRAS_NAME: name of the project
     GRAS_TEMPLATE: gras template e.g db-file, etc
     SOURCE_DATA: source of the data
@@ -980,6 +1070,10 @@ https://grapple-solutions.com/
     grpl_dev_doc="
 $cli_name
 $meta
+
+Description: 
+
+    Displays help menu for grpl dev
 
 Usage: 
 
@@ -1108,6 +1202,10 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 
+Description: 
+
+    Displays help menu for grpl grapi
+
 Usage: 
 
     grpl grapi [command]
@@ -1159,6 +1257,10 @@ https://grapple-solutions.com/
     grpl_gruim_doc="
 $cli_name
 $meta
+
+Description: 
+
+    Displays help menu for grpl gruim
 
 Usage: 
 

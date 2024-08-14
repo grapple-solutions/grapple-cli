@@ -17,7 +17,7 @@ cli_help() {
 valid_args=(
     "GRAS_TEMPLATE"
     "DB_TYPE"
-    "KUBECTL_CONTEXT"
+    "KUBE_CONTEXT"
   )
 
 # check if values are already passed form terminal
@@ -34,12 +34,14 @@ status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 
 
-is_correct_kubectl_context_provided $KUBECTL_CONTEXT
-if [ "${KUBECTL_CONTEXT}" == "" ]; then 
-  KUBECTL_CONTEXT=$(kubectl config current-context)
+if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then 
+  KUBE_CONTEXT=$(kubectl config current-context)
 fi
-
-status_log $TYPE_DEFAULT "KUBECTL_CONTEXT: ${KUBECTL_CONTEXT}"
+is_correct_kubectl_context_provided $KUBE_CONTEXT
+if [ "${KUBE_CONTEXT}" == "" ]; then 
+  KUBE_CONTEXT=$(kubectl config current-context)
+fi
+status_log $TYPE_DEFAULT "KUBE_CONTEXT: ${KUBE_CONTEXT}"
 
 MODELS='customer:{"base":"Entity","name":"customer","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"customername":{"type":"string"},"emaildomain":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}|email:{"base":"Entity","name":"email","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"emaildomain":{"type":"string","required":true},"email":{"type":"string","required":true}}}|cluster:{"base":"Entity","name":"cluster","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"clustername":{"type":"string"},"clusteridentifier":{"type":"string"},"clusterdns":{"type":"string"},"customerId":{"type":"string"},"emailId":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}'
 
@@ -49,7 +51,7 @@ SOURCE_DATA=https://raw.githubusercontent.com/grapple-solutions/grapple-test-dat
 
 # grpl r d db-file
 if [[ "${GRAS_TEMPLATE}" == $DB_FILE ]]; then
-  grpl r d --params --KUBECTL_CONTEXT=$KUBECTL_CONTEXT --GRAS_NAME=gras-$DB_FILE --KUBE_NS=gras-$DB_FILE --GRAS_TEMPLATE=$DB_FILE --SOURCE_DATA="https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/db.json" --MODELS=$MODELS --DB_FILE_PATH=/tmp/data.json --ENABLE_GRUIM=false  --RELATIONS=""
+  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-$DB_FILE --KUBE_NS=gras-$DB_FILE --GRAS_TEMPLATE=$DB_FILE --SOURCE_DATA="https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/db.json" --MODELS=$MODELS --DB_FILE_PATH=/tmp/data.json --ENABLE_GRUIM=false  --RELATIONS=""
   exit 0
 fi
 
@@ -64,25 +66,25 @@ status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
 
 #grpl r d mysql model  internal
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" != $INTERNAL_DB ]]; then
-  grpl r d --params --KUBECTL_CONTEXT=${KUBECTL_CONTEXT} --GRAS_NAME=gras-$DB_MYSQL_MODEL_BASED-$INTERNAL_DB --KUBE_NS=gras-$DB_MYSQL_MODEL_BASED-$INTERNAL_DB --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$INTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --RELATIONS="" --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA
+  grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-$DB_MYSQL_MODEL_BASED-$INTERNAL_DB --KUBE_NS=gras-$DB_MYSQL_MODEL_BASED-$INTERNAL_DB --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$INTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --RELATIONS="" --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA
   exit 0
 fi
 
 
 #grpl r d mysql model  external
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" != $EXTERNAL_DB ]]; then
-  grpl r d --params --KUBECTL_CONTEXT=${KUBECTL_CONTEXT} --GRAS_NAME=gras-$DB_MYSQL_MODEL_BASED-$EXTERNAL_DB --KUBE_NS=gras-$DB_MYSQL_MODEL_BASED-$EXTERNAL_DB --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$EXTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --DATASOURCES=$DATASOURCES --RELATIONS=""  --ENABLE_GRUIM=true --SOURCE_DATA=SOURCE_DATA
+  grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-$DB_MYSQL_MODEL_BASED-$EXTERNAL_DB --KUBE_NS=gras-$DB_MYSQL_MODEL_BASED-$EXTERNAL_DB --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$EXTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --DATASOURCES=$DATASOURCES --RELATIONS=""  --ENABLE_GRUIM=true --SOURCE_DATA=SOURCE_DATA
   exit 0
 fi
 
 #grpl r d mysql discovery  internal
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" != $INTERNAL_DB ]]; then
-  grpl r d --params --KUBECTL_CONTEXT=$KUBECTL_CONTEXT --GRAS_NAME=gras-$DB_MYSQL_DISCOVERY_BASED-$INTERNAL_DB --KUBE_NS=gras-$DB_MYSQL_DISCOVERY_BASED-$INTERNAL_DB --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$INTERNAL_DB --SOURCE_DATA=SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS="" --ENABLE_GRUIM=true
+  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-$DB_MYSQL_DISCOVERY_BASED-$INTERNAL_DB --KUBE_NS=gras-$DB_MYSQL_DISCOVERY_BASED-$INTERNAL_DB --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$INTERNAL_DB --SOURCE_DATA=SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS="" --ENABLE_GRUIM=true
   exit 0
 fi
 
 #grpl r d mysql discovery  external
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" != $EXTERNAL_DB ]]; then
-  grpl r d --params --KUBECTL_CONTEXT=$KUBECTL_CONTEXT --GRAS_NAME=gras-$DB_MYSQL_DISCOVERY_BASED-$EXTERNAL_DB --KUBE_NS=gras-$DB_MYSQL_DISCOVERY_BASED-$EXTERNAL_DB --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB --DATASOURCES=$DATASOURCES --SOURCE_DATA=SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS="" --ENABLE_GRUIM=true
+  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-$DB_MYSQL_DISCOVERY_BASED-$EXTERNAL_DB --KUBE_NS=gras-$DB_MYSQL_DISCOVERY_BASED-$EXTERNAL_DB --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB --DATASOURCES=$DATASOURCES --SOURCE_DATA=SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS="" --ENABLE_GRUIM=true
   exit 0
 fi

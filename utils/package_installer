@@ -192,10 +192,11 @@ check_and_install_asciidoc() {
             eval "$(getGumSpinnerOrLogger "ruby is not installed, now installing ruby") sudo snap install ruby --classic"
             eval "$(getGumSpinnerOrLogger "asciidoctor is not installed, now installing asciidoctor") gem install asciidoctor"
             exe_file_path=$(gem which asciidoctor)
-            extracted_version=$(echo "$string" | awk -F '/' '{print $6}')
+            extracted_version=$(echo "$exe_file_path" | awk -F '/' '{print $6}')
             asciidoc_template_path="~/.gem/gems/{}/bin"
-            asciidoc_path=$(echo "$asciidoc_template_path" | sed 's/{}/asciidoctor-2.0.22/')
+            asciidoc_path=$(echo "$asciidoc_template_path" | sed 's/{}/asciidoctor-2.0.23/')
             export PATH="$asciidoc_path:$PATH"
+            echo "$asciidoc_path:$PATH"
         else
             errMsg="Failed to install asciidoctor, OS ${OS} not supported at the moment"
             echo $errMsg
@@ -438,12 +439,8 @@ extract_grapple_cli_version(){
 
     if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
 
-        # Run kbcli version command and capture its output
-        output=$(brew info --json grapple-cli)
-
-        # Extract KubeBlocks version number
-        grpl_version=$(echo "$output" | grep -o '"version": "[^"]*' | sed 's/"version": "//')
-
+        # Extract grpl-cli version number
+        grpl_version=$(brew list --versions grapple-cli | grep grapple-cli | awk '{print $2}')
         # Output the latest version
         echo "$grpl_version" > "$GRPL_WORKDIR/VERSION"
     fi

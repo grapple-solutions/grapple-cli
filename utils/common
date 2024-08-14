@@ -123,6 +123,11 @@ extract_input_params_from_cli() {
   help_menu_cmd=$1
   shift
 
+  if [[ $# -eq 1 ]] && ( [[ $1 == $config_file_params ]] || [[ $1 == $values_params ]] || [[ $1 == $cli_params ]] ); then
+    status_log $TYPE_ERROR "Error: $1 require subsequent agruments, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+    exit 1 
+  fi
+
   while [[ $# -gt 0 ]]; do
 
     param_type=$1
@@ -147,6 +152,8 @@ extract_input_params_from_cli() {
     elif [[ $param_type == $values_params ]]; then
         # Loop through arguments
         values_yaml_file_names=""
+
+        
 
         while [[ $# -gt 0 ]]; do
             shift
@@ -333,7 +340,6 @@ setTTYModeState() {
 }
 
 setTTYModeState
-
 
 extract_domain_name() {
     fqdn=$1
