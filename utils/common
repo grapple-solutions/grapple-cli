@@ -340,3 +340,10 @@ setTTYModeState() {
 }
 
 setTTYModeState
+
+extract_domain_name() {
+    fqdn=$1
+    # Remove the hostname and keep only the domain and top-level domain
+    domain=$(echo "$fqdn" | awk -F. '{print $(NF-1)"."$NF}')
+    echo "$domain"
+}

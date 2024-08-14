@@ -36,6 +36,7 @@ valid_args=(
     "CIVO_MASTER_IP"
     "CIVO_EMAIL_ADDRESS"
     "CIVO_API_KEY"
+    "GRAPPLE_DNS"
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
@@ -93,9 +94,18 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   # if a CIVO cluster was selected, pre-set the configuration
   CIVO_CLUSTER_ID=$(eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
 
-  GRAPPLE_DNS=${CIVO_CLUSTER}
+  # check if a full domain-name was passed in GRAPPLE_DNS
+  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
+    status_log $TYPE_ERROR "Invalid DNS name ${GRAPPLE_DNS} was provided"
+    exit 1
+  fi
 
-  GRAPPLE_DOMAIN=".grapple-demo.com"
+  if [ "${GRAPPLE_DNS}" == "" ]; then 
+      GRAPPLE_DNS=${CIVO_CLUSTER}
+      GRAPPLE_DOMAIN=".grapple-demo.com"
+  fi
+  
+
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
 
   CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
@@ -178,7 +188,21 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
       sudo cp /tmp/minikube-test /etc/resolver/minikube-test
     fi
   fi 
-  GRAPPLE_DNS=test
+
+  # check if a full domain-name was passed in GRAPPLE_DNS
+  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
+    status_log $TYPE_ERROR "Invalid DNS name ${GRAPPLE_DNS} was provided"
+    exit 1
+  fi
+
+  if [ "${GRAPPLE_DNS}" == "" ]; then 
+    GRAPPLE_DNS=test
+  fi
+
+  # check if a full domain-name was passed in GRAPPLE_DNS
+  if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
+    GRAPPLE_DOMAIN=""
+  fi
   GRAPPLE_DOMAIN=""
   
 
@@ -199,14 +223,21 @@ echo "installing grapple version: ${GRAPPLE_VERSION}"
 # VERSION=$(prompt_for_input_with_validation "Enter version of the grapple solution framework: " "Semver version is expected. Default value if empty: 0.2.0" "$non_empty_regex" "Version cannot be empty." "0.2.0") || exit $?
 
 # The script then proceeds to dynamically generate values-override.yaml with user inputs
+
+complete_domain="" 
+if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
+  complete_domain=$GRAPPLE_DNS
+else 
+  complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
+fi
 cat <<EOF > /tmp/values-override.yaml
 # Default values for grsf-init.
 
-clusterdomain: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
+clusterdomain: ${complete_domain}
 
 # Configuration
 config:
-  clusterdomain: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
+  clusterdomain: ${complete_domain}
   grapiversion: "0.0.1"
   gruimversion: "0.0.1"
   dev: "false"
@@ -217,7 +248,7 @@ config:
   CIVO_REGION: ${CIVO_REGION}
   CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}
   CIVO_MASTER_IP: ${CIVO_MASTER_IP}
-  GRAPPLE_DNS: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
+  GRAPPLE_DNS: ${complete_domain}
   GRAPPLE_VERSION: ${GRAPPLE_VERSION}
 # Additional configurations omitted for brevity
 EOF
@@ -236,11 +267,11 @@ if [ "${AUTO_CONFIRM}" != "true" ]; then
     status_log $TYPE_DEFAULT "CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}"
     status_log $TYPE_DEFAULT "CIVO_MASTER_IP: ${CIVO_MASTER_IP}"
     status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
-    status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}"
+    status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
 
   elif [ "${TARGET_PLATFORM}" == $Minikube ]; then 
     status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
-    status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${GRAPPLE_DNS}${GRAPPLE_DOMAIN}"
+    status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
   fi
 
   gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
@@ -286,7 +317,8 @@ helm_deploy() {
 
 }
 
-if [ "${TARGET_PLATFORM}" = $CIVO ]; then
+if [ "${TARGET_PLATFORM}" = $CIVO ] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+  status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
   kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${GRAPPLE_DNS}" --env="CIVO_MASTER_IP=${CIVO_MASTER_IP}" --restart=Never
 fi
@@ -307,7 +339,7 @@ if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; the
 fi
 
 # remove the DNS job again
-if [ "${TARGET_PLATFORM}" = $CIVO ]; then
+if [ "${TARGET_PLATFORM}" = $CIVO ]  && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
 fi
 
