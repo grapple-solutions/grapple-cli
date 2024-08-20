@@ -96,8 +96,8 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   # check if a full domain-name was passed in GRAPPLE_DNS
   if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
-    status_log $TYPE_ERROR "Invalid DNS name ${GRAPPLE_DNS} was provided"
-    exit 1
+      status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
+      GRAPPLE_DOMAIN=".grapple-demo.com"
   fi
 
   if [ "${GRAPPLE_DNS}" == "" ]; then 
@@ -129,6 +129,11 @@ fi
 
 # if Kubernetes, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
+  # check if a full domain-name was passed in GRAPPLE_DNS
+  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
+      status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
+      GRAPPLE_DOMAIN=".grapple-demo.com"
+  fi
   if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then
     KUBE_CONTEXT=$(kubectl config current-context)
   fi
@@ -189,20 +194,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
     fi
   fi 
 
-  # check if a full domain-name was passed in GRAPPLE_DNS
-  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
-    status_log $TYPE_ERROR "Invalid DNS name ${GRAPPLE_DNS} was provided"
-    exit 1
-  fi
-
-  if [ "${GRAPPLE_DNS}" == "" ]; then 
-    GRAPPLE_DNS=test
-  fi
-
-  # check if a full domain-name was passed in GRAPPLE_DNS
-  if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
-    GRAPPLE_DOMAIN=""
-  fi
+  GRAPPLE_DNS=test
   GRAPPLE_DOMAIN=""
   
 
@@ -320,10 +312,10 @@ helm_deploy() {
 
 }
 
-if [ "${TARGET_PLATFORM}" = $CIVO ] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+if ([ "${TARGET_PLATFORM}" = $CIVO ] || [ "${TARGET_PLATFORM}" = $Kubernetes ]) && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
-  kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${GRAPPLE_DNS}" --env="CIVO_MASTER_IP=${CIVO_MASTER_IP}" --restart=Never
+  kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --env="CIVO_MASTER_IP=${CIVO_MASTER_IP}" --restart=Never
 fi
 
 echo 
