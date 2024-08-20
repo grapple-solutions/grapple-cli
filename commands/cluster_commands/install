@@ -272,6 +272,9 @@ if [ "${AUTO_CONFIRM}" != "true" ]; then
   elif [ "${TARGET_PLATFORM}" == $Minikube ]; then 
     status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
     status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
+  elif [ "${TARGET_PLATFORM}" == $Kubernetes ]; then 
+    status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
+    status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
   fi
 
   gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
