@@ -23,6 +23,14 @@ if [ "$installed_version" == "$stable_version" ]; then
   exit 0
 fi
 
+if ! eval "$(getGumSpinnerOrLogger "Checking is newer version of grapple-cli is available" ) brew update"; then 
+  errMsg="Failed to upgrade grappgle-cli"
+  status_log $TYPE_INFO $errMsg
+  echo $errMsg
+  exit 1
+fi
+
+
 if ! eval "$(getGumSpinnerOrLogger "Upgrading grapple-cli" ) brew upgrade grapple-cli"; then 
   errMsg="Failed to upgrade grappgle-cli"
   status_log $TYPE_INFO $errMsg
