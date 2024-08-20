@@ -12,7 +12,7 @@ cli_help() {
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
-if ! eval "$(getGumSpinnerOrLogger "Checking is newer version of grapple-cli is available" ) brew update"; then 
+if ! eval "$(getGumSpinnerOrLogger "Checking if newer version of grapple-cli is available" ) brew update"; then 
   errMsg="Failed to upgrade grappgle-cli"
   status_log $TYPE_INFO $errMsg
   echo $errMsg
