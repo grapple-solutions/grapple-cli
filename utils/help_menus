@@ -670,9 +670,9 @@ Variables:
   CIVO_REGION=Available CIVO regions (e.g. FRA1)
   CIVO_CLUSTER=CIVO cluster
   CIVO_CLUSTER_ID=CIVO cluster ID
-  CIVO_MASTER_IP=CIVO cluster master IP address
   CIVO_EMAIL_ADDRESS=email address of your CIVO account
   CIVO_API_KEY=api key of your CIVO account
+  CLUSTER_IP= Cluster IP address
 
 " 
 
