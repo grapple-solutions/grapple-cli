@@ -902,7 +902,7 @@ Examples:
 Variables:
 
     PROJECT_NAME=Name of the project
-    RESOURCE_TEMPLATE=Resource of the template
+    CREATE_REPO=If true then it will create and clone a new repo if false then it will only clone the repo
 "
 
     if [ "$type" == $WEB_DOC ]; then
