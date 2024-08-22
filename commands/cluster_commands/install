@@ -33,9 +33,9 @@ valid_args=(
     "CIVO_REGION"
     "CIVO_CLUSTER"
     "CIVO_CLUSTER_ID"
-    "CIVO_MASTER_IP"
     "CIVO_EMAIL_ADDRESS"
     "CIVO_API_KEY"
+    "CLUSTER_IP"
     "GRAPPLE_DNS"
   )
 # check if values are already passed form terminal
@@ -114,8 +114,8 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   CIVO_CLUSTER_NAME=$(if [ "${CIVO_CLUSTER_NAME}" != "" ]; then echo ${CIVO_CLUSTER_NAME}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_CLUSTER_NAME: " "Provide an name for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "selected civo cluster name: ${CIVO_CLUSTER_NAME}"
 
-  CIVO_MASTER_IP=$(if [ "${CIVO_MASTER_IP}" != "" ]; then echo ${CIVO_MASTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
-  echo "selected civo master ip: ${CIVO_MASTER_IP}"
+  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
+  echo "selected civo master ip: ${CLUSTER_IP}"
 
   #check if input from params is valid or not
   if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then 
@@ -138,6 +138,10 @@ if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
     KUBE_CONTEXT=$(kubectl config current-context)
   fi
   KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else kubectl config get-contexts -o name | gum choose; fi)
+
+  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  echo "kuberenetes cluster ip: ${CLUSTER_IP}"
+
 fi
 
 if [ "${TARGET_PLATFORM}" = $Minikube ]; then
@@ -239,7 +243,7 @@ config:
   CIVO_CLUSTER_NAME: ${CIVO_CLUSTER_NAME}
   CIVO_REGION: ${CIVO_REGION}
   CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}
-  CIVO_MASTER_IP: ${CIVO_MASTER_IP}
+  CIVO_MASTER_IP: ${CLUSTER_IP}
   GRAPPLE_DNS: ${complete_domain}
   GRAPPLE_VERSION: ${GRAPPLE_VERSION}
 # Additional configurations omitted for brevity
@@ -257,7 +261,7 @@ if [ "${AUTO_CONFIRM}" != "true" ]; then
     status_log $TYPE_DEFAULT "CIVO_CLUSTER_NAME: ${CIVO_CLUSTER_NAME}"
     status_log $TYPE_DEFAULT "CIVO_REGION: ${CIVO_REGION}"
     status_log $TYPE_DEFAULT "CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}"
-    status_log $TYPE_DEFAULT "CIVO_MASTER_IP: ${CIVO_MASTER_IP}"
+    status_log $TYPE_DEFAULT "CLUSTER_IP: ${CLUSTER_IP}"
     status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
     status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
 
@@ -315,7 +319,7 @@ helm_deploy() {
 if ([ "${TARGET_PLATFORM}" = $CIVO ] || [ "${TARGET_PLATFORM}" = $Kubernetes ]) && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
-  kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --env="CIVO_MASTER_IP=${CIVO_MASTER_IP}" --restart=Never
+  kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --env="CLUSTER_IP=${CLUSTER_IP}" --restart=Never
 fi
 
 echo 
