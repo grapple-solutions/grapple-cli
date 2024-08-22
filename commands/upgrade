@@ -12,6 +12,13 @@ cli_help() {
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
+if ! eval "$(getGumSpinnerOrLogger "Checking if newer version of grapple-cli is available" ) brew update"; then 
+  errMsg="Failed to upgrade grappgle-cli"
+  status_log $TYPE_INFO $errMsg
+  echo $errMsg
+  exit 1
+fi
+
 info=$(brew info --json grapple-cli)
 
 installed_version=$(echo "$info" | grep -o '"version": "[^"]*' | sed 's/"version": "//')
@@ -22,6 +29,7 @@ if [ "$installed_version" == "$stable_version" ]; then
   echo "grapple-cli $stable_version already installed"
   exit 0
 fi
+
 
 if ! eval "$(getGumSpinnerOrLogger "Upgrading grapple-cli" ) brew upgrade grapple-cli"; then 
   errMsg="Failed to upgrade grappgle-cli"
