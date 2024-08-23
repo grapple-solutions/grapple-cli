@@ -337,7 +337,7 @@ if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; the
     CRD=ClusterIssuer && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
 fi
 
-remove the DNS job again
+# remove the DNS job again
 if [ "${TARGET_PLATFORM}" = $CIVO ]  && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
 fi
