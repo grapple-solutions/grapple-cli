@@ -20,7 +20,7 @@ status_log $TYPE_INFO "application initialization is in progress"
 # valid arguments array
 valid_args=(
     "PROJECT_NAME"
-    "CREATE_REPO"
+    "AUTO_CONFIRM"
   )
 
 # check if values are already passed form terminal
@@ -34,12 +34,6 @@ fi
 PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
 echo "project name: ${PROJECT_NAME}"
 
-#check if input from params is valid or not
-CREATE_REPO=$(if [ "${CREATE_REPO}" != "" ]; then echo ${CREATE_REPO}; else [ $TTY == "enabled" ] && gum choose "clone the repo" "create and clone the repo"; fi) || exit $?
-if [ "${CREATE_REPO}" == "create and clone the repo" ] || [ "${CREATE_REPO}" == "true" ]; then CREATE_REPO="true"; fi
-
-echo "create repo: ${CREATE_REPO}"
-
 # ----------------------- params code ended ---------------------------
 
 if ! ls $GRPL_WORKDIR | grep "$PROJECT_NAME" >/dev/null 2>&1; then
@@ -47,65 +41,30 @@ if ! ls $GRPL_WORKDIR | grep "$PROJECT_NAME" >/dev/null 2>&1; then
   # Check if the repo already exists in the GitHub account
   cli_log "checking if the repository already exists in your GitHub account"
   if gh repo view "$PROJECT_NAME" >/dev/null 2>&1; then
-    # Repo exists, clone it
-    status_log $TYPE_INFO "Repository already exists. Cloning the repository."
+  # clone the grapple-template repo
+    status_log $TYPE_INFO "cloning a grapple-template repo"
     check_and_install_git
-    if ! eval "$(getGumSpinnerOrLogger "cloning repository" ) git clone \"https://github.com/${GITHUB_USERNAME}/${PROJECT_NAME}.git\" $PROJECT_NAME >/dev/null 2>&1"; then
-      status_log $TYPE_ERROR "failed to clone the repository due to the following error"
-      errMsg=$(git clone "https://github.com/${GITHUB_USERNAME}/${PROJECT_NAME}.git" $PROJECT_NAME)
+    if ! eval "$(getGumSpinnerOrLogger "cloning grapple template" ) git clone \"https://github.com/grapple-solutions/grapple-template.git\" $PROJECT_NAME"; then
+      status_log $TYPE_ERROR "failed to clone grapple template due to following error"
+      errMsg=$(git clone "https://github.com/grapple-solutions/grapple-template.git" $PROJECT_NAME)
       status_log $TYPE_ERROR "$errMsg"
       exit 1
     fi
   else
     # Repo does not exist, prompt to create it
-    status_log $TYPE_WARNING "Repository does not exist in your GitHub account."
-    if gum confirm "This repo does not exist in your GitHub account. Shall it be created?"; then
-      # Create and clone the repository
-      status_log $TYPE_INFO "Creating the repository on GitHub."
-      check_and_install_gh
-      if ! eval "$(getGumSpinnerOrLogger "creating repository" ) gh repo create $PROJECT_NAME --template grapple-solutions/grapple-template --clone --public >/dev/null 2>&1"; then
-        status_log $TYPE_ERROR "failed to create the repository due to the following error"
-        errMsg=$(gh repo create $PROJECT_NAME --template grapple-solutions/grapple-template --clone --public)
-        status_log $TYPE_ERROR "$errMsg"
-        exit 1
-      fi
-    else
-      status_log $TYPE_ERROR "Repository creation canceled by the user."
-      exit 1
+    status_log $TYPE_INFO "Repository does not exist in your GitHub account."
+      if [ "${AUTO_CONFIRM}" != "true" ]; then
+      gum confirm "This repo does not exist in your GitHub account. Shall it be created?" || (status_log $TYPE_ERROR "Repository creation canceled by the user" && exit 1)
     fi
-  fi
-  # Check if the repo already exists in the GitHub account
-  cli_log "checking if the repository already exists in your GitHub account"
-  if gh repo view "$PROJECT_NAME" >/dev/null 2>&1; then
-    # Repo exists, clone it
-    status_log $TYPE_INFO "Repository already exists. Cloning the repository."
-    check_and_install_git
-    if ! eval "$(getGumSpinnerOrLogger "cloning repository" ) git clone \"https://github.com/${GITHUB_USERNAME}/${PROJECT_NAME}.git\" $PROJECT_NAME >/dev/null 2>&1"; then
-      status_log $TYPE_ERROR "failed to clone the repository due to the following error"
-      errMsg=$(git clone "https://github.com/${GITHUB_USERNAME}/${PROJECT_NAME}.git" $PROJECT_NAME)
-      status_log $TYPE_ERROR "$errMsg"
-      exit 1
-    fi
-  else
-    # Repo does not exist, prompt to create it
-    status_log $TYPE_WARNING "Repository does not exist in your GitHub account."
-    if gum confirm "This repo does not exist in your GitHub account. Shall it be created?"; then
-      # Create and clone the repository
-      status_log $TYPE_INFO "Creating the repository on GitHub."
-      check_and_install_gh
-      if ! eval "$(getGumSpinnerOrLogger "creating repository" ) gh repo create $PROJECT_NAME --template grapple-solutions/grapple-template --clone --public >/dev/null 2>&1"; then
-        status_log $TYPE_ERROR "failed to create the repository due to the following error"
-        errMsg=$(gh repo create $PROJECT_NAME --template grapple-solutions/grapple-template --clone --public)
-        status_log $TYPE_ERROR "$errMsg"
-        exit 1
-      fi
-    else
-      status_log $TYPE_ERROR "Repository creation canceled by the user."
+    # Create and clone the repository
+    status_log $TYPE_INFO "Creating the repository on GitHub."
+    check_and_install_gh
+    if ! gh repo create $PROJECT_NAME --template grapple-solutions/grapple-template --clone --public >/dev/null; then
+      status_log $TYPE_ERROR "failed to create the repository due to the above error"
       exit 1
     fi
   fi
 
-  
 else
   status_log $TYPE_ERROR "failed to clone grapple template because a folder with this name already exist in the current directory"
   exit 1
