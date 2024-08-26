@@ -902,8 +902,7 @@ Examples:
 Variables:
 
     PROJECT_NAME=Name of the project
-    CREATE_REPO=If true then it will create and clone a new repo if false then it will only clone the repo
-"
+    AUTO_CONFIRM='false' / 'true'"
 
     if [ "$type" == $WEB_DOC ]; then
         return 0
