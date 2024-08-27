@@ -80,8 +80,5 @@ Ensure you have the following:
        ```
 
 6. **Repeat Testing:**
-   - You can repeat steps 5-8 to test different use cases as needed.
+   - You can repeat step 5 to test different use cases as needed.
 
-## Conclusion
-
-By following these steps, you can effectively test the Crossplane function with different use cases.
