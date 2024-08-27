@@ -1,44 +1,87 @@
-# function-template-go
-[![CI](https://github.com/crossplane/function-template-go/actions/workflows/ci.yml/badge.svg)](https://github.com/crossplane/function-template-go/actions/workflows/ci.yml)
+# Testing a Sample/Simple Crossplane Function
 
-A template for writing a [composition function][functions] in [Go][go].
 
-To learn how to use this template:
+## Prerequisites
 
-* [Follow the guide to writing a composition function in Go][function guide]
-* [Learn about how composition functions work][functions]
-* [Read the function-sdk-go package documentation][package docs]
+Ensure you have the following:
+- Docker installed
+- Go installed
+- Access to a Kubernetes cluster
 
-If you just want to jump in and get started:
+## Steps to Test the Crossplane Function
 
-1. Replace `function-template-go` with your function in `go.mod`,
-   `package/crossplane.yaml`, and any Go imports. (You can also do this
-   automatically by running the `./init.sh <function-name>` script.)
-1. Update `input/v1beta1/` to reflect your desired input (and run `go generate`)
-1. Add your logic to `RunFunction` in `fn.go`
-1. Add tests for your logic in `fn_test.go`
-1. Update this file, `README.md`, to be about your function!
+1. **Pull the Latest Changes:**
+   - Clone the repository or navigate to your local `grapple-cli` repository.
+   - Pull the latest changes:
+     ```bash
+     git pull origin main
+     ```
 
-This template uses [Go][go], [Docker][docker], and the [Crossplane CLI][cli] to
-build functions.
+2. **Navigate to the Crossplane Function Directory:**
+   - Move to the `crossplane-function` directory:
+     ```bash
+     cd grapple-cli/crossplane-function
+     ```
 
-```shell
-# Run code generation - see input/generate.go
-$ go generate ./...
+3. **Build the Docker Image:**
+   - Open a terminal and run the following command to build the Docker image:
+     ```bash
+     docker build . --tag=runtime
+     ```
 
-# Run tests - see fn_test.go
-$ go test ./...
+4. **Run the Function:**
+   - Once the Docker image is built, run the function:
+     ```bash
+     go run . --insecure
+     ```
+   - The function will now be available on port `9443`.
 
-# Build the function's runtime image - see Dockerfile
-$ docker build . --tag=runtime
+5. **Testing Different Use Cases:**
 
-# Build a function package - see package/crossplane.yaml
-$ crossplane xpkg build -f package --embed-runtime-image=runtime
-```
+   - **Add/Update the `LIC` Secret:**
+     - Use the following commands to encode the `LIC` value and update the `grsf-config` secret in the `grpl-system` namespace:
+       ```bash
+       echo -n "<LIC value>" | base64
+       ```
+     - Copy the base64-encoded output.
+     - Update the secret:
+       ```bash
+       kubectl patch secret grsf-config -n grpl-system --type='json' -p='[{"op": "add", "path": "/data/LIC", "value": "<copied_value>"}]'
+       ```
 
-[functions]: https://docs.crossplane.io/latest/concepts/composition-functions
-[go]: https://go.dev
-[function guide]: https://docs.crossplane.io/knowledge-base/guides/write-a-composition-function-in-go
-[package docs]: https://pkg.go.dev/github.com/crossplane/function-sdk-go
-[docker]: https://www.docker.com
-[cli]: https://docs.crossplane.io/latest/cli
+   - **Edit the `composition.yaml` File:**
+     - Update the `grapple-cli/crossplane-function/example/composition.yaml` file to set the email parameter’s value as required for the test case.
+
+   - **Render and Test:**
+     - Open a new terminal, navigate to the `example` directory, and run:
+       ```bash
+       cd grapple-cli/crossplane-function/example
+       crossplane beta render xr.yaml composition.yaml functions.yaml
+       ```
+     - If successful, it will produce the following output:
+       ```yaml
+       ---
+       apiVersion: example.crossplane.io/v1
+       kind: XR
+       metadata:
+         name: example-xr
+       status:
+         conditions:
+         - lastTransitionTime: "2024-01-01T00:00:00Z"
+           reason: Available
+           status: "True"
+           type: Ready
+       ```
+
+   - **Verify the `GRAPPLE_LICENSE` Secret:**
+     - To confirm that the `GRAPPLE_LICENSE` secret was added or updated, run:
+       ```bash
+       kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.GRAPPLE_LICENSE}" | base64 --decode
+       ```
+
+6. **Repeat Testing:**
+   - You can repeat steps 5-8 to test different use cases as needed.
+
+## Conclusion
+
+By following these steps, you can effectively test the Crossplane function with different use cases.
