@@ -233,6 +233,8 @@ clusterdomain: ${complete_domain}
 
 # Configuration
 config:
+  email: "${CIVO_EMAIL_ADDRESS}"
+  organization: $(echo "${CIVO_EMAIL_ADDRESS}" | cut -d'@' -f2)
   clusterdomain: ${complete_domain}
   grapiversion: "0.0.1"
   gruimversion: "0.0.1"
