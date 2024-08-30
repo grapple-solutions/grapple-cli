@@ -234,6 +234,8 @@ clusterdomain: ${complete_domain}
 # Configuration
 config:
   clusterdomain: ${complete_domain}
+  organization: "grapple solutions AG"
+  email: "info@grapple-solutions.com"
   grapiversion: "0.0.1"
   gruimversion: "0.0.1"
   dev: "false"
