@@ -233,6 +233,8 @@ clusterdomain: ${complete_domain}
 
 # Configuration
 config:
+  email: "${CIVO_EMAIL_ADDRESS}"
+  organization: $(echo "${CIVO_EMAIL_ADDRESS}" | cut -d'@' -f2)
   clusterdomain: ${complete_domain}
   organization: "grapple solutions AG"
   email: "info@grapple-solutions.com"
