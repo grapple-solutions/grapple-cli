@@ -248,6 +248,7 @@ config:
   CIVO_MASTER_IP: ${CLUSTER_IP}
   GRAPPLE_DNS: ${complete_domain}
   GRAPPLE_VERSION: ${GRAPPLE_VERSION}
+  GRAPPLE_LICENSE: "free"
 # Additional configurations omitted for brevity
 EOF
 
