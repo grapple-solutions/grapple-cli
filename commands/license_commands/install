@@ -1,0 +1,51 @@
+#!/bin/bash
+set -e
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/utils/help_menus"
+
+
+cli_help() {
+  grpl_license_install_cli_help
+  exit 0
+}
+
+determineLicenseValue() {
+    local lic="$1"
+    case "$lic" in
+        "starter")
+            echo "starter"
+            ;;
+        "pro")
+            echo "pro"
+            ;;
+        "enterprise")
+            echo "enterprise"
+            ;;
+        *)
+            echo "free"
+            ;;
+    esac
+}
+
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+
+# valid arguments array
+valid_args=(
+    "LICENSE_KEY"
+)
+
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@")
+
+LICENSE_KEY=$(if [ "${LICENSE_KEY}" != "" ]; then echo ${LICENSE_KEY}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter LICENSE_KEY: " "Provide the LICENSE_KEY key" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+echo "kuberenetes cluster ip: ${LICENSE_KEY}"
+
+
+license=$(determineLicenseValue $LICENSE_KEY)
+
+
+kubectl patch secret grsf-config -n grpl-system --type='json' -p="[{\"op\": \"add\", \"path\": \"/data/LIC\", \"value\": $license}]"
