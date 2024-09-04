@@ -331,9 +331,7 @@ helm_deploy() {
     else 
       echo "${i} Failed to Installed"
       status_log $TYPE_ERROR "${i} Failed to Installed due to following error"
-
       eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
-      fi   
       exit 1
     fi
   fi
