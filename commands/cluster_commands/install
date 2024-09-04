@@ -313,9 +313,9 @@ helm_deploy() {
   echo "Deploying $i with version $version"
 
   if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
-    Kubefirst_values = " -f ${GRPL_WORKDIR}/template-files/values-kubefirst.yaml "
+    Kubefirst_values=" -f ${GRPL_WORKDIR}/template-files/values-kubefirst.yaml "
   else
-    Kubefirst_values = ""
+    Kubefirst_values=""
   fi
 
   if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values" >/dev/null; then
