@@ -48,7 +48,7 @@ extract_input_params_from_cli $valid_args "grpl c i h" $(echo "$@")
 if [ "${TARGET_PLATFORM}" != "" ]; then 
   is_correct_target_platform_provided $TARGET_PLATFORM 
 fi
-TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes; fi)
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
 # if CIVO, then pre-set the configuration params
@@ -201,6 +201,19 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
   GRAPPLE_DNS=test
   GRAPPLE_DOMAIN=""
   
+
+fi
+
+# if Kubefirst, then pre-set the configuration params
+if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
+  # check if a full domain-name was passed in GRAPPLE_DNS
+  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
+      status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
+      GRAPPLE_DOMAIN=".grapple-demo.com"
+  fi
+
+  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  echo "kuberenetes cluster ip: ${CLUSTER_IP}"
 
 fi
 
