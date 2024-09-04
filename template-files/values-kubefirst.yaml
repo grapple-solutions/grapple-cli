@@ -1,0 +1,13 @@
+cert-manager:
+ enabled: false
+ installCRDs: false
+external-secrets:
+ enabled: false
+ installCRDs: false
+ crds:
+  createClusterExternalSecret: false
+  createClusterSecretStore: false
+ webhook:
+  create: false
+crossplane:
+ enabled: false
