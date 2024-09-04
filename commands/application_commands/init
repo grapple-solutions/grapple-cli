@@ -31,7 +31,7 @@ extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@")
 if [ "${PROJECT_NAME}" != "" ]; then 
   is_value_correct_wrt_regex $PROJECT_NAME $alphaNum_plus_hyphen_and_underscope_regex "Project name can only contain alpha numaric characters, '-'and '_' as special characters"
 fi
-PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
+PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else [ $TTY == "enabled" ] &&  prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
 echo "project name: ${PROJECT_NAME}"
 
 # ----------------------- params code ended ---------------------------
@@ -53,9 +53,9 @@ if ! ls $GRPL_WORKDIR | grep "$PROJECT_NAME" >/dev/null 2>&1; then
   else
     # Repo does not exist, prompt to create it
     status_log $TYPE_INFO "Repository does not exist in your GitHub account."
-      if [ "${AUTO_CONFIRM}" != "true" ]; then
+      if [ "${AUTO_CONFIRM}" != "true" ] &&  [ $TTY == "enabled" ]; then
       gum confirm "This repo does not exist in your GitHub account. Shall it be created?" || (status_log $TYPE_ERROR "Repository creation canceled by the user" && exit 1)
-    fi
+      fi
     # Create and clone the repository
     status_log $TYPE_INFO "Creating the repository on GitHub."
     check_and_install_gh

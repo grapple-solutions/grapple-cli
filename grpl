@@ -61,6 +61,9 @@ case "$command" in
   gruim)
     "$GRPL_WORKDIR/commands/gruim" $(echo $updated_cli_params) | tee -ia "$GRPL_WORKDIR/logs/gruim.log"
     ;;
+  license|lic)
+    "$GRPL_WORKDIR/commands/license" $(echo $updated_cli_params) | tee -ia "$GRPL_WORKDIR/logs/license.log" >/dev/null
+    ;;
   *)
     cli_help
     ;;
