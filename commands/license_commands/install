@@ -39,13 +39,18 @@ valid_args=(
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@")
+extract_input_params_from_cli $valid_args "grpl l i h" $(echo "$@")
 
 LICENSE_KEY=$(if [ "${LICENSE_KEY}" != "" ]; then echo ${LICENSE_KEY}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter LICENSE_KEY: " "Provide the LICENSE_KEY key" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
 echo "kuberenetes cluster ip: ${LICENSE_KEY}"
 
 
 license=$(determineLicenseValue $LICENSE_KEY)
+encoded_license=$(echo -n "$license" | base64)
 
+if ! kubectl patch secret grsf-config -n grpl-system --type='json' -p="[{\"op\": \"add\", \"path\": \"/data/LIC\", \"value\": \"$encoded_license\"}]" >/dev/null 2>&1; then
+    status_log $TYPE_ERROR "Failed to update grsf-config secret"
+    exit 1
+fi
 
-kubectl patch secret grsf-config -n grpl-system --type='json' -p="[{\"op\": \"add\", \"path\": \"/data/LIC\", \"value\": $license}]"
+status_log $TYPE_SUCCESS "LIC (License) \"$license\" added successfully"

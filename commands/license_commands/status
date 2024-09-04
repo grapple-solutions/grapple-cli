@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/utils/help_menus"
+
+
+cli_help() {
+  grpl_license_status_cli_help
+  exit 0
+}
+
+license=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode)
+if [[ $license != "" ]]; then
+    status_log $TYPE_INFO "LIC (License) status: $license"
+else 
+    status_log $TYPE_ERROR "Failed to get license status"
+    exit 1
+fi
