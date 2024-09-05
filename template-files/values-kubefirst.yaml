@@ -3,6 +3,8 @@ registry:
 cert-manager:
  enabled: false
  installCRDs: false
+externalsecrets:
+ enabled: false
 external-secrets:
  enabled: false
  installCRDs: false
