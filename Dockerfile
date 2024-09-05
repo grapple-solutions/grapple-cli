@@ -1,8 +1,6 @@
 
 FROM ubuntu:latest
 
-ARG HOMEBREW_GITHUB_API_TOKEN=""
-
 RUN apt-get update && \
     apt-get install build-essential curl file git ruby-full locales sudo snapd --no-install-recommends -y && \
     rm -rf /var/lib/apt/lists/*
@@ -28,6 +26,7 @@ RUN brew tap civo/tools && brew install civo && brew cleanup --prune=all
 RUN brew install jq yq && brew cleanup --prune=all
  
 # ARG GRAPPLE_CLI_VERSION=0.2.63
+ARG HOMEBREW_GITHUB_API_TOKEN=""
 ARG GRAPPLE_CLI_VERSION
 RUN export HOMEBREW_GITHUB_API_TOKEN=${HOMEBREW_GITHUB_API_TOKEN} && brew tap grapple-solutions/grapple && brew install grapple-cli && brew cleanup --prune=all
 
