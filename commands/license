@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e
+. "$GRPL_WORKDIR/utils/help_menus"
+
+cli_help() {
+  grpl_license_cli_help
+  exit 0
+}
+
+generate_web_doc() {
+  grpl_license_cli_help "web-doc"
+  exit 0
+}
+
+install_prerequisite
+command=$1
+shift
+case "$command" in
+  status|s)
+    "$GRPL_WORKDIR/commands/license_commands/status" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/license_status.log"
+    ;;
+  install|i)
+    "$GRPL_WORKDIR/commands/license_commands/install" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/license_install.log"
+    ;;
+  remove|r)
+    "$GRPL_WORKDIR/commands/license_commands/remove" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/license_create.log"
+    ;;
+  *)
+    cli_help
+    ;;
+esac

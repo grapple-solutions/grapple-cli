@@ -29,7 +29,7 @@ extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@")
 if [ "${GRAS_TEMPLATE}" != "" ]; then 
   is_correct_grapple_applicationsets_provided $GRAS_TEMPLATE 
 fi
-GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED; fi) || exit $?
+GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else  [ $TTY == "enabled" ] && gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED; fi) || exit $?
 status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 
