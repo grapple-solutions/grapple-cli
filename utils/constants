@@ -4,6 +4,7 @@
 CIVO="CIVO"
 Kubernetes="Kubernetes"
 Minikube="minikube"
+Kubefirst="Kubefirst"
 
 # Status Types
 TYPE_SUCCESS='SUCCESS'

@@ -48,7 +48,7 @@ extract_input_params_from_cli $valid_args "grpl c i h" $(echo "$@")
 if [ "${TARGET_PLATFORM}" != "" ]; then 
   is_correct_target_platform_provided $TARGET_PLATFORM 
 fi
-TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes; fi)
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
 # if CIVO, then pre-set the configuration params
@@ -204,6 +204,19 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
 
 fi
 
+# if Kubefirst, then pre-set the configuration params
+if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
+  # check if a full domain-name was passed in GRAPPLE_DNS
+  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
+      status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
+      GRAPPLE_DOMAIN=".grapple-demo.com"
+  fi
+
+  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  echo "kuberenetes cluster ip: ${CLUSTER_IP}"
+
+fi
+
 # Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
 if [ "${TARGET_PLATFORM}" != $Minikube ]; then
   GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
@@ -299,7 +312,13 @@ helm_deploy() {
 
   echo "Deploying $i with version $version"
 
-  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names" >/dev/null; then
+  if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
+    Kubefirst_values=" -f ${GRPL_WORKDIR}/template-files/values-kubefirst.yaml "
+  else
+    Kubefirst_values=""
+  fi
+
+  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values" >/dev/null; then
     
     if [ "$loggedOut" = "true" ]; then
       exit 1
@@ -312,7 +331,7 @@ helm_deploy() {
     else 
       echo "${i} Failed to Installed"
       status_log $TYPE_ERROR "${i} Failed to Installed due to following error"
-      eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names"  >&2    
+      eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
       exit 1
     fi
   fi
