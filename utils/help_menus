@@ -26,6 +26,10 @@ generate_cli_web_doc() {
     grpl_dev_cli_help $WEB_DOC
     grpl_grapi_cli_help $WEB_DOC
     grpl_gruim_cli_help $WEB_DOC
+    grpl_license_cli_help $WEB_DOC
+    grpl_license_install_cli_help $WEB_DOC
+    grpl_license_remove_cli_help $WEB_DOC
+    grpl_license_status_cli_help $WEB_DOC
      doc="
 = grpl cli Documentation
 :toc: left
@@ -61,6 +65,11 @@ $grpl_version_doc
 $grpl_dev_doc
 $grpl_grapi_doc
 $grpl_gruim_doc
+$grpl_license_doc
+$grpl_license_install_doc
+$grpl_license_remove_doc
+$grpl_license_status_doc
+
 "
 echo "$doc" > "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
         asciidoctor "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
@@ -1286,3 +1295,218 @@ Examples:
         echo "$grpl_gruim_doc"  >&2
     fi
 }
+
+
+
+grpl_license_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl license"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl license"
+        meta=""
+    fi
+
+    grpl_license_doc="
+$cli_name
+$meta
+
+Description: 
+
+    Displays help menu of grpl license
+
+Usage: 
+
+    grpl license [command]
+
+Commands:
+
+    h or help     Help menu
+    i or install  to install license
+    r or remove   to remove license
+    s or status   to get license status
+    
+Examples:    
+
+    grpl l h    or    grpl lic h    or    grpl license help
+    grpl l i    or    grpl lic i    or    grpl license install
+    grpl l r    or    grpl lic r    or    grpl license remove
+    grpl l s    or    grpl lic s    or    grpl license status
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_license_doc"  >&2
+    fi
+}
+
+
+
+
+grpl_license_install_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl license install"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="=== grpl license install"
+        meta=""
+    fi
+
+    grpl_license_install_doc="
+$cli_name
+$meta
+
+Description: 
+
+    Displays help menu of grpl license install
+
+Usage: 
+
+    grpl license install [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to install license
+    
+Examples:    
+
+    grpl l i h    or    grpl lic i h    or    grpl license install help
+    grpl l i      or    grpl lic i      or    grpl license install
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_license_install_doc"  >&2
+    fi
+}
+
+
+
+grpl_license_status_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl license status"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="=== grpl license status"
+        meta=""
+    fi
+
+    grpl_license_status_doc="
+$cli_name
+$meta
+
+Description: 
+
+    Displays help menu of grpl license status
+
+Usage: 
+
+    grpl license status [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to get license status
+    
+Examples:    
+
+    grpl l i h    or    grpl lic i h    or    grpl license install help
+    grpl l s      or    grpl lic s      or    grpl license status
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_license_status_doc"  >&2
+    fi
+}
+
+
+
+
+grpl_license_remove_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl license remove"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="=== grpl license remove"
+        meta=""
+    fi
+
+    grpl_license_remove_doc="
+$cli_name
+$meta
+
+Description: 
+
+    Displays help menu of grpl license remove
+
+Usage: 
+
+    grpl license remove [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to remove license
+    
+Examples:    
+
+    grpl l i h    or    grpl lic i h    or    grpl license install help
+    grpl l r      or    grpl lic r      or    grpl license remove
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_license_remove_doc"  >&2
+    fi
+}
+

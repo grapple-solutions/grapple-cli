@@ -10,6 +10,9 @@ cli_help() {
   exit 0
 }
 
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+
 license=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode)
 if [[ $license != "" ]]; then
     status_log $TYPE_INFO "LIC (License) status: $license"

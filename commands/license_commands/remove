@@ -6,9 +6,12 @@ set -e
 
 
 cli_help() {
-  grpl_license__cli_help
+  grpl_license_remove_cli_help
   exit 0
 }
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
 
 if ! kubectl patch secret grsf-config -n grpl-system --type='json' -p="[{\"op\": \"remove\", \"path\": \"/data/LIC\"}]" >/dev/null 2>&1; then
     status_log $TYPE_ERROR "Failed to remove License (LIC) from grsf-config secret becuase it does not exist"
