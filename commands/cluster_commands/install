@@ -223,14 +223,18 @@ fi
 
 # if Kubefirst, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
-  # check if a full domain-name was passed in GRAPPLE_DNS
-  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
-      status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
-      GRAPPLE_DOMAIN=".grapple-demo.com"
-  fi
 
-  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
-  echo "kuberenetes cluster ip: ${CLUSTER_IP}"
+### disable all checks if TARGET_PLATFORM = Kubefirst, as DNS managed by Kubefirst
+#  # check if a full domain-name was passed in GRAPPLE_DNS
+#  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
+#      status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
+#      GRAPPLE_DOMAIN=".grapple-demo.com"
+#  fi
+#
+#  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+#  echo "kuberenetes cluster ip: ${CLUSTER_IP}"
+
+  echo "DNS: $GRAPPLE_DNS"
 
 fi
 
