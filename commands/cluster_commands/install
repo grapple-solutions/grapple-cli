@@ -37,6 +37,8 @@ valid_args=(
     "CIVO_API_KEY"
     "CLUSTER_IP"
     "GRAPPLE_DNS"
+    "ORGANIZATION"
+    "EMAIL"
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
@@ -50,6 +52,18 @@ if [ "${TARGET_PLATFORM}" != "" ]; then
 fi
 TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
+
+if [ "${ORGANIZATION}" == "" ]; then 
+  ORGANIZATION="grapple solutions AG"
+fi
+
+if [ "${EMAIL}" != "" ]; then 
+  is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
+else 
+  EMAIL="info@grapple-solutions.com"
+fi
+
+
 
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
@@ -123,7 +137,10 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   fi
   CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
   echo "selected civo email address: ${CIVO_EMAIL_ADDRESS}"
-
+  EMAIL=$CIVO_EMAIL_ADDRESS
+  if [[ $ORGANIZATION == "" ]]; then
+    ORGANIZATION=$(echo "${CIVO_EMAIL_ADDRESS}" | cut -d'@' -f2)
+  fi
 
 fi
 
@@ -246,8 +263,8 @@ clusterdomain: ${complete_domain}
 
 # Configuration
 config:
-  email: "${CIVO_EMAIL_ADDRESS:-info@grapple-solutions.com}"
-  organization: $(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo "${CIVO_EMAIL_ADDRESS}" | cut -d'@' -f2; else echo "grapple solutions AG"; fi)
+  email: "${EMAIL}"
+  organization: ${ORGANIZATION}
   clusterdomain: ${complete_domain}
   grapiversion: "0.0.1"
   gruimversion: "0.0.1"
@@ -278,16 +295,12 @@ if [ "${AUTO_CONFIRM}" != "true" ]; then
     status_log $TYPE_DEFAULT "CIVO_REGION: ${CIVO_REGION}"
     status_log $TYPE_DEFAULT "CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}"
     status_log $TYPE_DEFAULT "CLUSTER_IP: ${CLUSTER_IP}"
-    status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
-    status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
-
-  elif [ "${TARGET_PLATFORM}" == $Minikube ]; then 
-    status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
-    status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
-  elif [ "${TARGET_PLATFORM}" == $Kubernetes ]; then 
-    status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
-    status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
   fi
+
+  status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
+  status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
+  status_log $TYPE_DEFAULT "ORGANIZATION: ${ORGANIZATION}"
+  status_log $TYPE_DEFAULT "EMAIL: ${EMAIL}"
 
   gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
 fi
