@@ -671,6 +671,8 @@ Variables:
   # general configurations
   GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.0' or '0.2.1')
   AUTO_CONFIRM='false' / 'true'
+  EMAIL = email
+  ORGANIZATION = organization
   # kubernetes related configurations
   KUBE_CONTEXT=kubernetes context, if its set to "currnet" then it will use current kubectl context
   # minikube related configurations
