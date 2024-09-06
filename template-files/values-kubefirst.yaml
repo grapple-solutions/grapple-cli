@@ -15,3 +15,13 @@ external-secrets:
   create: false
 crossplane:
  enabled: false
+ kubernetes:
+   enabled: true
+ helm:
+   enabled: true
+ civo:
+   enabled: false
+ aws:
+   enabled: false
+ permissions:
+   enabled: false
