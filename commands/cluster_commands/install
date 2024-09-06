@@ -53,17 +53,6 @@ fi
 TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
-if [ "${ORGANIZATION}" == "" ]; then 
-  ORGANIZATION="grapple solutions AG"
-fi
-
-if [ "${EMAIL}" != "" ]; then 
-  is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
-else 
-  EMAIL="info@grapple-solutions.com"
-fi
-
-
 
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
@@ -143,6 +132,17 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   fi
 
 fi
+
+if [ "${ORGANIZATION}" == "" ]; then 
+  ORGANIZATION="grapple solutions AG"
+fi
+
+if [ "${EMAIL}" != "" ]; then 
+  is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
+else 
+  EMAIL="info@grapple-solutions.com"
+fi
+
 
 # if Kubernetes, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
