@@ -244,6 +244,11 @@ if [ "${TARGET_PLATFORM}" != $Minikube ]; then
   echo "installing dns: ${GRAPPLE_DNS}"
 fi
 
+
+if [ "${GRAPPLE_VERSION}" == "latest" ]; then
+  GRAPPLE_VERSION=$(head -n 1 grapple-versions)
+fi
+
 if [ "${GRAPPLE_VERSION}" != "" ]; then 
   is_correct_grapple_version_provided $GRAPPLE_VERSION 
 fi 
