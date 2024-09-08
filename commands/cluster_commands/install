@@ -151,10 +151,23 @@ if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
       status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
       GRAPPLE_DOMAIN=".grapple-demo.com"
   fi
+
   if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then
-    KUBE_CONTEXT=$(kubectl config current-context)
+    if kubectl config current-context >/dev/null 2>&1; then
+      KUBE_CONTEXT=$(kubectl config current-context)
+    else
+      # Run the command and store the output in a variable
+      CONTEXTS=$(kubectl config get-contexts -o name)
+
+      # Check if the output is empty
+      if [ -z "$CONTEXTS" ]; then
+          status_log $TYPE_INFO "Warning: No contexts found"
+      fi
+    fi
   fi
+
   KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else kubectl config get-contexts -o name | gum choose; fi)
+  kubectl config use-context $KUBE_CONTEXT
 
   CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "kuberenetes cluster ip: ${CLUSTER_IP}"

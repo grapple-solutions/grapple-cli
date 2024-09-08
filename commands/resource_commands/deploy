@@ -510,9 +510,20 @@ valid_args=(
 # if yes? then store then in the respective vars
 extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@")
 
-if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then 
-  KUBE_CONTEXT=$(kubectl config current-context)
+if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then
+    if kubectl config current-context >/dev/null 2>&1; then
+      KUBE_CONTEXT=$(kubectl config current-context)
+    else
+      # Run the command and store the output in a variable
+      CONTEXTS=$(kubectl config get-contexts -o name)
+
+      # Check if the output is empty
+      if [ -z "$CONTEXTS" ]; then
+          status_log $TYPE_INFO "Warning: No contexts found"
+      fi
+    fi
 fi
+  
 #check if input from params is valid or not
 is_correct_kubectl_context_provided $KUBE_CONTEXT
 contexts=$(kubectl config get-contexts -o name)
