@@ -39,6 +39,12 @@ valid_args=(
     "GRAPPLE_DNS"
     "ORGANIZATION"
     "EMAIL"
+    "GITHUB_USERNAME"
+    "GITLAB_USERNAME"
+    "CLOUD_PROVIDER"
+    "CLOUD_REGION"
+    "CLUSTER_ID"
+    "CLUSTER_NAME"
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
@@ -50,7 +56,7 @@ extract_input_params_from_cli $valid_args "grpl c i h" $(echo "$@")
 if [ "${TARGET_PLATFORM}" != "" ]; then 
   is_correct_target_platform_provided $TARGET_PLATFORM 
 fi
-TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else [ $TTY == "enabled" ] && gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
 
@@ -233,6 +239,32 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
 #
 #  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
 #  echo "kuberenetes cluster ip: ${CLUSTER_IP}"
+
+
+  # input variable that are required for kubefirst
+
+  # ----------- Git Provider Input------------
+  GIT_PROVIDER=$(if [ "${GITHUB_USERNAME}" == "" ] && [ "${GITLAB_USERNAME}" == "" ]; then gum choose $GITHUB $GITLAB; else echo ""; fi)
+  echo "git provider: ${GIT_PROVIDER}"
+
+  if [ $GIT_PROVIDER == $GITHUB ]; then
+    GITHUB_USERNAME=$(if [ "${GITHUB_USERNAME}" != "" ]; then echo ${GITHUB_USERNAME}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter GITHUB_USERNAME: " "Provide the github username" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+    echo "github username: ${GITHUB_USERNAME}"
+  elif [ $GIT_PROVIDER == $GITLAB ]; then
+    GITLAB_USERNAME=$(if [ "${GITLAB_USERNAME}" != "" ]; then echo ${GITLAB_USERNAME}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter GITLAB_USERNAME: " "Provide the gitlab username" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+    echo "gitlab username: ${GITLAB_USERNAME}"
+  fi
+
+
+  #------------ Cloud Provider Input-----------
+
+  CLOUD_PROVIDER=$(if [ "${CLOUD_PROVIDER}" != "" ]; then echo ${CLOUD_PROVIDER}; else gum choose $K3D $AWS $Civo $DigitalOcean $GoogleCloud $Vultr; fi)
+  echo "cloud provider: ${CLOUD_PROVIDER}"
+
+  #------------ Cloud Provider Input-----------
+    
+  CLOUD_REGION=$(if [ "${CLOUD_REGION}" != "" ]; then echo ${CLOUD_REGION}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter GITLAB_USERNAME: " "Provide the gitlab username" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  echo "cloud region: ${CLOUD_REGION}"
 
   echo "DNS: $GRAPPLE_DNS"
 

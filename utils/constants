@@ -60,3 +60,15 @@ REFRENCES_MANY="refrencesMany"
 
 #kube-context
 CURRENT_CONTEXT="current"
+
+#git-providers
+GITHUB="github"
+GITLAB="gitlab"
+
+#kubefirst: cloud providers
+AWS="AWS"
+Civo="Civo"
+DigitalOcean="DigitalOcean"
+GoogleCloud="Google Cloud"
+Vultr="Vultr"
+K3D="k3d"
