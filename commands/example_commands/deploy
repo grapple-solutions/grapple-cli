@@ -33,26 +33,6 @@ GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; els
 status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 
-
-if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then
-  if kubectl config current-context >/dev/null 2>&1; then
-    KUBE_CONTEXT=$(kubectl config current-context)
-  else
-    # Run the command and store the output in a variable
-    CONTEXTS=$(kubectl config get-contexts -o name)
-
-    # Check if the output is empty
-    if [ -z "$CONTEXTS" ]; then
-          status_log $TYPE_INFO "Warning: No contexts found"
-    fi
-  fi
-fi
-
-
-is_correct_kubectl_context_provided $KUBE_CONTEXT
-if [ "${KUBE_CONTEXT}" == "" ]; then 
-  KUBE_CONTEXT=$(kubectl config current-context)
-fi
 status_log $TYPE_DEFAULT "KUBE_CONTEXT: ${KUBE_CONTEXT}"
 
 MODELS='customer:{"base":"Entity","name":"customer","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"customername":{"type":"string"},"emaildomain":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}|email:{"base":"Entity","name":"email","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"emaildomain":{"type":"string","required":true},"email":{"type":"string","required":true}}}|cluster:{"base":"Entity","name":"cluster","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"clustername":{"type":"string"},"clusteridentifier":{"type":"string"},"clusterdns":{"type":"string"},"customerId":{"type":"string"},"emailId":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}'
