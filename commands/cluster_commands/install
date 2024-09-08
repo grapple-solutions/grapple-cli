@@ -260,6 +260,14 @@ if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
 else 
   complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
 fi
+
+license=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode)
+if [[ $license != "" ]]; then
+    GRAPPLE_LICENSE=$license
+else 
+    GRAPPLE_LICENSE="free"
+fi
+
 cat <<EOF > /tmp/values-override.yaml
 # Default values for grsf-init.
 
@@ -282,7 +290,7 @@ config:
   CIVO_MASTER_IP: ${CLUSTER_IP}
   GRAPPLE_DNS: ${complete_domain}
   GRAPPLE_VERSION: ${GRAPPLE_VERSION}
-  GRAPPLE_LICENSE: "free"
+  GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}
 # Additional configurations omitted for brevity
 EOF
 
@@ -303,6 +311,7 @@ if [ "${AUTO_CONFIRM}" != "true" ]; then
 
   status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
   status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
+  status_log $TYPE_DEFAULT "GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}"
   status_log $TYPE_DEFAULT "ORGANIZATION: ${ORGANIZATION}"
   status_log $TYPE_DEFAULT "EMAIL: ${EMAIL}"
 
