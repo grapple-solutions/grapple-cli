@@ -684,6 +684,10 @@ Variables:
   CIVO_EMAIL_ADDRESS=email address of your CIVO account
   CIVO_API_KEY=api key of your CIVO account
   CLUSTER_IP= Cluster IP address
+  CLOUD_PROVIDER = cloud provider for kubefirst
+  CLOUD_REGION = cloud region of kubefirst cloud provider
+  CLUSTER_ID = cluster id of kubefirst cluster
+  CLUSTER_NAME = cluster name for kubefirst cluster
 
 " 
 

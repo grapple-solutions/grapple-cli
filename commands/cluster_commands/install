@@ -51,7 +51,8 @@ valid_args=(
 extract_input_params_from_cli $valid_args "grpl c i h" $(echo "$@")
 
 
-# verify install target platform
+#------------ TARGET_PLATFORM Input-----------
+
 # if TARGET_PLATFORM is provided using CLI then we need to check if valid TARGET_PLATFORM was provided or not
 if [ "${TARGET_PLATFORM}" != "" ]; then 
   is_correct_target_platform_provided $TARGET_PLATFORM 
@@ -66,6 +67,8 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   # first check if civo is installed or not, if not? then install it
   check_and_install_civo
 
+#------------ CIVO_API_KEY Input-----------
+  
   if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [ $TTY == "enabled" ]; then
     CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
   fi
@@ -75,12 +78,16 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
     civo apikey current grapple
   fi
 
+#------------ CIVO_REGION Input-----------
+
   if [ "${CIVO_REGION}" != "" ]; then 
     is_correct_civo_region_provided $CIVO_REGION 
   fi
 
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else [ $TTY == "enabled" ] &&  gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
+
+#------------ CIVO_CLUSTER Input-----------
 
   if [ "${CIVO_CLUSTER}" != "" ]; then 
     is_correct_civo_cluster_provided $CIVO_CLUSTER 
@@ -100,8 +107,12 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   extract_kubectl_cli_version
 
+#------------ CIVO_CLUSTER_ID Input-----------
+
   # if a CIVO cluster was selected, pre-set the configuration
   CIVO_CLUSTER_ID=$(eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
+
+#------------ GRAPPLE_DNS Input-----------
 
   # check if a full domain-name was passed in GRAPPLE_DNS
   if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
@@ -117,14 +128,22 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
 
+#------------ CIVO_CLUSTER_ID Input-----------
+
   CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "selected civo cluster ID: ${CIVO_CLUSTER_ID}"
+
+#------------ CIVO_CLUSTER_NAME Input-----------
 
   CIVO_CLUSTER_NAME=$(if [ "${CIVO_CLUSTER_NAME}" != "" ]; then echo ${CIVO_CLUSTER_NAME}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_CLUSTER_NAME: " "Provide an name for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "selected civo cluster name: ${CIVO_CLUSTER_NAME}"
 
+#------------ CLUSTER_IP Input-----------
+
   CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
   echo "selected civo master ip: ${CLUSTER_IP}"
+
+#------------ CIVO_EMAIL_ADDRESS Input-----------
 
   #check if input from params is valid or not
   if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then 
@@ -139,19 +158,12 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
 fi
 
-if [ "${ORGANIZATION}" == "" ]; then 
-  ORGANIZATION="grapple solutions AG"
-fi
-
-if [ "${EMAIL}" != "" ]; then 
-  is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
-else 
-  EMAIL="info@grapple-solutions.com"
-fi
-
 
 # if Kubernetes, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
+
+#------------ GRAPPLE_DNS Input-----------
+
   # check if a full domain-name was passed in GRAPPLE_DNS
   if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
       status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
@@ -261,10 +273,21 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
   CLOUD_PROVIDER=$(if [ "${CLOUD_PROVIDER}" != "" ]; then echo ${CLOUD_PROVIDER}; else gum choose $K3D $AWS $Civo $DigitalOcean $GoogleCloud $Vultr; fi)
   echo "cloud provider: ${CLOUD_PROVIDER}"
 
-  #------------ Cloud Provider Input-----------
+  #------------ Cloud Region Input-----------
     
-  CLOUD_REGION=$(if [ "${CLOUD_REGION}" != "" ]; then echo ${CLOUD_REGION}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter GITLAB_USERNAME: " "Provide the gitlab username" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  CLOUD_REGION=$(if [ "${CLOUD_REGION}" != "" ]; then echo ${CLOUD_REGION}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_REGION: " "Provide the cluster region" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "cloud region: ${CLOUD_REGION}"
+
+  #------------ Cluster ID Input-----------
+    
+  CLUSTER_ID=$(if [ "${CLUSTER_ID}" != "" ]; then echo ${CLUSTER_ID}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_ID: " "Provide the cluster id" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  echo "cluster id: ${CLUSTER_ID}"
+
+  #------------ Cluster Name Input-----------
+    
+  CLUSTER_NAME=$(if [ "${CLUSTER_NAME}" != "" ]; then echo ${CLUSTER_NAME}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_NAME: " "Provide the cluster name" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  echo "cluster name: ${CLUSTER_NAME}"
+
 
   echo "DNS: $GRAPPLE_DNS"
 
@@ -276,22 +299,34 @@ if [ "${TARGET_PLATFORM}" != $Minikube ]; then
   echo "installing dns: ${GRAPPLE_DNS}"
 fi
 
+#----------- GRAPPLE_VERSION Input --------
 if [ "${GRAPPLE_VERSION}" != "" ]; then 
   is_correct_grapple_version_provided $GRAPPLE_VERSION 
 fi 
 GRAPPLE_VERSION=$(if [ "${GRAPPLE_VERSION}" != "" ]; then echo ${GRAPPLE_VERSION}; else [ $TTY == "enabled" ] && gum choose "${GRAPPLE_AVAILABLE_VERSIONS[@]}"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
 echo "installing grapple version: ${GRAPPLE_VERSION}"
 
-# VERSION=$(prompt_for_input_with_validation "Enter version of the grapple solution framework: " "Semver version is expected. Default value if empty: 0.2.0" "$non_empty_regex" "Version cannot be empty." "0.2.0") || exit $?
 
-# The script then proceeds to dynamically generate values-override.yaml with user inputs
-
+#----------- creating complete --------
 complete_domain="" 
 if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
   complete_domain=$GRAPPLE_DNS
 else 
   complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
 fi
+
+#----------- ORGANIZATION default value --------
+if [ "${ORGANIZATION}" == "" ]; then 
+  ORGANIZATION="grapple solutions AG"
+fi
+
+#----------- Email validation and default value --------
+if [ "${EMAIL}" != "" ]; then 
+  is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
+else 
+  EMAIL="info@grapple-solutions.com"
+fi
+
 cat <<EOF > /tmp/values-override.yaml
 # Default values for grsf-init.
 
@@ -315,6 +350,10 @@ config:
   GRAPPLE_DNS: ${complete_domain}
   GRAPPLE_VERSION: ${GRAPPLE_VERSION}
   GRAPPLE_LICENSE: "free"
+  CLOUD_PROVIDER: ${CLOUD_PROVIDER}
+  CLOUD_REGION: ${CLOUD_REGION}
+  CLUSTER_ID: ${CLUSTER_ID}
+  CLUSTER_NAME: ${CLUSTER_NAME}
 # Additional configurations omitted for brevity
 EOF
 
@@ -325,12 +364,16 @@ if [ "${AUTO_CONFIRM}" != "true" ]; then
 
   status_log $TYPE_DEFAULT "Going to deploy grpl on ${TARGET_PLATFORM} with following configurations"  
   if [ "${TARGET_PLATFORM}" == $CIVO ]; then 
-    
     status_log $TYPE_DEFAULT "CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}"
     status_log $TYPE_DEFAULT "CIVO_CLUSTER_NAME: ${CIVO_CLUSTER_NAME}"
     status_log $TYPE_DEFAULT "CIVO_REGION: ${CIVO_REGION}"
     status_log $TYPE_DEFAULT "CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}"
     status_log $TYPE_DEFAULT "CLUSTER_IP: ${CLUSTER_IP}"
+  elif [ ${TARGET_PLATFORM} == $Kubefirst ]; then
+    status_log $TYPE_DEFAULT "CLOUD_PROVIDER: ${CLOUD_PROVIDER}"
+    status_log $TYPE_DEFAULT "CLOUD_REGION: ${CLOUD_REGION}"
+    status_log $TYPE_DEFAULT "CLUSTER_ID: ${CLUSTER_ID}"
+    status_log $TYPE_DEFAULT "CLUSTER_NAME: ${CLUSTER_NAME}"
   fi
 
   status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
