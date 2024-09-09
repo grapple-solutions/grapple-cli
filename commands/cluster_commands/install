@@ -53,17 +53,6 @@ fi
 TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
-if [ "${ORGANIZATION}" == "" ]; then 
-  ORGANIZATION="grapple solutions AG"
-fi
-
-if [ "${EMAIL}" != "" ]; then 
-  is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
-else 
-  EMAIL="info@grapple-solutions.com"
-fi
-
-
 
 # if CIVO, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
@@ -143,6 +132,17 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   fi
 
 fi
+
+if [ "${ORGANIZATION}" == "" ]; then 
+  ORGANIZATION="grapple solutions AG"
+fi
+
+if [ "${EMAIL}" != "" ]; then 
+  is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
+else 
+  EMAIL="info@grapple-solutions.com"
+fi
+
 
 # if Kubernetes, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
@@ -244,6 +244,11 @@ if [ "${TARGET_PLATFORM}" != $Minikube ]; then
   echo "installing dns: ${GRAPPLE_DNS}"
 fi
 
+
+if [ "${GRAPPLE_VERSION}" == "latest" ]; then
+  GRAPPLE_VERSION=$(head -n 1 grapple-versions)
+fi
+
 if [ "${GRAPPLE_VERSION}" != "" ]; then 
   is_correct_grapple_version_provided $GRAPPLE_VERSION 
 fi 
@@ -260,6 +265,14 @@ if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
 else 
   complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
 fi
+
+license=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode)
+if [[ $license != "" ]]; then
+    GRAPPLE_LICENSE=$license
+else 
+    GRAPPLE_LICENSE="free"
+fi
+
 cat <<EOF > /tmp/values-override.yaml
 # Default values for grsf-init.
 
@@ -282,7 +295,7 @@ config:
   CIVO_MASTER_IP: ${CLUSTER_IP}
   GRAPPLE_DNS: ${complete_domain}
   GRAPPLE_VERSION: ${GRAPPLE_VERSION}
-  GRAPPLE_LICENSE: "free"
+  GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}
 # Additional configurations omitted for brevity
 EOF
 
@@ -303,6 +316,7 @@ if [ "${AUTO_CONFIRM}" != "true" ]; then
 
   status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
   status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
+  status_log $TYPE_DEFAULT "GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}"
   status_log $TYPE_DEFAULT "ORGANIZATION: ${ORGANIZATION}"
   status_log $TYPE_DEFAULT "EMAIL: ${EMAIL}"
 
