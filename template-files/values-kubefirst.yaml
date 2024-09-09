@@ -1,6 +1,6 @@
 config:
- ssl:
-  enabled: true
+ ssl: true
+ sslissuer: letsencrypt-staging
 registry:
  enabled: false
 cert-manager:
