@@ -459,6 +459,11 @@ fi
 
 
 #----------- GRAPPLE_VERSION Input --------
+
+if [ "${GRAPPLE_VERSION}" == "latest" ]; then
+  GRAPPLE_VERSION=$(head -n 1 grapple-versions)
+fi
+
 if [ "${GRAPPLE_VERSION}" != "" ]; then 
   is_correct_grapple_version_provided $GRAPPLE_VERSION 
 fi 
@@ -477,6 +482,14 @@ if [ "${EMAIL}" != "" ]; then
   is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
 else 
   EMAIL="info@grapple-solutions.com"
+fi
+
+
+license=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode)
+if [[ $license != "" ]]; then
+    GRAPPLE_LICENSE=$license
+else 
+    GRAPPLE_LICENSE="free"
 fi
 
 cat <<EOF > /tmp/values-override.yaml
@@ -501,7 +514,7 @@ config:
   CIVO_MASTER_IP: ${CLUSTER_IP}
   GRAPPLE_DNS: ${complete_domain}
   GRAPPLE_VERSION: ${GRAPPLE_VERSION}
-  GRAPPLE_LICENSE: "free"
+  GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}
   CLOUD_PROVIDER: ${KUBEFIRST_CLOUD_PROVIDER}
   CLOUD_REGION: ${KUBEFIRST_CLOUD_REGION}
   CLUSTER_ID: ${KUBEFIRST_CLUSTER_ID}
@@ -531,6 +544,7 @@ if [ "${AUTO_CONFIRM}" != "true" ]; then
 
   status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
   status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
+  status_log $TYPE_DEFAULT "GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}"
   status_log $TYPE_DEFAULT "ORGANIZATION: ${ORGANIZATION}"
   status_log $TYPE_DEFAULT "EMAIL: ${EMAIL}"
 
