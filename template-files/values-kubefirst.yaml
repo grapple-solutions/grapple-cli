@@ -1,6 +1,6 @@
 config:
- ssl: true
- sslissuer: letsencrypt-staging
+ ssl: 'true'
+ sslissuer: 'letsencrypt-prod'
 registry:
  enabled: false
 cert-manager:
