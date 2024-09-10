@@ -475,7 +475,7 @@ else
 fi
 
 
-license=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode)
+license=$(eval "$(getGumSpinnerOrLogger "Fetching LIC (License)") kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode")
 if [[ $license != "" ]]; then
     GRAPPLE_LICENSE=$license
 else 
