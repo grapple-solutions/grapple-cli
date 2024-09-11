@@ -246,7 +246,7 @@ fi
 
 
 if [ "${GRAPPLE_VERSION}" == "latest" ]; then
-  GRAPPLE_VERSION=$(head -n 1 grapple-versions)
+  GRAPPLE_VERSION=$(head -n 1 "$GRPL_WORKDIR/grapple-versions")
 fi
 
 if [ "${GRAPPLE_VERSION}" != "" ]; then 
