@@ -381,51 +381,15 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
 #  echo "kuberenetes cluster ip: ${CLUSTER_IP}"
 
 
-  # input variable that are required for kubefirst
-
-  # ----------- Git Provider Input------------
-  
-  if [ $TTY == "enabled" ]; then
-    status_log $TYPE_INFO "Select Git Provider"
-    GIT_PROVIDER=$(if [ "${GITHUB_USERNAME}" == "" ] && [ "${GITLAB_USERNAME}" == "" ]; then gum choose $GITHUB $GITLAB; else echo ""; fi)
-    echo "git provider: ${GIT_PROVIDER}"
+  if [[ "${GITHUB_USERNAME}" != "" ]]; then
+    status_log $TYPE_INFO "extracting email from github username $GITHUB_USERNAME"
+    extract_email_from_github_username
+    status_log $TYPE_INFO "extracted email : $EMAIL from github username $GITHUB_USERNAME"
+  elif [[ "${GITLAB_USERNAME}" != "" ]]; then
+    status_log $TYPE_INFO "extracting email from gitlab username $GITLAB_USERNAME"
+    extract_email_from_gitlab_username
+    status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username $GITLAB_USERNAME"
   fi
-
-  if [[ $GIT_PROVIDER == $GITHUB ]] || [[ $GITHUB_USERNAME != "" ]]; then
-    GITHUB_USERNAME=$(if [ "${GITHUB_USERNAME}" != "" ]; then echo ${GITHUB_USERNAME}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter GITHUB_USERNAME: " "Provide the github username" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
-    echo "github username: ${GITHUB_USERNAME}"
-    status_log $TYPE_INFO "extracting email from github username"
-    [ "${GITHUB_USERNAME}" != "" ] && extract_email_from_github_username
-    status_log $TYPE_INFO "extracted email : $EMAIL from github username"
-
-  elif [[ $GIT_PROVIDER == $GITLAB ]] || [[ $GITLAB_USERNAME != "" ]]; then
-    GITLAB_USERNAME=$(if [ "${GITLAB_USERNAME}" != "" ]; then echo ${GITLAB_USERNAME}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter GITLAB_USERNAME: " "Provide the gitlab username" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
-    echo "gitlab username: ${GITLAB_USERNAME}"
-    status_log $TYPE_INFO "extracting email from gitlab username"
-    [ "${GITLAB_USERNAME}" != "" ] && extract_email_from_gitlab_username
-    status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username"
-  fi
-
-
-  #------------ Cloud Provider Input-----------
-
-  KUBEFIRST_CLOUD_PROVIDER=$(if [ "${KUBEFIRST_CLOUD_PROVIDER}" != "" ]; then echo ${KUBEFIRST_CLOUD_PROVIDER}; else [ $TTY == "enabled" ] && gum choose $K3D $AWS $Civo $DigitalOcean $GoogleCloud $Vultr; fi)
-  echo "cloud provider: ${KUBEFIRST_CLOUD_PROVIDER}"
-
-  #------------ Cloud Region Input-----------
-    
-  KUBEFIRST_CLOUD_REGION=$(if [ "${KUBEFIRST_CLOUD_REGION}" != "" ]; then echo ${KUBEFIRST_CLOUD_REGION}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_REGION: " "Provide the cluster region" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
-  echo "cloud region: ${KUBEFIRST_CLOUD_REGION}"
-
-  #------------ Cluster ID Input-----------
-    
-  KUBEFIRST_CLUSTER_ID=$(if [ "${KUBEFIRST_CLUSTER_ID}" != "" ]; then echo ${KUBEFIRST_CLUSTER_ID}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter KUBEFIRST_CLUSTER_ID: " "Provide the cluster id" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
-  echo "cluster id: ${KUBEFIRST_CLUSTER_ID}"
-
-  #------------ Cluster Name Input-----------
-    
-  KUBEFIRST_CLUSTER_NAME=$(if [ "${KUBEFIRST_CLUSTER_NAME}" != "" ]; then echo ${KUBEFIRST_CLUSTER_NAME}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter KUBEFIRST_CLUSTER_NAME: " "Provide the cluster name" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
-  echo "cluster name: ${KUBEFIRST_CLUSTER_NAME}"
 
 
   echo "DNS: $GRAPPLE_DNS"
@@ -434,18 +398,18 @@ fi
 
 
 # Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
-complete_domain="" 
-if [ "${TARGET_PLATFORM}" != $Minikube ] && [ "${TARGET_PLATFORM}" != $Kubefirst ]; then
+if [ "${TARGET_PLATFORM}" != $Minikube ]; then
   GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
   echo "installing dns: ${GRAPPLE_DNS}"
-  #----------- creating complete domain --------
-  if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
-    complete_domain=$GRAPPLE_DNS
-  else 
-    complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
-  fi
 fi
 
+#----------- creating complete domain --------
+complete_domain="" 
+if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
+  complete_domain=$GRAPPLE_DNS
+else 
+  complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
+fi
 
 
 #----------- GRAPPLE_VERSION Input --------
