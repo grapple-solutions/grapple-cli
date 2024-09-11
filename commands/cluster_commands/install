@@ -414,15 +414,14 @@ fi
 
 #----------- GRAPPLE_VERSION Input --------
 
-if [ "${GRAPPLE_VERSION}" == "latest" ]; then
+if [ "${GRAPPLE_VERSION}" == "latest" ] || [ "${GRAPPLE_VERSION}" == "" ]; then
   GRAPPLE_VERSION=$(head -n 1 "$GRPL_WORKDIR/grapple-versions")
+  status_log $TYPE_INFO "Installing grapple version: ${GRAPPLE_VERSION}"
 fi
 
 if [ "${GRAPPLE_VERSION}" != "" ]; then 
   is_correct_grapple_version_provided $GRAPPLE_VERSION 
-fi 
-GRAPPLE_VERSION=$(if [ "${GRAPPLE_VERSION}" != "" ]; then echo ${GRAPPLE_VERSION}; else [ $TTY == "enabled" ] && gum choose "${GRAPPLE_AVAILABLE_VERSIONS[@]}"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
-echo "installing grapple version: ${GRAPPLE_VERSION}"
+fi
 
 
 #----------- ORGANIZATION default value --------
