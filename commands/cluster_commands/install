@@ -385,8 +385,7 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
     status_log $TYPE_INFO "extracting email from github username $GITHUB_USERNAME"
     extract_email_from_github_username
     status_log $TYPE_INFO "extracted email : $EMAIL from github username $GITHUB_USERNAME"
-
-  elif [[ "${GITHUB_USERNAME}" != "" ]]; then
+  elif [[ "${GITLAB_USERNAME}" != "" ]]; then
     status_log $TYPE_INFO "extracting email from gitlab username $GITLAB_USERNAME"
     extract_email_from_gitlab_username
     status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username $GITLAB_USERNAME"
@@ -399,7 +398,7 @@ fi
 
 
 # Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
-if [ "${TARGET_PLATFORM}" != $Minikube ] then
+if [ "${TARGET_PLATFORM}" != $Minikube ]; then
   GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
   echo "installing dns: ${GRAPPLE_DNS}"
 fi
