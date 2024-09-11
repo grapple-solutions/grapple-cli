@@ -48,7 +48,7 @@ echo "kuberenetes cluster ip: ${LICENSE_KEY}"
 license=$(determineLicenseValue $LICENSE_KEY)
 encoded_license=$(echo -n "$license" | base64)
 
-
+status_log $TYPE_INFO "Updating the license"
 existing_license=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode)
 if [[ $existing_license != "" ]] && [[ $existing_license != "free" ]]; then
     gum confirm "LIC (License) already installed. Do you want to re-install it?" || (status_log $TYPE_ERROR "LIC (License) installation canceled by the user" && exit 1)
@@ -59,4 +59,4 @@ if ! kubectl patch secret grsf-config -n grpl-system --type='json' -p="[{\"op\":
     exit 1
 fi
 
-status_log $TYPE_SUCCESS "LIC (License) \"$license\" added successfully"
+status_log $TYPE_SUCCESS "LIC (License) \"$license\" installed successfully"
