@@ -388,11 +388,14 @@ deploy_template() {
     cli_log "resource deploy BEGIN"
     status_log $TYPE_DEFAULT "resource deploy is in progress"
 
-    if [ "$(kubectl config current-context)" = "minikube" ]; then
-        echo "patching for minikube..."
-        MINIKUBE_PATCH=" --set gras.ssl=false --set grapi.ssl=false --set gruim.ssl=false "
-    else
-        MINIKUBE_PATCH=""
+    if kubectl config current-context >/dev/null 2>&1; then
+        KUBE_CONTEXT=$(kubectl config current-context)
+        if [ "$KUBE_CONTEXT" = "minikube" ]; then
+            echo "patching for minikube..."
+            MINIKUBE_PATCH=" --set gras.ssl=false --set grapi.ssl=false --set gruim.ssl=false "
+        else
+            MINIKUBE_PATCH=""
+        fi
     fi
 
     if ! eval "$(getGumSpinnerOrLogger "Deploying template") helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f $template_file_dest ${MINIKUBE_PATCH}"; then
