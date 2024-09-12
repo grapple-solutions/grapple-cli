@@ -266,8 +266,7 @@ check_and_install_yq() {
         elif [ "${OS}" == "gnu" ]; then
             status_log $TYPE_INFO "going to refresh snap"
             sudo snap refresh >/dev/null 2>&1
-            eval "$(getGumSpinnerOrLogger "yq is not installed, now installing yq") sudo curl -L https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -o /usr/bin/yq"
-            sudo chmod +x /usr/bin/yq
+            eval "$(getGumSpinnerOrLogger "yq is not installed, now installing yq") sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq"
         else
             errMsg="Failed to install yq, OS ${OS} not supported at the moment"
             echo $errMsg
