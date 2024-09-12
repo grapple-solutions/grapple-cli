@@ -39,18 +39,153 @@ valid_args=(
     "GRAPPLE_DNS"
     "ORGANIZATION"
     "EMAIL"
+    "GITHUB_USERNAME"
+    "GITLAB_USERNAME"
+    "KUBEFIRST_CLOUD_PROVIDER"
+    "KUBEFIRST_CLOUD_REGION"
+    "KUBEFIRST_CLUSTER_ID"
+    "KUBEFIRST_CLUSTER_NAME"
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
 extract_input_params_from_cli $valid_args "grpl c i h" $(echo "$@")
 
 
-# verify install target platform
+#-------------Functions-------------------
+
+extract_email_from_github_username() {
+
+  check_and_install_jq
+
+  # fetch the GitHub user's details (name) using the GitHub username
+  user_details=$(curl -s "https://api.github.com/users/$GITHUB_USERNAME")
+  USER_NAME=$(echo "$user_details" | jq -r '.name')
+
+  # for getting paginating results
+  page=1
+  per_page=30
+
+  # loop over all events until email is found
+  while [ -z "$EMAIL" ]; do
+    response=$(curl -s "https://api.github.com/users/$GITHUB_USERNAME/events/public?per_page=$per_page&page=$page")
+
+    # Validate that the response is valid JSON
+    if ! echo "$response" | jq empty > /dev/null 2>&1; then
+      echo "Error: Invalid JSON response from GitHub"
+      break
+    fi
+
+    # Check if response is empty, indicating no more pages
+    if [ "$(echo "$response" | jq length)" -eq 0 ]; then
+      break
+    fi
+
+    if ! echo "$response" | jq empty > /dev/null 2>&1; then
+      echo "Error: Invalid JSON response from GitHub"
+      break
+    fi
+
+    # remove all spaces
+    response=$(echo "$response" | tr -d '[:space:]')
+
+    # indicating no more pages
+    if [ "$(echo "$response" | jq length)" -eq 0 ]; then
+      break
+    fi
+
+    # loop through each event in the response using jq to filter PushEvent
+    if ! echo "$response" | jq -e '.[] | select(.type == "PushEvent")' > /dev/null 2>&1; then
+      status_log $TYPE_ERROR "No Email found for $GITHUB_USERNAME"
+      exit 1
+    fi
+    for row in $(echo "$response" | jq -c '.[] | select(.type == "PushEvent")'); do
+      # loop through all commits in the commit array
+      for commit in $(echo "$row" | jq -c '.payload.commits[]'); do
+        commit_name=$(echo "$commit" | jq -r '.author.name')
+        commit_email=$(echo "$commit" | jq -r '.author.email')
+        if [ "$commit_name" == "$GITHUB_USERNAME" ] || [ "$commit_name" == "$USER_NAME" ]; then
+          EMAIL=$commit_email
+          # break both loops
+          break 2
+        fi
+      done
+    done
+
+    page=$((page + 1))
+  done
+
+  if [ -n "$EMAIL" ]; then
+    echo "Email found: $EMAIL"
+  else
+    echo "No matching commit author found."
+  fi
+}
+
+
+extract_email_from_gitlab_username(){
+
+  check_and_install_jq
+
+  # fetch the GitLab user ID and name by username
+  user_details=$(curl -s "https://gitlab.com/api/v4/users?username=$GITLAB_USERNAME")
+  USER_ID=$(echo "$user_details" | jq -r '.[0].id')
+  USER_NAME=$(echo "$user_details" | jq -r '.[0].name')
+
+  if [ -z "$USER_ID" ]; then
+    status_log $TYPE_ERROR "No Email found for $GITLAB_USERNAME"
+    exit 1
+  fi
+
+  page=1
+  per_page=30
+
+  # loop over all events until email is found
+  while [ -z "$EMAIL" ]; do
+    response=$(curl -s "https://gitlab.com/api/v4/users/$USER_ID/events?per_page=$per_page&page=$page")
+
+    if [ -z "$response" ] || [ "$(echo "$response" | jq length)" -eq 0 ]; then
+      status_log $TYPE_ERROR "No Email found for $GITLAB_USERNAME"
+      exit 1
+    fi
+
+    # remove all spaces
+    response=$(echo "$response" | tr -d '[:space:]')
+
+    # loop through each event in the response using jq to filter PushEvent
+    for row in $(echo "$response" | jq -c '.[] | select(.action_name == "pushednew")'); do
+
+      project_id=$(echo "$row" | jq -r '.project_id')
+      commit_sha=$(echo "$row" | jq -r '.push_data.commit_to')
+
+      commit_info=$(curl -s "https://gitlab.com/api/v4/projects/$project_id/repository/commits/$commit_sha")
+
+      commit_name=$(echo "$commit_info" | jq -r '.author_name')
+      commit_email=$(echo "$commit_info" | jq -r '.author_email')
+
+      if [ "$commit_name" == "$GITLAB_USERNAME" ] || [ "$commit_name" == "$USER_NAME" ]; then
+        EMAIL=$commit_email
+        break
+      fi
+    done
+
+    page=$((page + 1))
+  done
+
+  if [ -n "$EMAIL" ]; then
+    echo "Email found: $EMAIL"
+  else
+    echo "No matching commit author found."
+  fi
+}
+
+
+#------------ TARGET_PLATFORM Input-----------
+
 # if TARGET_PLATFORM is provided using CLI then we need to check if valid TARGET_PLATFORM was provided or not
 if [ "${TARGET_PLATFORM}" != "" ]; then 
   is_correct_target_platform_provided $TARGET_PLATFORM 
 fi
-TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else [ $TTY == "enabled" ] && gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
 
@@ -60,6 +195,8 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   # first check if civo is installed or not, if not? then install it
   check_and_install_civo
 
+#------------ CIVO_API_KEY Input-----------
+  
   if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [ $TTY == "enabled" ]; then
     CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
   fi
@@ -69,12 +206,16 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
     civo apikey current grapple
   fi
 
+#------------ CIVO_REGION Input-----------
+
   if [ "${CIVO_REGION}" != "" ]; then 
     is_correct_civo_region_provided $CIVO_REGION 
   fi
 
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else [ $TTY == "enabled" ] &&  gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
+
+#------------ CIVO_CLUSTER Input-----------
 
   if [ "${CIVO_CLUSTER}" != "" ]; then 
     is_correct_civo_cluster_provided $CIVO_CLUSTER 
@@ -94,8 +235,12 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   extract_kubectl_cli_version
 
+#------------ CIVO_CLUSTER_ID Input-----------
+
   # if a CIVO cluster was selected, pre-set the configuration
   CIVO_CLUSTER_ID=$(eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
+
+#------------ GRAPPLE_DNS Input-----------
 
   # check if a full domain-name was passed in GRAPPLE_DNS
   if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
@@ -111,14 +256,22 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
 
+#------------ CIVO_CLUSTER_ID Input-----------
+
   CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "selected civo cluster ID: ${CIVO_CLUSTER_ID}"
+
+#------------ CIVO_CLUSTER_NAME Input-----------
 
   CIVO_CLUSTER_NAME=$(if [ "${CIVO_CLUSTER_NAME}" != "" ]; then echo ${CIVO_CLUSTER_NAME}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_CLUSTER_NAME: " "Provide an name for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "selected civo cluster name: ${CIVO_CLUSTER_NAME}"
 
+#------------ CLUSTER_IP Input-----------
+
   CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
   echo "selected civo master ip: ${CLUSTER_IP}"
+
+#------------ CIVO_EMAIL_ADDRESS Input-----------
 
   #check if input from params is valid or not
   if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then 
@@ -133,19 +286,12 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
 fi
 
-if [ "${ORGANIZATION}" == "" ]; then 
-  ORGANIZATION="grapple solutions AG"
-fi
-
-if [ "${EMAIL}" != "" ]; then 
-  is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
-else 
-  EMAIL="info@grapple-solutions.com"
-fi
-
 
 # if Kubernetes, then pre-set the configuration params
 if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
+
+#------------ GRAPPLE_DNS Input-----------
+
   # check if a full domain-name was passed in GRAPPLE_DNS
   if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
       status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
@@ -260,9 +406,22 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
 #  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
 #  echo "kuberenetes cluster ip: ${CLUSTER_IP}"
 
+
+  if [[ "${GITHUB_USERNAME}" != "" ]]; then
+    status_log $TYPE_INFO "extracting email from github username $GITHUB_USERNAME"
+    extract_email_from_github_username
+    status_log $TYPE_INFO "extracted email : $EMAIL from github username $GITHUB_USERNAME"
+  elif [[ "${GITLAB_USERNAME}" != "" ]]; then
+    status_log $TYPE_INFO "extracting email from gitlab username $GITLAB_USERNAME"
+    extract_email_from_gitlab_username
+    status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username $GITLAB_USERNAME"
+  fi
+
+
   echo "DNS: $GRAPPLE_DNS"
 
 fi
+
 
 # Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
 if [ "${TARGET_PLATFORM}" != $Minikube ]; then
@@ -270,27 +429,40 @@ if [ "${TARGET_PLATFORM}" != $Minikube ]; then
   echo "installing dns: ${GRAPPLE_DNS}"
 fi
 
-
-if [ "${GRAPPLE_VERSION}" == "latest" ]; then
-  GRAPPLE_VERSION=$(head -n 1 grapple-versions)
-fi
-
-if [ "${GRAPPLE_VERSION}" != "" ]; then 
-  is_correct_grapple_version_provided $GRAPPLE_VERSION 
-fi 
-GRAPPLE_VERSION=$(if [ "${GRAPPLE_VERSION}" != "" ]; then echo ${GRAPPLE_VERSION}; else [ $TTY == "enabled" ] && gum choose "${GRAPPLE_AVAILABLE_VERSIONS[@]}"; fi) || exit $? # not sure if both GRAPPLE_VERSION & VERSION are needed
-echo "installing grapple version: ${GRAPPLE_VERSION}"
-
-# VERSION=$(prompt_for_input_with_validation "Enter version of the grapple solution framework: " "Semver version is expected. Default value if empty: 0.2.0" "$non_empty_regex" "Version cannot be empty." "0.2.0") || exit $?
-
-# The script then proceeds to dynamically generate values-override.yaml with user inputs
-
+#----------- creating complete domain --------
 complete_domain="" 
 if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
   complete_domain=$GRAPPLE_DNS
 else 
   complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
 fi
+
+
+#----------- GRAPPLE_VERSION Input --------
+
+if [ "${GRAPPLE_VERSION}" == "latest" ] || [ "${GRAPPLE_VERSION}" == "" ]; then
+  GRAPPLE_VERSION=$(head -n 1 "$GRPL_WORKDIR/grapple-versions")
+  status_log $TYPE_INFO "Installing grapple version: ${GRAPPLE_VERSION}"
+fi
+
+if [ "${GRAPPLE_VERSION}" != "" ]; then 
+  is_correct_grapple_version_provided $GRAPPLE_VERSION 
+fi
+
+
+#----------- ORGANIZATION default value --------
+if [ "${ORGANIZATION}" == "" ]; then 
+  ORGANIZATION="grapple solutions AG"
+fi
+
+
+#----------- Email validation and default value --------
+if [ "${EMAIL}" != "" ]; then 
+  is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
+else 
+  EMAIL="info@grapple-solutions.com"
+fi
+
 
 license=$(eval "$(getGumSpinnerOrLogger "Fetching LIC (License)") kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode")
 if [[ $license != "" ]]; then
@@ -322,22 +494,31 @@ config:
   GRAPPLE_DNS: ${complete_domain}
   GRAPPLE_VERSION: ${GRAPPLE_VERSION}
   GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}
+  CLOUD_PROVIDER: ${KUBEFIRST_CLOUD_PROVIDER}
+  CLOUD_REGION: ${KUBEFIRST_CLOUD_REGION}
+  CLUSTER_ID: ${KUBEFIRST_CLUSTER_ID}
+  CLUSTER_NAME: ${KUBEFIRST_CLUSTER_NAME}
 # Additional configurations omitted for brevity
 EOF
 
 cat /tmp/values-override.yaml
+
 
 # Use gum to confirm before proceeding
 if [ "${AUTO_CONFIRM}" != "true" ]; then
 
   status_log $TYPE_DEFAULT "Going to deploy grpl on ${TARGET_PLATFORM} with following configurations"  
   if [ "${TARGET_PLATFORM}" == $CIVO ]; then 
-    
     status_log $TYPE_DEFAULT "CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}"
     status_log $TYPE_DEFAULT "CIVO_CLUSTER_NAME: ${CIVO_CLUSTER_NAME}"
     status_log $TYPE_DEFAULT "CIVO_REGION: ${CIVO_REGION}"
     status_log $TYPE_DEFAULT "CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}"
     status_log $TYPE_DEFAULT "CLUSTER_IP: ${CLUSTER_IP}"
+  elif [ ${TARGET_PLATFORM} == $Kubefirst ]; then
+    status_log $TYPE_DEFAULT "KUBEFIRST_CLOUD_PROVIDER: ${KUBEFIRST_CLOUD_PROVIDER}"
+    status_log $TYPE_DEFAULT "KUBEFIRST_CLOUD_REGION: ${KUBEFIRST_CLOUD_REGION}"
+    status_log $TYPE_DEFAULT "KUBEFIRST_CLUSTER_ID: ${KUBEFIRST_CLUSTER_ID}"
+    status_log $TYPE_DEFAULT "KUBEFIRST_CLUSTER_NAME: ${KUBEFIRST_CLUSTER_NAME}"
   fi
 
   status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
