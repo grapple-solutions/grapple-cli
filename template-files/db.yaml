@@ -2,8 +2,6 @@ gras: {}
 grapi:
   # beimagetag: "v0.112"
   ingress: true
-  ssl: false
-  sslissuer: letsencrypt-grapple-demo
   initContainers:
   - name: init-db
     spec:
@@ -15,8 +13,6 @@ grapi:
       datasource: "$DATABASE_SCHEMA"
 
 gruim:
-  ssl: false
-  sslissuer: letsencrypt-grapple-demo
   style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
   config: ""
   additionalpackages: ""
