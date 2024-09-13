@@ -185,7 +185,7 @@ extract_email_from_gitlab_username(){
 if [ "${TARGET_PLATFORM}" != "" ]; then 
   is_correct_target_platform_provided $TARGET_PLATFORM 
 fi
-TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else [ $TTY == "enabled" ] && gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else [ $TTY == "enabled" ] && gum choose $Minikube $CIVO $Kubernetes $Kubefirst $K3D; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
 
