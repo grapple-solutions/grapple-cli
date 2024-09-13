@@ -3,8 +3,6 @@ grapi:
   # beimagetag: "v0.112"
   discoveredrepos: true
   ingress: true
-  ssl: false
-  sslissuer: letsencrypt-grapple-demo
   initContainers:
   - name: test
     spec:
@@ -33,9 +31,6 @@ grapi:
       datasource: "db"
 
 gruim:
-  # uiimagetag: "0.1.38"
-  ssl: false
-  sslissuer: letsencrypt-grapple-demo
   style: '{"colors":{"primary":{"DEFAULT":"#34344A","fg":"#fff"},"accent":{"DEFAULT":"#CC5A71","fg":"#fff"}}}'
   config: ""
   additionalpackages: ""
