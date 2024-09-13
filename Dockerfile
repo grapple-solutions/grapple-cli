@@ -39,6 +39,11 @@ RUN brew install jq && \
 	if [ "$TARGETARCH" != "arm64" ]; then brew install yq; fi && \
 	if [ "$TARGETARCH" = "arm64" ]; then curl -L https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_arm64.tar.gz | tar xz -C .; sudo mv yq_linux_arm64 /usr/bin/yq; fi && \
 	brew cleanup --prune=all
+
+# install gettext (for grpl example deploy)
+RUN echo "installing gettext for grpl example deploy" && \
+	if [ "$TARGETARCH" != "arm64" ]; then brew install gettext; brew cleanup --prune=all; fi && \
+	if [ "$TARGETARCH" = "arm64" ]; then sudo apt-get install gettext; sudo rm -rf /var/lib/apt/lists/*; fi
  
 # ARG GRAPPLE_CLI_VERSION=0.2.63
 ARG HOMEBREW_GITHUB_API_TOKEN=""
