@@ -5,7 +5,7 @@
 is_correct_target_platform_provided() {
 
     target_platform=$1
-    if [[ $target_platform != $Minikube && $target_platform != $CIVO && $target_platform != $Kubernetes && $target_platform != $Kubefirst ]]; then
+    if [[ $target_platform != $Minikube && $target_platform != $CIVO && $target_platform != $Kubernetes && $target_platform != $Kubefirst && $target_platform != $K3D ]]; then
         errMsg="Error: Invalid TARGET_PLATFORM provided : $target_platform. Please provide one of the following 1)$Minikube 2)$CIVO 3)$Kubernetes 4)$Kubefirst"
         echo $errMsg
         status_log $TYPE_ERROR "$errMsg"
