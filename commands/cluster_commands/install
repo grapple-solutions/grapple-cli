@@ -551,7 +551,11 @@ helm_deploy() {
   echo "Deploying $i with version $version"
 
   if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
-    Kubefirst_values=" -f ${GRPL_WORKDIR}/template-files/values-kubefirst.yaml "
+    if echo ${KUBEFIRST_CLOUD_PROVIDER} | grep -i k3d >/dev/null 2>&1; then
+      Kubefirst_values=" -f ${GRPL_WORKDIR}/template-files/values-kubefirst-k3d.yaml "
+    else
+      Kubefirst_values=" -f ${GRPL_WORKDIR}/template-files/values-kubefirst.yaml "
+    fi
   else
     Kubefirst_values=""
   fi
