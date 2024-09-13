@@ -297,10 +297,36 @@ if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
       status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
       GRAPPLE_DOMAIN=".grapple-demo.com"
   fi
-  if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then
-    KUBE_CONTEXT=$(kubectl config current-context)
-  fi
-  KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else kubectl config get-contexts -o name | gum choose; fi)
+
+#---------- KUBE_CONTEXT Input ------------
+
+if [ -n "$KUBERNETES_SERVICE_HOST" ] && [ -n "$KUBERNETES_SERVICE_PORT" ]; then
+    echo "Running inside a Kubernetes cluster"
+else
+    echo "Not running inside a Kubernetes cluster"
+    if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then
+        if kubectl config current-context >/dev/null 2>&1; then
+        KUBE_CONTEXT=$(kubectl config current-context)
+        fi
+    fi
+    
+    # Run the command and store the output in a variable
+    contexts=$(kubectl config get-contexts -o name)
+    # Check if the output is empty
+    if [ -z "$contexts" ]; then
+        status_log $TYPE_ERROR "Error: No contexts found"
+        exit 1
+    else
+        #check if input from params is valid or not
+        is_correct_kubectl_context_provided $KUBE_CONTEXT
+        contexts=$(kubectl config get-contexts -o name)
+        KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else gum choose  --header "Please select kubectl context you want to use" $contexts ; fi) || exit $?
+        kubectl config use-context $KUBE_CONTEXT
+        status_log $TYPE_DEFAULT "KUBE_CONTEXT: ${KUBE_CONTEXT}"
+    fi
+fi
+
+
 
   CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "kuberenetes cluster ip: ${CLUSTER_IP}"

@@ -388,11 +388,14 @@ deploy_template() {
     cli_log "resource deploy BEGIN"
     status_log $TYPE_DEFAULT "resource deploy is in progress"
 
-    if [ "$(kubectl config current-context)" = "minikube" ]; then
-        echo "patching for minikube..."
-        MINIKUBE_PATCH=" --set gras.ssl=false --set grapi.ssl=false --set gruim.ssl=false "
-    else
-        MINIKUBE_PATCH=""
+    if kubectl config current-context >/dev/null 2>&1; then
+        KUBE_CONTEXT=$(kubectl config current-context)
+        if [ "$KUBE_CONTEXT" = "minikube" ]; then
+            echo "patching for minikube..."
+            MINIKUBE_PATCH=" --set gras.ssl=false --set grapi.ssl=false --set gruim.ssl=false "
+        else
+            MINIKUBE_PATCH=""
+        fi
     fi
 
     if ! eval "$(getGumSpinnerOrLogger "Deploying template") helm upgrade --install ${GRAS_NAME} oci://public.ecr.aws/${awsregistry}/gras-deploy  -n ${KUBE_NS} -f $template_file_dest ${MINIKUBE_PATCH}"; then
@@ -510,15 +513,34 @@ valid_args=(
 # if yes? then store then in the respective vars
 extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@")
 
-if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then 
-  KUBE_CONTEXT=$(kubectl config current-context)
+#---------- KUBE_CONTEXT Input ------------
+
+if [ -n "$KUBERNETES_SERVICE_HOST" ] && [ -n "$KUBERNETES_SERVICE_PORT" ]; then
+    echo "Running inside a Kubernetes cluster"
+else
+    echo "Not running inside a Kubernetes cluster"
+    if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then
+        if kubectl config current-context >/dev/null 2>&1; then
+        KUBE_CONTEXT=$(kubectl config current-context)
+        fi
+    fi
+    
+    # Run the command and store the output in a variable
+    contexts=$(kubectl config get-contexts -o name)
+    # Check if the output is empty
+    if [ -z "$contexts" ]; then
+        status_log $TYPE_ERROR "Error: No contexts found"
+        exit 1
+    else
+        #check if input from params is valid or not
+        is_correct_kubectl_context_provided $KUBE_CONTEXT
+        contexts=$(kubectl config get-contexts -o name)
+        KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else gum choose  --header "Please select kubectl context you want to use" $contexts ; fi) || exit $?
+        kubectl config use-context $KUBE_CONTEXT
+        status_log $TYPE_DEFAULT "KUBE_CONTEXT: ${KUBE_CONTEXT}"
+    fi
 fi
-#check if input from params is valid or not
-is_correct_kubectl_context_provided $KUBE_CONTEXT
-contexts=$(kubectl config get-contexts -o name)
-KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else gum choose  --header "Please select kubectl context you want to use" $contexts ; fi) || exit $?
-kubectl config use-context $KUBE_CONTEXT
-status_log $TYPE_DEFAULT "KUBE_CONTEXT: ${KUBE_CONTEXT}"
+
 
 
 #check if input from params is valid or not
