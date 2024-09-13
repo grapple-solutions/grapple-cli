@@ -667,7 +667,7 @@ Examples:
 
 Variables:
 
-  TARGET_PLATFORM=CIVO / Kubernetes / minikube / Kubefirst
+  TARGET_PLATFORM=CIVO / Kubernetes / minikube / Kubefirst / k3d
   # general configurations
   GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.0' or '0.2.1')
   AUTO_CONFIRM='false' / 'true'
