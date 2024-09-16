@@ -31,7 +31,7 @@ generate_cli_web_doc() {
     grpl_license_remove_cli_help $WEB_DOC
     grpl_license_status_cli_help $WEB_DOC
      doc="
-= grpl cli Documentation
+= grpl cli Documentation - $(cat $GRPL_WORKDIR/VERSION)
 :toc: left
 :toclevels: 3
 :sectanchors:
@@ -41,8 +41,6 @@ generate_cli_web_doc() {
 == Introduction
 
 the grapple cli
-
-Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/[grapple solution^]
 
@@ -103,9 +101,14 @@ generate_crds_web_doc() {
       exit 1
     fi
 
+    grpl_version="$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.GRAPPLE_VERSION}" | base64 --decode)"
+    if [ "$grpl_version" == "" ]; then
+      grpl_version="unknown"
+    fi
+
     status_log $TYPE_INFO "Going to generate grapple web doc. This might take some time"
     crds_doc="
-= grpl CRDs Documentation
+= grpl CRDs Documentation - $grpl_version
 :toc: left
 :toclevels: 3
 :sectanchors:
@@ -119,9 +122,9 @@ the grapple CRDs
 https://grapple-solutions.com/[grapple solution^]
 
 
-$(echo "$gras_doc" | transform_crds_docs_into_web_docs_format "gras.spec" "== gras")
-$(echo "$grapi_doc" | transform_crds_docs_into_web_docs_format "grapi.spec" "== grapi")
-$(echo "$gruim_doc" | transform_crds_docs_into_web_docs_format "gruim.spec" "== gruim")
+$(echo "$gras_doc" | transform_crds_docs_into_web_docs_format "gras.spec" "== gras - $grpl_version")
+$(echo "$grapi_doc" | transform_crds_docs_into_web_docs_format "grapi.spec" "== grapi - $grpl_version")
+$(echo "$gruim_doc" | transform_crds_docs_into_web_docs_format "gruim.spec" "== gruim - $grpl_version")
 
 "
 
@@ -153,7 +156,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Usage: 
@@ -204,7 +207,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_cli_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
@@ -272,7 +275,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_application_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
@@ -323,7 +326,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_cluster_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
@@ -377,7 +380,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_example_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
@@ -430,7 +433,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_install_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
@@ -471,7 +474,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_upgrade_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
@@ -522,7 +525,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_version_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
@@ -950,7 +953,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_resource_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
@@ -1084,7 +1087,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_dev_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
@@ -1215,7 +1218,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_grapi_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
@@ -1271,7 +1274,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_gruim_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
@@ -1327,7 +1330,7 @@ https://grapple-solutions.com/
     fi
 
     grpl_license_doc="
-$cli_name
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
 Description: 
