@@ -1,5 +1,5 @@
 config:
- ssl: 'false'
+ ssl: 'true'
  sslissuer: 'letsencrypt-prod'
 registry:
  enabled: false
