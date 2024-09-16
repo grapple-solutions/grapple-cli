@@ -8,7 +8,7 @@ cli_help() {
 }
 
 
-[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help && exit 0
+[ "$1" = "help" ] || [ "$1" = "h" ] || [ "$1" = "" ] && cli_help && exit 0
 
 install_prerequisite
 check_and_install_asciidoc
