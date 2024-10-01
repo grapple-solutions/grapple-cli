@@ -560,15 +560,18 @@ helm_deploy() {
     Kubefirst_values=""
   fi
 
-  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values" >/dev/null; then
+  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --istall $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values" >/dev/null; then
     
-    if [ "$loggedOut" = "true" ]; then
+    if [[ "$loggedOut" = "true" ]]; then
+      echo "${i} Failed to Installed"
+      status_log $TYPE_ERROR "${i} Failed to Installed due to following error"
+      eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
       exit 1
     fi
 
-    if helm registry logout public.ecr.aws/${awsregistry} >/dev/null 2>&1; then
+    if helm registry logout public.ecr.aws >/dev/null 2>&1; then
       loggedOut="true"
-      status_log $TYPE_INFO "logged out of public.ecr.aws/${awsregistry} registry"
+      status_log $TYPE_INFO "logged out of public.ecr.aws registry"
       helm_deploy $i
     else 
       echo "${i} Failed to Installed"
