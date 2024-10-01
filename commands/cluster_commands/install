@@ -19,7 +19,8 @@ cli_help() {
 
 NS=grpl-system
 awsregistry="p7h7z5g3"
-
+SSL_ENABLE="false"
+SSL_ISSUER="letsencrypt-grapple-demo"
 cli_log "cluster install BEGIN"
 status_log $TYPE_INFO "Installation of grpl is in progress"
 
@@ -175,6 +176,75 @@ extract_email_from_gitlab_username(){
     echo "Email found: $EMAIL"
   else
     echo "No matching commit author found."
+  fi
+}
+
+create_and_load_ca_into_secret() {
+
+  # Define file paths and directories
+  crt="rootCA.pem"
+  key="rootCA-key.pem"
+  mac_dir="$HOME/Library/Application Support/mkcert"
+  linux_dir="$HOME/.local/share/mkcert"
+  namespace="cert-manager"
+  secret_name="mkcert-ca-secret"
+
+  if (kubectl get secrets -n $namespace $secret_name -o name >/dev/null 2>&1); then
+    name="secret/$secret_name"
+    if [[ $name == $(kubectl get secrets -n $namespace $secret_name -o name) ]]; then
+      status_log $TYPE_SUCCESS "$secret_name already exists"
+      return
+    fi
+  fi
+
+  # Check if the files exist in the macOS directory
+  if [ -f "$mac_dir/$crt" ] && [ -f "$mac_dir/$key" ]; then
+    echo "Files found in $mac_dir"
+    ca_path="$mac_dir"
+  elif [ -f "$linux_dir/$crt" ] && [ -f "$linux_dir/$key" ]; then
+    # Check if the files exist in the Linux directory
+    echo "Files found in $linux_dir"
+    ca_path="$linux_dir"
+  else
+    # If files do not exist in either directory, abort the process
+    status_log $TYPE_ERROR "Error: CA files not found in both directories. Aborting proccess of creating cluster-issuer"
+    exit 1
+  fi
+
+  # Create the Kubernetes secret using the found CA files
+  echo "Creating Kubernetes secret in namespace $namespace..."
+  kubectl create secret tls $secret_name \
+    --cert="$ca_path/$crt" \
+    --key="$ca_path/$key" \
+    --namespace $namespace
+
+  if [ $? -eq 0 ]; then
+    status_log $TYPE_SUCCESS "Secret $secret_name successfully created in namespace $namespace."
+
+kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: mkcert-ca-issuer
+spec:
+  ca:
+    secretName: $secret_name
+EOF
+
+    # Check if the command succeeded
+    if [ $? -eq 0 ]; then
+      status_log $TYPE_SUCCESS  "ClusterIssuer mkcert-ca-issuer created successfully!"
+    else
+      status_log $TYPE_ERROR "Failed to create ClusterIssuer mkcert-ca-issuer"
+      echo "Checking for logs..."
+      kubectl describe clusterissuer mkcert-ca-issuer
+      exit 1
+    fi
+
+
+  else
+    status_log $TYPE_ERROR  "Failed to create secret $secret_name in namespace $namespace."
+    exit 1
   fi
 }
 
@@ -417,6 +487,11 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
     status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username $GITLAB_USERNAME"
   fi
 
+  if [[ $KUBEFIRST_CLOUD_PROVIDER == $K3D ]]; then
+    create_and_load_ca_into_secret
+    SSL_ENABLE="true"
+    SSL_ISSUER="mkcert-ca-issuer"
+  fi
 
   echo "DNS: $GRAPPLE_DNS"
 
@@ -484,8 +559,8 @@ config:
   grapiversion: "0.0.1"
   gruimversion: "0.0.1"
   dev: "false"
-  ssl: "false"
-  sslissuer: "letsencrypt-grapple-demo"
+  ssl: "$SSL_ENABLE"
+  sslissuer: "$SSL_ISSUER"
   CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}
   CIVO_CLUSTER_NAME: ${CIVO_CLUSTER_NAME}
   CIVO_REGION: ${CIVO_REGION}
