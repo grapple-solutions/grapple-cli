@@ -560,7 +560,7 @@ helm_deploy() {
     Kubefirst_values=""
   fi
 
-  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --istall $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values" >/dev/null; then
+  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values" >/dev/null; then
     
     if [[ "$loggedOut" = "true" ]]; then
       echo "${i} Failed to Installed"
