@@ -539,7 +539,7 @@ else
 fi
 
 
-license=$(eval "$(getGumSpinnerOrLogger "Fetching LIC (License)") kubectl get secret -n grpl-system grsf-confg -o jsonpath="{.data.LIC}" | base64 --decode")
+license=$(eval "$(getGumSpinnerOrLogger "Fetching LIC (License)") kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode")
 
 if [[ $? -ne 0 ]]; then
     echo "Error: Failed to fetch the license from Kubernetes secret."
