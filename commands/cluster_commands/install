@@ -635,23 +635,25 @@ helm_deploy() {
     Kubefirst_values=""
   fi
 
-  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values" >/dev/null; then
+  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --intall $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values" >/dev/null; then
     
     if [[ "$loggedOut" = "true" ]]; then
       echo "${i} Failed to Installed"
       status_log $TYPE_ERROR "${i} Failed to Installed due to following error"
-      eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
+      eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --intall $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
       exit 1
     fi
 
     if helm registry logout public.ecr.aws >/dev/null 2>&1; then
       loggedOut="true"
       status_log $TYPE_INFO "logged out of public.ecr.aws registry"
+      status_log $TYPE_INFO "trying again"
       helm_deploy $i
     else 
+      status_log $TYPE_INFO "We tried logging out of public.ecr.aws registry but it failed, please run 'helm registry logout public.ecr.aws/<repo>' and try again"
       echo "${i} Failed to Installed"
       status_log $TYPE_ERROR "${i} Failed to Installed due to following error"
-      eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
+      eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --intall $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
       exit 1
     fi
   fi
