@@ -343,13 +343,15 @@ Commands:
 
     s or status     Cluster status
     i or install    Cluster installation
+    p or patch      Cluster patch
     c or create     Cluster creation
     *               Help menu
     
 Examples:    
 
     grpl c s    or    grpl cluster status
-    grpl c i    or    grpl cluster install      
+    grpl c i    or    grpl cluster install    
+    grpl c p    or    grpl cluster patch       
     grpl c c    or    grpl cluster create  
     grpl c *    or    grpl cluster *
 
