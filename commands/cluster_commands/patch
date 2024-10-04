@@ -126,14 +126,14 @@ if [[ "${CLOUD_PROVIDER,,}" == "${K3D,,}" ]]; then
     SSL_NEW=$(echo -n "true" | base64)
     SSL_ISSUER_NEW=$(echo -n "mkcert-ca-issuer" | base64)
 
-    # Patch the secret to update ssl and sslIssuer
+    # Patch the secret to update ssl and sslissuer
     kubectl patch secret $SECRET_NAME -n $NAMESPACE --type='json' -p='[
       {"op": "add", "path": "/data/ssl", "value":"'"$SSL_NEW"'"},
-      {"op": "add", "path": "/data/sslIssuer", "value":"'"$SSL_ISSUER_NEW"'"}
+      {"op": "add", "path": "/data/sslissuer", "value":"'"$SSL_ISSUER_NEW"'"}
     ]'
 
     if [[ $? -eq 0 ]]; then
-        status_log $TYPE_SUCCESS "Successfully updated secret 'grsf-config' with ssl=true and sslIssuer=mkcert-ca-issuer."
+        status_log $TYPE_SUCCESS "Successfully updated secret 'grsf-config' with ssl=true and sslissuer=mkcert-ca-issuer."
     else
         echo "Error: Failed to update the secret."
         exit 1
