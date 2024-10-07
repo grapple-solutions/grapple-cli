@@ -546,7 +546,6 @@ if [[ $? -ne 0 ]]; then
 elif [[ -z $license ]]; then
     GRAPPLE_LICENSE="free"
 else
-    echo "License fetched successfully ${license}."
     GRAPPLE_LICENSE=$license
 fi
 
