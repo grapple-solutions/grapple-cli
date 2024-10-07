@@ -542,10 +542,8 @@ fi
 license=$(eval "$(getGumSpinnerOrLogger "Fetching LIC (License)") kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode")
 
 if [[ $? -ne 0 ]]; then
-    echo "Error: Failed to fetch the license from Kubernetes secret."
     GRAPPLE_LICENSE="free"
 elif [[ -z $license ]]; then
-    echo "No license found, setting to 'free'."
     GRAPPLE_LICENSE="free"
 else
     echo "License fetched successfully ${license}."
