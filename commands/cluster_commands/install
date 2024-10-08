@@ -82,7 +82,7 @@ patch_coredns() {
   export DOCKER_API_GATEWAY=$DOCKER_API_GATEWAY
 
   # Step 3: Apply the coredns role and rolebinding
-  kubectl apply -f coredns-role-and-rolebinding.yaml
+  kubectl apply -f $GRPL_WORKDIR/files/coredns-role-and-rolebinding.yaml
 
   # Step 4: Move template file to /tmp and substitute environment variables
 
