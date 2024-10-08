@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: patch-coredns-configmap
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: patch-coredns
+  template:
+    metadata:
+      labels:
+        name: patch-coredns
+    spec:
+      containers:
+      - name: patch-coredns
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Checking if patch file exists..."
+          if [ -f /patch/coredns-json-patch.yaml ]; then
+            echo "Patching CoreDNS ConfigMap..."
+            kubectl patch configmap coredns -n kube-system --patch-file /patch/coredns-json-patch.yaml
+            kubectl rollout restart deployment coredns -n kube-system
+            echo "ConfigMap patched successfully!"
+          else
+            echo "Patch file not found! Exiting."
+            exit 1
+          fi
+          # Keep the container alive for some time to allow checking logs
+          sleep 3600
+        volumeMounts:
+        - name: patch-volume
+          mountPath: /patch
+      volumes:
+      - name: patch-volume
+        configMap:
+          name: coredns-patch
+      restartPolicy: Always
