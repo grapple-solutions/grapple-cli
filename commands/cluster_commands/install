@@ -110,7 +110,7 @@ patch_coredns() {
   fi
 
   if ! kubectl rollout restart deployment coredns -n kube-system > /dev/null 2>&1; then
-    status_log $TYPE_ERROR "$default_error Failed to ollout restart deployment coredns."
+    status_log $TYPE_ERROR "$default_error Failed to rollout restart deployment coredns."
     exit 1
   fi
 
