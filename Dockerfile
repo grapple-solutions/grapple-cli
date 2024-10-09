@@ -48,7 +48,7 @@ RUN echo "installing gettext for grpl example deploy" && \
 # ARG GRAPPLE_CLI_VERSION=0.2.63
 ARG HOMEBREW_GITHUB_API_TOKEN=""
 ARG GRAPPLE_CLI_VERSION
-RUN export HOMEBREW_GITHUB_API_TOKEN=${HOMEBREW_GITHUB_API_TOKEN} && brew tap zahid-iqbal-alpha/homebrew-tap && brew install grapple-cli && brew cleanup --prune=all
+RUN export HOMEBREW_GITHUB_API_TOKEN=${HOMEBREW_GITHUB_API_TOKEN} && brew tap grapple-solutions/grapple && brew install grapple-cli && brew cleanup --prune=all
 
 #RUN grpl version
 
