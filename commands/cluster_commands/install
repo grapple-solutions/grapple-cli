@@ -115,7 +115,7 @@ patch_coredns() {
   fi
 
 
-  status_log $TYPE_INFO "Successfully created ConfigMap coredns-custom"
+  status_log $TYPE_SUCCESS "Successfully created ConfigMap coredns-custom"
 
 }
 
