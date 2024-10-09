@@ -540,11 +540,15 @@ fi
 
 
 license=$(eval "$(getGumSpinnerOrLogger "Fetching LIC (License)") kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode")
-if [[ $license != "" ]]; then
-    GRAPPLE_LICENSE=$license
-else 
+
+if [[ $? -ne 0 ]]; then
     GRAPPLE_LICENSE="free"
+elif [[ -z $license ]]; then
+    GRAPPLE_LICENSE="free"
+else
+    GRAPPLE_LICENSE=$license
 fi
+
 
 cat <<EOF > /tmp/values-override.yaml
 # Default values for grsf-init.
