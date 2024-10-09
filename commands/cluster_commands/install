@@ -683,7 +683,7 @@ fi
 
 # remove the DNS job again
 if [ "${TARGET_PLATFORM}" = $CIVO ]  && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
-  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
+  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS//./-} 
 fi
 
 echo "wait for crossplane to be ready"
