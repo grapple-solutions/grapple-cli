@@ -314,6 +314,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   # check if a full domain-name was passed in GRAPPLE_DNS
   if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
+      status_log $TYPE_INFO "Extracted Domain $(extract_domain_name "$GRAPPLE_DNS")"
       status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
       GRAPPLE_DOMAIN=".grapple-demo.com"
   fi
@@ -660,7 +661,7 @@ helm_deploy() {
 
 }
 
-if ([ "${TARGET_PLATFORM}" = $CIVO ] || [ "${TARGET_PLATFORM}" = $Kubernetes ]) && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+if ([ "${TARGET_PLATFORM}" = $CIVO ] || [ "${TARGET_PLATFORM}" = $Kubernetes ]) && host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS//./-} >/dev/null 2>&1 | true
   kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS//./-} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --env="CIVO_MASTER_IP=${CLUSTER_IP}" --restart=Never
@@ -682,7 +683,7 @@ if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; the
 fi
 
 # remove the DNS job again
-if [ "${TARGET_PLATFORM}" = $CIVO ]  && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+if ([ "${TARGET_PLATFORM}" = $CIVO ] || [ "${TARGET_PLATFORM}" = $Kubernetes ])  && host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS//./-} 
 fi
 
