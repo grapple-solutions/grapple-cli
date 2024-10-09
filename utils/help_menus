@@ -18,6 +18,7 @@ generate_cli_web_doc() {
     grpl_application_init_cli_help $WEB_DOC
     grpl_cluster_create_cli_help $WEB_DOC
     grpl_cluster_install_cli_help $WEB_DOC
+    grpl_cluster_patch_cli_help $WEB_DOC
     grpl_cluster_status_cli_help $WEB_DOC
     grpl_example_deploy_cli_help $WEB_DOC
     grpl_example_status_cli_help $WEB_DOC
@@ -51,6 +52,7 @@ $grpl_application_init_doc
 $grpl_cluster_doc
 $grpl_cluster_create_doc
 $grpl_cluster_install_doc
+$grpl_cluster_patch_doc
 $grpl_cluster_status_doc
 $grpl_example_doc
 $grpl_example_deploy_doc
@@ -341,13 +343,15 @@ Commands:
 
     s or status     Cluster status
     i or install    Cluster installation
+    p or patch      Cluster patch
     c or create     Cluster creation
     *               Help menu
     
 Examples:    
 
     grpl c s    or    grpl cluster status
-    grpl c i    or    grpl cluster install      
+    grpl c i    or    grpl cluster install    
+    grpl c p    or    grpl cluster patch       
     grpl c c    or    grpl cluster create  
     grpl c *    or    grpl cluster *
 
@@ -751,6 +755,56 @@ Examples:
         return 0
     else
         echo "$grpl_cluster_status_doc"  >&2
+    fi
+}
+
+grpl_cluster_patch_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl cluster patch"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="=== grpl cluster patch"
+        meta=""
+    fi
+
+    grpl_cluster_patch_doc="
+$cli_name
+$meta
+
+Description: 
+
+    Patches the cluster
+
+Usage: 
+
+    grpl cluster patch [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to patch cluster 
+    
+Examples:    
+
+    grpl c p h    or    grpl cluster patch help
+    grpl c p *    or    grpl cluster patch *
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_cluster_patch_doc"  >&2
     fi
 }
 

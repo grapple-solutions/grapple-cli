@@ -1,0 +1,148 @@
+#!/bin/bash
+set -e
+
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/utils/help_menus"
+
+
+cli_help() {
+  grpl_cluster_patch_cli_help
+  exit 0
+}
+
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+
+
+create_and_load_ca_into_secret() {
+
+  # Define file paths and directories
+  crt="rootCA.pem"
+  key="rootCA-key.pem"
+  mac_dir="$HOME/Library/Application Support/mkcert"
+  linux_dir="$HOME/.local/share/mkcert"
+  namespace="cert-manager"
+  secret_name="mkcert-ca-secret"
+
+  if (kubectl get secrets -n $namespace $secret_name -o name >/dev/null 2>&1); then
+    name="secret/$secret_name"
+    if [[ $name == $(kubectl get secrets -n $namespace $secret_name -o name) ]]; then
+      status_log $TYPE_SUCCESS "$secret_name already exists"
+      return
+    fi
+  fi
+
+  # Check if the files exist in the macOS directory
+  if [ -f "$mac_dir/$crt" ] && [ -f "$mac_dir/$key" ]; then
+    echo "Files found in $mac_dir"
+    ca_path="$mac_dir"
+  elif [ -f "$linux_dir/$crt" ] && [ -f "$linux_dir/$key" ]; then
+    # Check if the files exist in the Linux directory
+    echo "Files found in $linux_dir"
+    ca_path="$linux_dir"
+  else
+    # If files do not exist in either directory, abort the process
+    status_log $TYPE_ERROR "Error: CA files not found in both directories. Aborting proccess of creating cluster-issuer"
+    exit 1
+  fi
+
+  # Create the Kubernetes secret using the found CA files
+  echo "Creating Kubernetes secret in namespace $namespace..."
+  kubectl create secret tls $secret_name \
+    --cert="$ca_path/$crt" \
+    --key="$ca_path/$key" \
+    --namespace $namespace
+
+  if [ $? -eq 0 ]; then
+    status_log $TYPE_SUCCESS "Secret $secret_name successfully created in namespace $namespace."
+
+kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: mkcert-ca-issuer
+spec:
+  ca:
+    secretName: $secret_name
+EOF
+
+    # Check if the command succeeded
+    if [ $? -eq 0 ]; then
+      status_log $TYPE_SUCCESS  "ClusterIssuer mkcert-ca-issuer created successfully!"
+    else
+      status_log $TYPE_ERROR "Failed to create ClusterIssuer mkcert-ca-issuer"
+      echo "Checking for logs..."
+      kubectl describe clusterissuer mkcert-ca-issuer
+      exit 1
+    fi
+
+
+  else
+    status_log $TYPE_ERROR  "Failed to create secret $secret_name in namespace $namespace."
+    exit 1
+  fi
+}
+
+
+
+
+# Define the namespace and secret name
+NAMESPACE="grpl-system"
+SECRET_NAME="grsf-config"
+
+# Try to get the secret and check if it exists
+SECRET_DATA=$(kubectl get secret $SECRET_NAME -n $NAMESPACE -o jsonpath="{.data.CLOUD_PROVIDER}" 2>/dev/null)
+
+# Check if the secret or namespace doesn't exist
+if [[ $? -ne 0 ]]; then
+    status_log $TYPE_ERROR "Error: Secret '$SECRET_NAME' or namespace '$NAMESPACE' does not exist."
+    exit 1
+fi
+
+# Check if the CLOUD_PROVIDER key exists in the secret
+if [[ -z "$SECRET_DATA" ]]; then
+    status_log $TYPE_ERROR "Error: CLOUD_PROVIDER key not found in the '$SECRET_NAME' secret."
+    exit 1
+fi
+
+# Decode the CLOUD_PROVIDER value
+CLOUD_PROVIDER=$(echo "$SECRET_DATA" | base64 --decode 2>/dev/null)
+
+# Check if decoding was successful
+if [[ $? -ne 0 ]]; then
+    status_log $TYPE_ERROR "Error: Failed to decode the CLOUD_PROVIDER value."
+    exit 1
+fi
+
+# Perform a case-insensitive comparison with "k3d"
+if [[ "${CLOUD_PROVIDER,,}" == "${K3D,,}" ]]; then
+
+    echo "CLOUD_PROVIDER is k3d"
+
+    create_and_load_ca_into_secret
+    # Base64 encode the new values
+    SSL_NEW=$(echo -n "true" | base64)
+    SSL_ISSUER_NEW=$(echo -n "mkcert-ca-issuer" | base64)
+
+    # Patch the secret to update ssl and sslissuer
+    kubectl patch secret $SECRET_NAME -n $NAMESPACE --type='json' -p='[
+      {"op": "add", "path": "/data/ssl", "value":"'"$SSL_NEW"'"},
+      {"op": "add", "path": "/data/sslissuer", "value":"'"$SSL_ISSUER_NEW"'"}
+    ]'
+
+    if [[ $? -eq 0 ]]; then
+        status_log $TYPE_SUCCESS "Successfully updated secret 'grsf-config' with ssl=true and sslissuer=mkcert-ca-issuer."
+    else
+        echo "Error: Failed to update the secret."
+        exit 1
+    fi
+else
+    status_log $TYPE_INFO "CLOUD_PROVIDER is not k3d, cluster patch isn't required."
+    exit 0
+fi
+
+
+
+status_log $TYPE_SUCCESS "Successfully patched cluster"
