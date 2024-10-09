@@ -81,14 +81,11 @@ patch_coredns() {
   fi
   export DOCKER_API_GATEWAY=$DOCKER_API_GATEWAY
 
-  # Step 3: Apply the coredns role and rolebinding
-  kubectl apply -f $GRPL_WORKDIR/files/coredns-role-and-rolebinding.yaml
-
   # Step 4: Move template file to /tmp and substitute environment variables
 
-  template_file_src="$GRPL_WORKDIR/files/coredns-json-patch.yaml"
-  template_file_dest="/tmp/coredns-json-patch.yaml"
-  tmp_file_dest="/tmp/tmp_coredns_patch.yaml"
+  template_file_src="$GRPL_WORKDIR/files/coredns-custom.yaml"
+  template_file_dest="/tmp/coredns-custom.yaml"
+  tmp_file_dest="/tmp/tmp_coredns_custom.yaml"
 
 
   # Move the file and substitute environment variables using envsubst
@@ -107,30 +104,19 @@ patch_coredns() {
   fi
 
   # Step 5: Check if the coredns-patch ConfigMap exists, if not, create it
-  if ! kubectl get configmap coredns-patch -n kube-system > /dev/null 2>&1; then
-    status_log $TYPE_INFO "Creating coredns-patch ConfigMap in kube-system namespace."
-    kubectl create configmap coredns-patch --from-file="$template_file_dest" -n kube-system
-    if [ $? -ne 0 ]; then
-      status_log $TYPE_ERROR "$default_error Failed to create coredns-patch ConfigMap."
-      exit 1
-    fi
-  else
-    status_log $TYPE_INFO "ConfigMap coredns-patch already exists, skipping creation."
+  if ! kubectl apply -f $template_file_dest > /dev/null 2>&1; then
+    status_log $TYPE_ERROR "$default_error Failed to create coredns-patch ConfigMap."
+    exit 1
   fi
 
-  # Step 6: Check if the DaemonSet patch-coredns-configmap exists, if not, apply it
-  if ! kubectl get daemonset patch-coredns-configmap -n kube-system > /dev/null 2>&1; then
-    status_log $TYPE_INFO "Creating DaemonSet patch-coredns-configmap in kube-system namespace."
-    kubectl apply -f "$GRPL_WORKDIR/files/coredns-patch-daemonset.yaml"
-    if [ $? -ne 0 ]; then
-      status_log $TYPE_ERROR "$default_error Failed to create DaemonSet patch-coredns-configmap."
-      exit 1
-    fi
-  else
-    status_log $TYPE_INFO "DaemonSet patch-coredns-configmap already exists, skipping creation."
+  if ! kubectl rollout restart deployment coredns -n kube-system > /dev/null 2>&1; then
+    status_log $TYPE_ERROR "$default_error Failed to ollout restart deployment coredns."
+    exit 1
   fi
 
-  status_log $TYPE_INFO "Successfully patched CoreDNS."
+
+  status_log $TYPE_INFO "Successfully created ConfigMap coredns-custom"
+
 }
 
 
