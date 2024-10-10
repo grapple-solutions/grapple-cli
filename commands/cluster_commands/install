@@ -488,7 +488,7 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
 
   echo "DNS: $GRAPPLE_DNS"
 
-  if [[ "${KUBEFIRST_CLOUD_PROVIDER,,}" == "${K3D,,}" ]]; then
+  if [[ "$(echo "${CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${K3D}" | tr '[:upper:]' '[:lower:]')" ]]; then
     patch_coredns
   fi
 
@@ -627,7 +627,7 @@ helm_deploy() {
   echo "Deploying $i with version $version"
 
   if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
-    if [[ "${KUBEFIRST_CLOUD_PROVIDER,,}" == "${K3D,,}" ]]; then
+    if [[ "$(echo "${CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${K3D}" | tr '[:upper:]' '[:lower:]')" ]]; then
       Kubefirst_values=" -f ${GRPL_WORKDIR}/template-files/values-kubefirst-k3d.yaml "
     else
       Kubefirst_values=" -f ${GRPL_WORKDIR}/template-files/values-kubefirst.yaml "
