@@ -30,7 +30,8 @@ ENV OSTYPE darwin23.0
 RUN brew install gum && \
 	if [ "$TARGETARCH" != "arm64" ]; then brew install kubectl; fi && \
 	if [ "$TARGETARCH" = "arm64" ]; then curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"; chmod +x kubectl; sudo mv kubectl /usr/bin; fi && \
-	brew install helm && brew cleanup --prune=all
+	# installing dns utils, for host package
+	brew install helm && brew install bind && brew cleanup --prune=all
 
 # non-mandatory installation of tools to speed up the usage of the CLI in the image...
 # install yq for arm64 using curl as it was not working with brew...
