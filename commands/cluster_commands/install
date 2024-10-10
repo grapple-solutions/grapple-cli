@@ -536,14 +536,10 @@ else
 fi
 
 
-license=$(eval "$(getGumSpinnerOrLogger "Fetching LIC (License)") kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode")
-
-if [[ $? -ne 0 ]]; then
-    GRAPPLE_LICENSE="free"
+if kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode 2>&1 > /dev/null ; then
+    GRAPPLE_LICENSE=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode)
 elif [[ -z $license ]]; then
     GRAPPLE_LICENSE="free"
-else
-    GRAPPLE_LICENSE=$license
 fi
 
 
