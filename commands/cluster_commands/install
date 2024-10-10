@@ -536,7 +536,7 @@ else
 fi
 
 
-if kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode 2>&1 > /dev/null ; then
+if kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode >/dev/null 2>&1 ; then
     GRAPPLE_LICENSE=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode)
 elif [[ -z $license ]]; then
     GRAPPLE_LICENSE="free"
