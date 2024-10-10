@@ -538,8 +538,6 @@ fi
 
 license=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" 2>/dev/null | base64 --decode 2>/dev/null)
 
-status_log $TYPE_INFO "license: ${license}"
-
 if [[ $? -ne 0 ]]; then
     GRAPPLE_LICENSE="free"
 elif [[ -z $license ]]; then
