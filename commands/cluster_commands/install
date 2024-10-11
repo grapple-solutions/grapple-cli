@@ -58,31 +58,17 @@ extract_input_params_from_cli $valid_args "grpl c i h" $(echo "$@")
 patch_coredns() {
   default_error="Failed to patch CoreDNS ConfigMap or NodeHosts because: "
   
-  # Step 1: Extract the first IP from NodeHosts
-  first_ip=$(kubectl get cm -n kube-system coredns -o jsonpath='{.data.NodeHosts}' | awk 'NR==1 {print $1}')
+  # Step 1: Extract the docker gateway IP
+  DOCKER_API_GATEWAY=$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')
   # Check if kubectl command succeeded
   if [ $? -ne 0 ]; then
-    status_log $TYPE_ERROR "$default_error Failed to retrieve CoreDNS ConfigMap or NodeHosts."
+    status_log $TYPE_ERROR "$default_error Failed to retrieve Docker gateway IP."
     exit 1
   fi
 
-  # Check if the first IP was extracted successfully
-  if [[ -z "$first_ip" ]]; then
-    status_log $TYPE_ERROR  "$default_error No IP address found in NodeHosts."
-    exit 1
-  fi
-
-  # Step 2: Use Bash string manipulation to replace the last octet with 1
-  DOCKER_API_GATEWAY="${first_ip%.*}.1"
-
-  # Check if the modification was successful
-  if [[ -z "$DOCKER_API_GATEWAY" ]]; then
-    status_log $TYPE_ERROR "$default_error Failed to get Docker gateway IP."
-    exit 1
-  fi
   export DOCKER_API_GATEWAY=$DOCKER_API_GATEWAY
 
-  # Step 4: Move template file to /tmp and substitute environment variables
+  # Step 2: Move template file to /tmp and substitute environment variables
 
   template_file_src="$GRPL_WORKDIR/files/coredns-custom.yaml"
   template_file_dest="/tmp/coredns-custom.yaml"
@@ -104,7 +90,7 @@ patch_coredns() {
     exit 1
   fi
 
-  # Step 5: Check if the coredns-patch ConfigMap exists, if not, create it
+  # Step 3: Check if the coredns-patch ConfigMap exists, if not, create it
   if ! kubectl apply -f $template_file_dest > /dev/null 2>&1; then
     status_log $TYPE_ERROR "$default_error Failed to create coredns-patch ConfigMap."
     exit 1
