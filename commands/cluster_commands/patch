@@ -117,7 +117,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # Perform a case-insensitive comparison with "k3d"
-if [[ "${CLOUD_PROVIDER,,}" == "${K3D,,}" ]]; then
+if [[ "$(echo "${CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${K3D}" | tr '[:upper:]' '[:lower:]')" ]]; then
 
     echo "CLOUD_PROVIDER is k3d"
 
