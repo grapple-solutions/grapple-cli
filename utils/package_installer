@@ -150,10 +150,7 @@ check_and_install_kbcli() {
     if ! kbcli >/dev/null 2>&1; then
         echo "kbcli cli is required"
         echo "installing kbcli cli..."
-        if [ "${OS}" == "mac" ]; then
-            eval "$(getGumSpinnerOrLogger "a prerequisite kbcli is not installed, now tapping kbcli") brew tap apecloud/tap"
-            eval "$(getGumSpinnerOrLogger "a prerequisite kbcli is not installed, now installing kbcli") brew install kbcli"
-         elif [ "${OS}" == "gnu" ]; then
+        if [ "${OS}" == "mac" ] || [ "${OS}" == "gnu" ]; then
             eval "$(getGumSpinnerOrLogger "a prerequisite kbcli is not installed, now installing kbcli") curl -fsSL https://kubeblocks.io/installer/install_cli.sh | bash "
         else
             errMsg="Failed to install kbcli, OS ${OS} not supported at the moment"
