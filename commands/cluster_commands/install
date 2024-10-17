@@ -164,15 +164,15 @@ extract_email_from_github_username() {
 
     # loop through each event in the response using jq to filter PushEvent
     if ! echo "$response" | jq -e '.[] | select(.type == "PushEvent")' > /dev/null 2>&1; then
-      status_log $TYPE_ERROR "No Email found for $GITHUB_USERNAME"
-      exit 1
+      page=$((page + 1))
+      continue
     fi
     for row in $(echo "$response" | jq -c '.[] | select(.type == "PushEvent")'); do
       # loop through all commits in the commit array
       for commit in $(echo "$row" | jq -c '.payload.commits[]'); do
         commit_name=$(echo "$commit" | jq -r '.author.name')
         commit_email=$(echo "$commit" | jq -r '.author.email')
-        if [ "$commit_name" == "$GITHUB_USERNAME" ] || [ "$commit_name" == "$USER_NAME" ]; then
+        if { [ "$commit_name" == "$GITHUB_USERNAME" ] || [ "$commit_name" == "$USER_NAME" ]; } && [[ "$commit_email" != *"noreply"* ]]; then
           EMAIL=$commit_email
           # break both loops
           break 2
@@ -185,8 +185,6 @@ extract_email_from_github_username() {
 
   if [ -n "$EMAIL" ]; then
     echo "Email found: $EMAIL"
-  else
-    echo "No matching commit author found."
   fi
 }
 
@@ -479,11 +477,11 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
   if [[ "${GITHUB_USERNAME}" != "" ]]; then
     status_log $TYPE_INFO "extracting email from github username $GITHUB_USERNAME"
     extract_email_from_github_username
-    status_log $TYPE_INFO "extracted email : $EMAIL from github username $GITHUB_USERNAME"
+    if [[ "${EMAIL}" == "" ]]; then EMAIL="info@grapple-solutions.com"; status_log $TYPE_INFO "Using detault email : $EMAIL"; else status_log $TYPE_INFO "extracted email : $EMAIL from github username $GITHUB_USERNAME"; fi
   elif [[ "${GITLAB_USERNAME}" != "" ]]; then
     status_log $TYPE_INFO "extracting email from gitlab username $GITLAB_USERNAME"
     extract_email_from_gitlab_username
-    status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username $GITLAB_USERNAME"
+    if [[ "${EMAIL}" == "" ]]; then EMAIL="info@grapple-solutions.com"; status_log $TYPE_INFO "Using detault email : $EMAIL"; else status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username $GITHUB_USERNAME"; fi
   fi
 
   echo "DNS: $GRAPPLE_DNS"
