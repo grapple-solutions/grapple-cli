@@ -185,6 +185,8 @@ extract_email_from_github_username() {
 
   if [ -n "$EMAIL" ]; then
     echo "Email found: $EMAIL"
+  else
+    echo "No matching commit author found."
   fi
 }
 
