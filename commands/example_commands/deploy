@@ -35,7 +35,7 @@ status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 MODELS='customer:{"base":"Entity","name":"customer","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"customername":{"type":"string"},"emaildomain":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}|email:{"base":"Entity","name":"email","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"emaildomain":{"type":"string","required":true},"email":{"type":"string","required":true}}}|cluster:{"base":"Entity","name":"cluster","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"clustername":{"type":"string"},"clusteridentifier":{"type":"string"},"clusterdns":{"type":"string"},"customerId":{"type":"string"},"emailId":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}'
 
-DATASOURCES='classicmodelsid:{"name":"classicmodelsid","connector":"mysql","url":"","host":"aurora-mysql-test.cpfyybdyajmx.eu-central-1.rds.amazonaws.com","port":"3306","user":"admin","password":"florida2012","database":"classicmodelsid"}'
+DATASOURCES='classicmodelsid:{"name":"classicmodelsid","connector":"mysql","url":"","host":"aurora-mysql-test.cpfyybdyajmx.eu-central-1.rds.amazonaws.com","port":"3306","user":"classicmodelsid","password":"p7cg22bz","database":"classicmodelsid"}'
 
 SOURCE_DATA=https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql
 
