@@ -479,11 +479,11 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
   if [[ "${GITHUB_USERNAME}" != "" ]]; then
     status_log $TYPE_INFO "extracting email from github username $GITHUB_USERNAME"
     extract_email_from_github_username
-    if [[ "${EMAIL}" == "" ]]; then EMAIL="info@grapple-solutions.com"; status_log $TYPE_INFO "Using detault email : $EMAIL"; else status_log $TYPE_INFO "extracted email : $EMAIL from github username $GITHUB_USERNAME"; fi
+    if [[ "${EMAIL}" == "" ]]; then EMAIL="info@grapple-solutions.com"; status_log $TYPE_INFO "Using default email : $EMAIL"; else status_log $TYPE_INFO "extracted email : $EMAIL from github username $GITHUB_USERNAME"; fi
   elif [[ "${GITLAB_USERNAME}" != "" ]]; then
     status_log $TYPE_INFO "extracting email from gitlab username $GITLAB_USERNAME"
     extract_email_from_gitlab_username
-    if [[ "${EMAIL}" == "" ]]; then EMAIL="info@grapple-solutions.com"; status_log $TYPE_INFO "Using detault email : $EMAIL"; else status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username $GITHUB_USERNAME"; fi
+    if [[ "${EMAIL}" == "" ]]; then EMAIL="info@grapple-solutions.com"; status_log $TYPE_INFO "Using default email : $EMAIL"; else status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username $GITHUB_USERNAME"; fi
   fi
 
   echo "DNS: $GRAPPLE_DNS"
