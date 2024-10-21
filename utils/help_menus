@@ -976,8 +976,7 @@ Examples:
 Variables:
 
     PROJECT_NAME=Name of the project
-    AUTO_CONFIRM='false' / 'true'
-    GITUHB_TOKEN=Token to authenticate gh"
+    AUTO_CONFIRM='false' / 'true'"
 
     if [ "$type" == $WEB_DOC ]; then
         return 0
