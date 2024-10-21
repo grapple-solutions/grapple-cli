@@ -65,7 +65,7 @@ if ! gh auth status >/dev/null 2>&1; then
     exit 1
   fi
 
-  GITHUB_TOKEN=$(if [ "${GITHUB_TOKEN}" != "" ]; then echo ${GITHUB_TOKEN}; else prompt_for_input_with_validation "Enter GITHUB_TOKEN: " "Provide GITHUB_TOKEN to authenticate gh" ".*" ""; fi) || exit $?
+  GITHUB_TOKEN=$(if [ "${GITHUB_TOKEN}" != "" ]; then echo ${GITHUB_TOKEN}; else prompt_for_input_with_validation "Enter GITHUB_TOKEN: " "Provide GITHUB_TOKEN to authenticate gh" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
   if echo $GITHUB_TOKEN | gh auth login --with-token >/dev/null 2>&1; then
     status_log $TYPE_INFO "gh is authenticated"
   else
