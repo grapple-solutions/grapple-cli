@@ -101,8 +101,6 @@ else
 fi
 
 
-
-
 if ! awk -v repl="$PROJECT_NAME" '{gsub("grapple-template", repl)}1' "$PROJECT_NAME/README.md" > temp && mv temp "$PROJECT_NAME/README.md" >/dev/null 2>&1; then
   status_log $TYPE_ERROR "failed to replace $PROJECT_NAME with 'grapple-template' in README.md file of the  project '$PROJECT_NAME' due to following error"
   errMsg=$(awk -v repl="$PROJECT_NAME" '{gsub("grapple-template", repl)}1' "$PROJECT_NAME/README.md")
@@ -112,8 +110,14 @@ fi
 
 cli_log "application init COMPLETED"
 status_log $TYPE_SUCCESS "application initialization is complete"
-cd $PROJECT_NAME
+
+# move into the project
+status_log $TYPE_INFO "moving into the project $PROJECT_NAME"
+cd "$PROJECT_NAME"
+
 status_log $TYPE_INFO "What's Next?"
 status_log $TYPE_INFO "run 'grpl dev help' to displays help menu for grpl dev"
 status_log $TYPE_INFO "run 'grpl dev' to start the project"
+
+$SHELL
 
