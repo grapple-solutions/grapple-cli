@@ -265,7 +265,7 @@ ask_kubeblocks_installation() {
   kubeblocks_template_file_dest="/tmp/kube_db.yaml"
   cp "$GRPL_WORKDIR/files/db.yaml" $kubeblocks_template_file_dest
 
-  if ! kbcli >/dev/null 2>&1 || ! kubectl get clusters.apps.kubeblocks.io >/dev/null 2>&1 || kbcli cluster list -n ${NS} ${GRAS_NAME} >/dev/null 2>&1; then
+  if ! kubectl get clusters.apps.kubeblocks.io >/dev/null 2>&1 || ! kbcli cluster list -n ${NS} ${GRAS_NAME} >/dev/null 2>&1; then
 
     status_log $TYPE_INFO "checking kubeblocks"
     check_and_install_kubeblocks
@@ -279,6 +279,8 @@ ask_kubeblocks_installation() {
     yq -i ".metadata.name=\"$GRAS_NAME\"" $kubeblocks_template_file_dest
     kubectl apply -n ${NS} -f $kubeblocks_template_file_dest
     status_log $TYPE_INFO "created internal db"
+
+    status_log $TYPE_SUCCESS "Successfully installed kubeblocks"
   else
     status_log $TYPE_INFO "running kbcli >/dev/null"
     kbcli
@@ -626,9 +628,6 @@ EOF
 cat /tmp/values-override.yaml
 
 
-ask_kubeblocks_installation
-
-
 # Use gum to confirm before proceeding
 if [ "${AUTO_CONFIRM}" != "true" ]; then
 
@@ -813,3 +812,5 @@ cli_log "cluster install END"
 rm /tmp/values-override.yaml
 
 status_log $TYPE_SUCCESS "Successfuly Installed grpl"
+
+ask_kubeblocks_installation
