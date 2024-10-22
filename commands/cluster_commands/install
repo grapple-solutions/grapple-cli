@@ -249,7 +249,7 @@ extract_email_from_gitlab_username(){
 }
 
 
-ask_kubeblocks_installation() {
+kubeblocks_installation() {
 
   if [ "${INSTALL_KUBEBLOCKS}" != "true" ]; then
     return
@@ -802,4 +802,4 @@ rm /tmp/values-override.yaml
 
 status_log $TYPE_SUCCESS "Successfuly Installed grpl"
 
-ask_kubeblocks_installation
+kubeblocks_installation
