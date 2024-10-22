@@ -21,7 +21,7 @@ status_log $TYPE_INFO "application initialization is in progress"
 valid_args=(
     "PROJECT_NAME"
     "AUTO_CONFIRM"
-    "GITHUB_TOKEN"
+    "GITHUBTOKEN"
   )
 
 # check if values are already passed form terminal
@@ -60,17 +60,17 @@ check_and_install_gh
 status_log $TYPE_INFO "checking if gh is authenticated"
 if ! gh auth status >/dev/null 2>&1; then
   status_log $TYPE_INFO "gh is not authenticated"
-  if [ "${GITHUB_TOKEN}" == "" ] &&  [ $TTY != "enabled" ]; then
-    status_log $TYPE_ERROR "grpl cli is running in non-interactive mode, please provide GITHUB_TOKEN cli parameter to authenticate gh and continue with grpl application init"
+  if [ "${GITHUBTOKEN}" == "" ] &&  [ $TTY != "enabled" ]; then
+    status_log $TYPE_ERROR "grpl cli is running in non-interactive mode, please provide GITHUBTOKEN cli parameter to authenticate gh and continue with grpl application init"
     exit 1
   fi
 
-  GITHUB_TOKEN=$(if [ "${GITHUB_TOKEN}" != "" ]; then echo ${GITHUB_TOKEN}; else prompt_for_input_with_validation "Enter GITHUB_TOKEN: " "Provide GITHUB_TOKEN to authenticate gh" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
-  if echo $GITHUB_TOKEN | gh auth login --with-token >/dev/null 2>&1; then
+  GITHUBTOKEN=$(if [ "${GITHUBTOKEN}" != "" ]; then echo ${GITHUBTOKEN}; else prompt_for_input_with_validation "Enter GITHUBTOKEN: " "Provide GITHUBTOKEN to authenticate gh" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
+  if echo $GITHUBTOKEN | gh auth login --with-token >/dev/null 2>&1; then
     status_log $TYPE_INFO "gh is authenticated"
   else
     status_log $TYPE_ERROR "failed to authenticate gh due to following error"
-    echo $GITHUB_TOKEN | gh auth login --with-token
+    echo $GITHUBTOKEN | gh auth login --with-token
     exit 1
   fi
   

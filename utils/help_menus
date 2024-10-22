@@ -977,7 +977,7 @@ Variables:
 
     PROJECT_NAME=Name of the project
     AUTO_CONFIRM='false' / 'true'
-    GITHUB_TOKEN=Token to authenticate gh"
+    GITHUBTOKEN=Token to authenticate gh"
 
     if [ "$type" == $WEB_DOC ]; then
         return 0
