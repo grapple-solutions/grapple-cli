@@ -281,17 +281,6 @@ ask_kubeblocks_installation() {
     status_log $TYPE_INFO "created internal db"
 
     status_log $TYPE_SUCCESS "Successfully installed kubeblocks"
-  else
-    status_log $TYPE_INFO "running kbcli >/dev/null"
-    kbcli
-
-    status_log $TYPE_INFO "running kubectl get clusters.apps.kubeblocks.io"
-    kubectl get clusters.apps.kubeblocks.io
-
-
-    status_log $TYPE_INFO "running kbcli cluster list -n ${NS} ${GRAS_NAME}"
-    kbcli cluster list -n ${NS} ${GRAS_NAME}
-
   fi
 
 }
