@@ -279,6 +279,17 @@ ask_kubeblocks_installation() {
     yq -i ".metadata.name=\"$GRAS_NAME\"" $kubeblocks_template_file_dest
     kubectl apply -n ${NS} -f $kubeblocks_template_file_dest
     status_log $TYPE_INFO "created internal db"
+  else
+    status_log $TYPE_INFO "running kbcli >/dev/null"
+    kbcli
+
+    status_log $TYPE_INFO "running kubectl get clusters.apps.kubeblocks.io"
+    kubectl get clusters.apps.kubeblocks.io
+
+
+    status_log $TYPE_INFO "running kbcli cluster list -n ${NS} ${GRAS_NAME}"
+    kbcli cluster list -n ${NS} ${GRAS_NAME}
+
   fi
 
 }
