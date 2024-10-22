@@ -275,6 +275,7 @@ ask_kubeblocks_installation() {
       kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
     done
 
+    check_and_install_yq
     yq -i ".metadata.name=\"$GRAS_NAME\"" $kubeblocks_template_file_dest
     kubectl apply -n ${NS} -f $kubeblocks_template_file_dest
     status_log $TYPE_INFO "created internal db"
