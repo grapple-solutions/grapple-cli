@@ -23,11 +23,11 @@ valid_args=(
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
 help_menu_cmd="grpl resource deploy help"
-extract_input_params_from_cli $valid_args ${help_menu_cmd} $(echo "$@")
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
 
 
 #check if input from params is valid or not
-check_if_param_avaiable_in_non_interactive_mode "GRAS_TEMPLATE" "$GRAS_TEMPLATE" ${help_menu_cmd}
+check_if_param_avaiable_in_non_interactive_mode "GRAS_TEMPLATE" "$GRAS_TEMPLATE" "${help_menu_cmd}"
 if [ "${GRAS_TEMPLATE}" != "" ]; then 
   is_correct_grapple_applicationsets_provided $GRAS_TEMPLATE 
 fi
@@ -51,7 +51,7 @@ fi
 
 
 #check if input from params is valid or not
-check_if_param_avaiable_in_non_interactive_mode "DB_TYPE" "$DB_TYPE" ${help_menu_cmd}
+check_if_param_avaiable_in_non_interactive_mode "DB_TYPE" "$DB_TYPE" "${help_menu_cmd}"
 if [ "${DB_TYPE}" != "" ]; then 
   is_correct_db_type_provided $DB_TYPE 
 fi

@@ -51,9 +51,7 @@ valid_args=(
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
 help_menu_cmd="grpl cluster install help"
-extract_input_params_from_cli $valid_args ${help_menu_cmd} $(echo "$@")
-
-exit 0
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
 
 #-------------Functions-------------------
 
@@ -253,7 +251,7 @@ extract_email_from_gitlab_username(){
 #------------ TARGET_PLATFORM Input-----------
 
 # if TARGET_PLATFORM is provided using CLI then we need to check if valid TARGET_PLATFORM was provided or not
-check_if_param_avaiable_in_non_interactive_mode "TARGET_PLATFORM" "${TARGET_PLATFORM}" ${help_menu_cmd}
+check_if_param_avaiable_in_non_interactive_mode "TARGET_PLATFORM" "${TARGET_PLATFORM}" "${help_menu_cmd}"
 if [ "${TARGET_PLATFORM}" != "" ]; then 
   is_correct_target_platform_provided $TARGET_PLATFORM 
 fi
@@ -280,7 +278,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
 #------------ CIVO_REGION Input-----------
 
-  check_if_param_avaiable_in_non_interactive_mode "CIVO_REGION" "${CIVO_REGION}" ${help_menu_cmd}
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_REGION" "${CIVO_REGION}" "${help_menu_cmd}"
   if [ "${CIVO_REGION}" != "" ] && [ $TTY == "enabled" ]; then 
     is_correct_civo_region_provided $CIVO_REGION 
   fi
@@ -289,7 +287,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
 #------------ CIVO_CLUSTER Input-----------
 
-  check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER" "${CIVO_CLUSTER}" ${help_menu_cmd}
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER" "${CIVO_CLUSTER}" "${help_menu_cmd}"
   if [ "${CIVO_CLUSTER}" != "" ]; then 
     is_correct_civo_cluster_provided $CIVO_CLUSTER 
   fi
@@ -311,7 +309,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 #------------ CIVO_CLUSTER_ID Input-----------
 
   # if a CIVO cluster was selected, pre-set the configuration
-  check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER_ID" "${CIVO_CLUSTER_ID}" ${help_menu_cmd}
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER_ID" "${CIVO_CLUSTER_ID}" "${help_menu_cmd}"
   CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID"; fi)
 
 #------------ GRAPPLE_DNS Input-----------
@@ -337,14 +335,14 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
 #------------ CLUSTER_IP Input-----------
 
-  check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" ${help_menu_cmd}
+  check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" "${help_menu_cmd}"
   CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
   echo "selected civo master ip: ${CLUSTER_IP}"
 
 #------------ CIVO_EMAIL_ADDRESS Input-----------
 
   #check if input from params is valid or not
-  check_if_param_avaiable_in_non_interactive_mode "CIVO_EMAIL_ADDRESS" "${CIVO_EMAIL_ADDRESS}" ${help_menu_cmd}
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_EMAIL_ADDRESS" "${CIVO_EMAIL_ADDRESS}" "${help_menu_cmd}"
   if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then 
     is_value_correct_wrt_regex $CIVO_EMAIL_ADDRESS $email_regex "Invalid email address format. Please try again"
   fi
@@ -362,7 +360,7 @@ fi
 if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
 
 #------------ GRAPPLE_DNS Input-----------
-  check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "${GRAPPLE_DNS}" ${help_menu_cmd}
+  check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "${GRAPPLE_DNS}" "${help_menu_cmd}"
   # check if a full domain-name was passed in GRAPPLE_DNS
   if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
       status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
@@ -398,7 +396,7 @@ else
 fi
 
 
-  check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" ${help_menu_cmd}
+  check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" "${help_menu_cmd}"
   CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "kuberenetes cluster ip: ${CLUSTER_IP}"
 
@@ -499,7 +497,7 @@ fi
 
 # Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
 if [ "${TARGET_PLATFORM}" != $Minikube ]; then
-  check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "$GRAPPLE_DNS" {"$help_menu_cmd"}
+  check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "$GRAPPLE_DNS" "${help_menu_cmd}"
   GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
   echo "installing dns: ${GRAPPLE_DNS}"
 fi
