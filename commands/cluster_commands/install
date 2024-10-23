@@ -310,7 +310,6 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   # if a CIVO cluster was selected, pre-set the configuration
   check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER_ID" "${CIVO_CLUSTER_ID}" "${help_menu_cmd}"
-  status_log $TYPE_INFO "TTY mode: ${TTY}"
   CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID"; fi)
 
 #------------ GRAPPLE_DNS Input-----------
