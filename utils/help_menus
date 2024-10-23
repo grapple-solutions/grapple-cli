@@ -697,6 +697,7 @@ Variables:
   KUBEFIRST_CLUSTER_NAME = cluster name for kubefirst cluster
   GITHUB_USERNAME = github username
   GITLAB_USERNAME = gitlab username
+  INSTALL_KUBEBLOCKS = 'true' / 'false', set to 'true' if you want to install kubeblocks
 
 " 
 

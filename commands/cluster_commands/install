@@ -47,6 +47,7 @@ valid_args=(
     "KUBEFIRST_CLOUD_REGION"
     "KUBEFIRST_CLUSTER_ID"
     "KUBEFIRST_CLUSTER_NAME"
+    "INSTALL_KUBEBLOCKS"
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
@@ -248,6 +249,42 @@ extract_email_from_gitlab_username(){
 }
 
 
+kubeblocks_installation() {
+
+  if [ "${INSTALL_KUBEBLOCKS}" != "true" ]; then
+    return
+  fi
+
+  if ! kbcli >/dev/null 2>&1; then
+      status_log $TYPE_INFO "installing kbcli"
+      check_and_install_kbcli
+  fi
+
+  # check if kubeblocks is installed
+  GRAS_NAME="grpl-c-i-kubeblocks"
+  kubeblocks_template_file_dest="/tmp/kube_db.yaml"
+  cp "$GRPL_WORKDIR/files/db.yaml" $kubeblocks_template_file_dest
+
+  if ! kubectl get clusters.apps.kubeblocks.io >/dev/null 2>&1 || ! kbcli cluster list -n ${NS} ${GRAS_NAME} >/dev/null 2>&1; then
+
+    status_log $TYPE_INFO "checking kubeblocks"
+    check_and_install_kubeblocks
+
+    status_log $TYPE_INFO "waiting for configs to apply"
+    for i in $(kubectl get clusterversion -o name); do 
+      kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
+    done
+
+    check_and_install_yq
+    yq -i ".metadata.name=\"$GRAS_NAME\"" $kubeblocks_template_file_dest
+    kubectl apply -n ${NS} -f $kubeblocks_template_file_dest
+    status_log $TYPE_INFO "created internal db"
+
+    status_log $TYPE_SUCCESS "Successfully installed kubeblocks"
+  fi
+
+}
+
 #------------ TARGET_PLATFORM Input-----------
 
 # if TARGET_PLATFORM is provided using CLI then we need to check if valid TARGET_PLATFORM was provided or not
@@ -422,7 +459,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
   extract_kubectl_cli_version
 
   if ! minikube addons list | grep enabled | grep ingress >/dev/null 2>&1; then
-    if [ "${AUTO_CONFIRM}" != "true" ]; then
+    if [ "${AUTO_CONFIRM}" != "true" ] && [ $TTY == "enabled" ]; then
       gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     fi
     echo "enabling ingress addons for minikube"
@@ -764,3 +801,5 @@ cli_log "cluster install END"
 rm /tmp/values-override.yaml
 
 status_log $TYPE_SUCCESS "Successfuly Installed grpl"
+
+kubeblocks_installation
