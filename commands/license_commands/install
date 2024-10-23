@@ -39,9 +39,11 @@ valid_args=(
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-extract_input_params_from_cli $valid_args "grpl l i h" $(echo "$@")
+help_menu_cmd="grpl license install help"
+extract_input_params_from_cli $valid_args ${help_menu_cmd} $(echo "$@")
 
-LICENSE_KEY=$(if [ "${LICENSE_KEY}" != "" ]; then echo ${LICENSE_KEY}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter LICENSE_KEY: " "Provide the LICENSE_KEY key" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+check_if_param_avaiable_in_non_interactive_mode "LICENSE_KEY" "$LICENSE_KEY" ${help_menu_cmd}
+LICENSE_KEY=$(if [ "${LICENSE_KEY}" != "" ]; then echo ${LICENSE_KEY}; else prompt_for_input_with_validation "Enter LICENSE_KEY: " "Provide the LICENSE_KEY key" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
 echo "kuberenetes cluster ip: ${LICENSE_KEY}"
 
 
@@ -50,7 +52,7 @@ encoded_license=$(echo -n "$license" | base64)
 
 status_log $TYPE_INFO "Updating the license"
 existing_license=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" | base64 --decode)
-if [[ $existing_license != "" ]] && [[ $existing_license != "free" ]]; then
+if [[ $existing_license != "" ]] && [[ $existing_license != "free" ]] && [[ $TTY == "enabled" ]]; then
     gum confirm "LIC (License) already installed. Do you want to re-install it?" || (status_log $TYPE_ERROR "LIC (License) installation canceled by the user" && exit 1)
 fi
 

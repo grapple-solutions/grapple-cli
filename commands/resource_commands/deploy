@@ -511,7 +511,8 @@ valid_args=(
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-extract_input_params_from_cli $valid_args "grpl r d h" $(echo "$@")
+help_menu_cmd="grpl resource deploy help"
+extract_input_params_from_cli $valid_args ${help_menu_cmd} $(echo "$@")
 
 #---------- KUBE_CONTEXT Input ------------
 
@@ -544,6 +545,7 @@ fi
 
 
 #check if input from params is valid or not
+check_if_param_avaiable_in_non_interactive_mode "GRAS_NAME" "$GRAS_NAME" ${help_menu_cmd}
 if [ "${GRAS_NAME}" != "" ]; then 
   is_value_correct_wrt_regex $GRAS_NAME $alphaNum_plus_hyphen_and_underscope_regex "gras name can only contain alpha numaric characters, '-'and '_' as special characters"
 fi
@@ -551,6 +553,7 @@ GRAS_NAME=$(if [ "${GRAS_NAME}" != "" ]; then echo ${GRAS_NAME}; else prompt_for
 status_log $TYPE_DEFAULT "GRAS_NAME: ${GRAS_NAME}"
 
 #check if input from params is valid or not
+check_if_param_avaiable_in_non_interactive_mode "GRAS_TEMPLATE" "$GRAS_TEMPLATE" ${help_menu_cmd}
 if [ "${GRAS_TEMPLATE}" != "" ]; then 
   is_correct_grapple_applicationsets_provided $GRAS_TEMPLATE 
 fi
@@ -571,6 +574,7 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     cp "$GRPL_WORKDIR/template-files/db-file.yaml" $template_file_dest
 
     # input model
+    check_if_param_avaiable_in_non_interactive_mode "MODELS" "$MODELS" ${help_menu_cmd}
     if [[ $MODELS == "" ]]; then
         take_model_input_from_cli
     else 
@@ -580,9 +584,12 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     fi 
 
 
+    # input db file path
+    check_if_param_avaiable_in_non_interactive_mode "DB_FILE_PATH" "$DB_FILE_PATH" ${help_menu_cmd}
     take_db_file_path
 
     # input data source url
+    check_if_param_avaiable_in_non_interactive_mode "SOURCE_DATA" "$SOURCE_DATA" ${help_menu_cmd}
     SOURCE_DATA=$(if [ "${SOURCE_DATA}" != "" ]; then echo ${SOURCE_DATA}; else prompt_for_explicit_input_with_validation "Enter SOURCE_DATA: " "Provide data source url, press enter to omit" ".*" "please provide valid datasource url"; fi) || exit $?
     if [[ $SOURCE_DATA != "" ]]; then
         status_log $TYPE_DEFAULT "SOURCE_DATA: ${SOURCE_DATA}"
@@ -596,10 +603,12 @@ if [ "$GRAS_TEMPLATE" == "$DB_FILE" ]; then
     if [[ "${cli_args[@]}" =~ "--RELATIONS" ]] && [[ $RELATIONS == "" ]] ; then
         yq eval 'del(.grapi.relations)' -i $template_file_dest
     else
+        check_if_param_avaiable_in_non_interactive_mode "RELATIONS" "$RELATIONS" ${help_menu_cmd}
         take_relation_input_from_cli "${models_name[@]}"
     fi
     
 
+    check_if_param_avaiable_in_non_interactive_mode "ENABLE_GRUIM" "$ENABLE_GRUIM" ${help_menu_cmd}
     ask_guim_enablement
 
     substitute_env_vars_in_template
@@ -621,6 +630,7 @@ cp "$GRPL_WORKDIR/template-files/db.yaml" $template_file_dest
 cp "$GRPL_WORKDIR/files/db.yaml" $kubeblocks_template_file_dest
 
 #check if input from params is valid or not
+check_if_param_avaiable_in_non_interactive_mode "DB_TYPE" "$DB_TYPE" ${help_menu_cmd}
 if [ "${DB_TYPE}" != "" ]; then 
   is_correct_db_type_provided $DB_TYPE 
 fi
@@ -636,7 +646,7 @@ if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
     fi
 
     # check if kubeblocks is installed
-    if ! kbcli >/dev/null 2>&1 || ! kubectl get clusters.apps.kubeblocks.io >/dev/null 2>&1 || kbcli cluster list -n ${KUBE_DB} ${GRAS_NAME} >/dev/null 2>&1; then
+    if ! kubectl get clusters.apps.kubeblocks.io >/dev/null 2>&1 || ! kbcli cluster list -n ${KUBE_DB} ${GRAS_NAME} >/dev/null 2>&1; then
 
         status_log $TYPE_INFO "checking kubeblocks"
         check_and_install_kubeblocks
@@ -661,6 +671,7 @@ if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
 
 elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
 
+    check_if_param_avaiable_in_non_interactive_mode "DATASOURCES" "$DATASOURCES" ${help_menu_cmd}
     if [[ $DATASOURCES != "" ]]; then
         transform_datasources_input_to_yaml $DATASOURCES
     else
@@ -676,6 +687,7 @@ fi
 # discovery based checks
 if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
     
+    check_if_param_avaiable_in_non_interactive_mode "DISCOVERIES" "$DISCOVERIES" ${help_menu_cmd}
     if [[ "$DISCOVERIES" != "" ]]; then
         transform_discoveries_input_to_yaml $DISCOVERIES
     else
@@ -685,7 +697,9 @@ if [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_DISCOVERY_BASED"  ]]; then
     yq -i ".grapi.discoveredrepos=true" $template_file_dest
 
 elif  [[ "$GRAS_TEMPLATE" == "$DB_MYSQL_MODEL_BASED"  ]]; then
+
     # input model
+    check_if_param_avaiable_in_non_interactive_mode "MODELS" "$MODELS" ${help_menu_cmd}
     if [[ $MODELS == "" ]]; then
         take_model_input_from_cli
     else 
@@ -702,9 +716,12 @@ cli_args=$@
 if [[ "${cli_args[@]}" =~ "--RELATIONS" ]] && [[ $RELATIONS == "" ]] ; then
     yq eval 'del(.grapi.relations)' -i $template_file_dest
 else
+    check_if_param_avaiable_in_non_interactive_mode "RELATIONS" "$RELATIONS" ${help_menu_cmd}
     take_relation_input_from_cli "${models_name[@]}"
 fi
 
+# check for database schema
+check_if_param_avaiable_in_non_interactive_mode "DATABASE_SCHEMA" "$DATABASE_SCHEMA" ${help_menu_cmd}
 DATABASE_SCHEMA=$(if [ "${DATABASE_SCHEMA}" != "" ]; then echo ${DATABASE_SCHEMA}; else prompt_for_input_with_validation "DATABASE_SCHEMA: " "please provide DATABASE SCHEMA: " "$non_empty_regex" "DATABASE_SCHEMA name can'tdi be empty"; fi) || exit $?
 status_log $TYPE_DEFAULT "DATABASE_SCHEMA: ${DATABASE_SCHEMA}"
 export DATABASE_SCHEMA=$DATABASE_SCHEMA
@@ -746,7 +763,6 @@ else
         yq -i ".grapi.initContainers[0].spec.image=\"mysql\"" $template_file_dest
         export command=$mysql_init_container_bash_script
     fi
-
 
 fi
 

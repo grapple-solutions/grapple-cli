@@ -25,13 +25,15 @@ valid_args=(
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@")
+help_menu_cmd="grpl app init help"
+extract_input_params_from_cli $valid_args ${help_menu_cmd} $(echo "$@")
 
 #check if input from params is valid or not
+check_if_param_avaiable_in_non_interactive_mode "PROJECT_NAME" "$PROJECT_NAME" ${help_menu_cmd}
 if [ "${PROJECT_NAME}" != "" ]; then 
   is_value_correct_wrt_regex $PROJECT_NAME $alphaNum_plus_hyphen_and_underscope_regex "Project name can only contain alpha numaric characters, '-'and '_' as special characters"
 fi
-PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else [ $TTY == "enabled" ] &&  prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
+PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
 echo "project name: ${PROJECT_NAME}"
 
 # ----------------------- params code ended ---------------------------
@@ -53,9 +55,9 @@ if ! ls $GRPL_WORKDIR | grep "$PROJECT_NAME" >/dev/null 2>&1; then
   else
     # Repo does not exist, prompt to create it
     status_log $TYPE_INFO "Repository does not exist in your GitHub account."
-      if [ "${AUTO_CONFIRM}" != "true" ] &&  [ $TTY == "enabled" ]; then
+    if [ "${AUTO_CONFIRM}" != "true" ] &&  [ $TTY == "enabled" ]; then
       gum confirm "This repo does not exist in your GitHub account. Shall it be created?" || (status_log $TYPE_ERROR "Repository creation canceled by the user" && exit 1)
-      fi
+    fi
     # Create and clone the repository
     status_log $TYPE_INFO "Creating the repository on GitHub."
     check_and_install_gh
