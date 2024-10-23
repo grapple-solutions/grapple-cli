@@ -352,7 +352,7 @@ check_if_param_avaiable_in_non_interactive_mode() {
   paramName=$1
   paramValue=$2
   help_menu_cmd=$3
-  if [ "$paramValue" == "" ] && [ "$TTY" == "true" ]; then
+  if [ "$paramValue" == "" ] && [ "$TTY" == "enabled" ]; then
     status_log $TYPE_ERROR "Error: $paramName is a required argument in non-interactive mode, please run '$help_menu_cmd'  to get more info on how to pass agruments from cli"
     exit 1
   fi
