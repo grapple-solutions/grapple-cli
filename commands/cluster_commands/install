@@ -248,34 +248,34 @@ extract_email_from_gitlab_username(){
   fi
 }
 
-
 kubeblocks_installation() {
-
-  if [ "${INSTALL_KUBEBLOCKS}" != "true" ]; then
-    return
-  fi
-
-  if ! kbcli >/dev/null 2>&1; then
-      status_log $TYPE_INFO "installing kbcli"
+  if ! kbcli; then
+      echo "installing kbcli"
       check_and_install_kbcli
   fi
 
-  if ! kubectl get clusters.apps.kubeblocks.io >/dev/null 2>&1; then
-
-    status_log $TYPE_INFO "checking kubeblocks"
+  if ! kubectl get clusters.apps.kubeblocks.io; then
+    echo "checking kubeblocks"
     check_and_install_kubeblocks
 
-    status_log $TYPE_INFO "waiting for configs to apply"
+    echo "waiting for configs to apply"
     for i in $(kubectl get clusterversion -o name); do 
       kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
     done
 
-    status_log $TYPE_SUCCESS "Successfully installed kubeblocks"
+    echo "Successfully installed kubeblocks"
   fi
-
 }
-export -f kubeblocks_installation
-nohup bash -c 'kubeblocks_installation' &
+
+if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
+    status_log $TYPE_INFO "Installing kubeblocks in background"
+    
+    # Run kubeblocks_installation in the background and redirect all output to /dev/null
+    kubeblocks_installation > /dev/null 2>&1 &
+    
+    status_log $TYPE_SUCCESS "Running kubeblocks installation in background"
+fi
+
 
 #------------ TARGET_PLATFORM Input-----------
 
@@ -794,3 +794,7 @@ rm /tmp/values-override.yaml
 
 status_log $TYPE_SUCCESS "Successfuly Installed grpl"
 
+
+status_log $TYPE_INFO "Waiting for kubeblocks to be installed"
+wait
+status_log $TYPE_SUCCESS "kubeblocks is installed"
