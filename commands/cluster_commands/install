@@ -802,4 +802,4 @@ rm /tmp/values-override.yaml
 
 status_log $TYPE_SUCCESS "Successfuly Installed grpl"
 
-kubeblocks_installation
+kubeblocks_installation &
