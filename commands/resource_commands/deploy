@@ -630,22 +630,8 @@ status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
 # internal/external db case
 if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
 
-    if ! kbcli >/dev/null 2>&1; then
-        status_log $TYPE_INFO "installing kbcli"
-        check_and_install_kbcli
-    fi
-
     # check if kubeblocks is installed
-    if ! kubectl get clusters.apps.kubeblocks.io >/dev/null 2>&1 || ! kbcli cluster list -n ${KUBE_DB} ${GRAS_NAME} >/dev/null 2>&1; then
-
-        status_log $TYPE_INFO "checking kubeblocks"
-        check_and_install_kubeblocks
-
-        status_log $TYPE_INFO "waiting for configs to apply"
-        for i in $(kubectl get clusterversion -o name); do 
-            kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
-        done
-
+    if ! kbcli cluster list -n ${KUBE_DB} ${GRAS_NAME} >/dev/null 2>&1; then
         yq -i ".metadata.name=\"$GRAS_NAME\"" $kubeblocks_template_file_dest
         kubectl apply -n ${KUBE_NS} -f $kubeblocks_template_file_dest
         status_log $TYPE_INFO "created internal db"
