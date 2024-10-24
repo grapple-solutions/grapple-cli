@@ -638,7 +638,7 @@ if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
     fi
 
     # check if kubeblocks is installed
-    if ! kbcli >/dev/null 2>&1 || ! kubectl get clusters.apps.kubeblocks.io >/dev/null 2>&1 || kbcli cluster list -n ${KUBE_DB} ${GRAS_NAME} >/dev/null 2>&1; then
+    if ! kbcli >/dev/null 2>&1 || ! kubectl get clusters.apps.kubeblocks.io >/dev/null 2>&1 || ! kbcli cluster list -n ${KUBE_DB} ${GRAS_NAME} >/dev/null 2>&1; then
 
         status_log $TYPE_INFO "checking kubeblocks"
         check_and_install_kubeblocks

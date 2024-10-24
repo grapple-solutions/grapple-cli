@@ -697,6 +697,7 @@ Variables:
   KUBEFIRST_CLUSTER_NAME = cluster name for kubefirst cluster
   GITHUB_USERNAME = github username
   GITLAB_USERNAME = gitlab username
+  INSTALL_KUBEBLOCKS = 'true' / 'false', set to 'true' if you want to install kubeblocks
 
 " 
 
@@ -976,7 +977,8 @@ Examples:
 Variables:
 
     PROJECT_NAME=Name of the project
-    AUTO_CONFIRM='false' / 'true'"
+    AUTO_CONFIRM='false' / 'true'
+    GITHUBTOKEN=Token to authenticate gh"
 
     if [ "$type" == $WEB_DOC ]; then
         return 0

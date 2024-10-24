@@ -47,6 +47,7 @@ valid_args=(
     "KUBEFIRST_CLOUD_REGION"
     "KUBEFIRST_CLUSTER_ID"
     "KUBEFIRST_CLUSTER_NAME"
+    "INSTALL_KUBEBLOCKS"
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
@@ -164,15 +165,15 @@ extract_email_from_github_username() {
 
     # loop through each event in the response using jq to filter PushEvent
     if ! echo "$response" | jq -e '.[] | select(.type == "PushEvent")' > /dev/null 2>&1; then
-      status_log $TYPE_ERROR "No Email found for $GITHUB_USERNAME"
-      exit 1
+      page=$((page + 1))
+      continue
     fi
     for row in $(echo "$response" | jq -c '.[] | select(.type == "PushEvent")'); do
       # loop through all commits in the commit array
       for commit in $(echo "$row" | jq -c '.payload.commits[]'); do
         commit_name=$(echo "$commit" | jq -r '.author.name')
         commit_email=$(echo "$commit" | jq -r '.author.email')
-        if [ "$commit_name" == "$GITHUB_USERNAME" ] || [ "$commit_name" == "$USER_NAME" ]; then
+        if { [ "$commit_name" == "$GITHUB_USERNAME" ] || [ "$commit_name" == "$USER_NAME" ]; } && [[ "$commit_email" != *"noreply"* ]]; then
           EMAIL=$commit_email
           # break both loops
           break 2
@@ -247,6 +248,42 @@ extract_email_from_gitlab_username(){
   fi
 }
 
+
+kubeblocks_installation() {
+
+  if [ "${INSTALL_KUBEBLOCKS}" != "true" ]; then
+    return
+  fi
+
+  if ! kbcli >/dev/null 2>&1; then
+      status_log $TYPE_INFO "installing kbcli"
+      check_and_install_kbcli
+  fi
+
+  # check if kubeblocks is installed
+  GRAS_NAME="grpl-c-i-kubeblocks"
+  kubeblocks_template_file_dest="/tmp/kube_db.yaml"
+  cp "$GRPL_WORKDIR/files/db.yaml" $kubeblocks_template_file_dest
+
+  if ! kubectl get clusters.apps.kubeblocks.io >/dev/null 2>&1 || ! kbcli cluster list -n ${NS} ${GRAS_NAME} >/dev/null 2>&1; then
+
+    status_log $TYPE_INFO "checking kubeblocks"
+    check_and_install_kubeblocks
+
+    status_log $TYPE_INFO "waiting for configs to apply"
+    for i in $(kubectl get clusterversion -o name); do 
+      kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
+    done
+
+    check_and_install_yq
+    yq -i ".metadata.name=\"$GRAS_NAME\"" $kubeblocks_template_file_dest
+    kubectl apply -n ${NS} -f $kubeblocks_template_file_dest
+    status_log $TYPE_INFO "created internal db"
+
+    status_log $TYPE_SUCCESS "Successfully installed kubeblocks"
+  fi
+
+}
 
 #------------ TARGET_PLATFORM Input-----------
 
@@ -422,7 +459,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
   extract_kubectl_cli_version
 
   if ! minikube addons list | grep enabled | grep ingress >/dev/null 2>&1; then
-    if [ "${AUTO_CONFIRM}" != "true" ]; then
+    if [ "${AUTO_CONFIRM}" != "true" ] && [ $TTY == "enabled" ]; then
       gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     fi
     echo "enabling ingress addons for minikube"
@@ -479,11 +516,11 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
   if [[ "${GITHUB_USERNAME}" != "" ]]; then
     status_log $TYPE_INFO "extracting email from github username $GITHUB_USERNAME"
     extract_email_from_github_username
-    status_log $TYPE_INFO "extracted email : $EMAIL from github username $GITHUB_USERNAME"
+    if [[ "${EMAIL}" == "" ]]; then EMAIL="info@grapple-solutions.com"; status_log $TYPE_INFO "Using default email : $EMAIL"; else status_log $TYPE_INFO "extracted email : $EMAIL from github username $GITHUB_USERNAME"; fi
   elif [[ "${GITLAB_USERNAME}" != "" ]]; then
     status_log $TYPE_INFO "extracting email from gitlab username $GITLAB_USERNAME"
     extract_email_from_gitlab_username
-    status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username $GITLAB_USERNAME"
+    if [[ "${EMAIL}" == "" ]]; then EMAIL="info@grapple-solutions.com"; status_log $TYPE_INFO "Using default email : $EMAIL"; else status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username $GITHUB_USERNAME"; fi
   fi
 
   echo "DNS: $GRAPPLE_DNS"
@@ -764,3 +801,5 @@ cli_log "cluster install END"
 rm /tmp/values-override.yaml
 
 status_log $TYPE_SUCCESS "Successfuly Installed grpl"
+
+kubeblocks_installation
