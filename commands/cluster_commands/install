@@ -267,11 +267,6 @@ kubeblocks_installation() {
   fi
 }
 
-if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
-    status_log $TYPE_INFO "Installing kubeblocks in background"
-    kubeblocks_installation >/dev/null 2>&1 &
-fi
-
 
 #------------ TARGET_PLATFORM Input-----------
 
@@ -685,6 +680,11 @@ helm_deploy() {
   fi
 
 }
+
+if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
+    status_log $TYPE_INFO "Installing kubeblocks in background"
+    kubeblocks_installation >/dev/null 2>&1 &
+fi
 
 if ([ "${TARGET_PLATFORM}" = $CIVO ] || [ "${TARGET_PLATFORM}" = $Kubernetes ]) && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
