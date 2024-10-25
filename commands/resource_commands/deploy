@@ -631,7 +631,7 @@ status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
 if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
 
     # check if kubeblocks is installed
-    if ! kbcli cluster list -n ${KUBE_DB} ${GRAS_NAME} >/dev/null 2>&1; then
+    if ! kbcli cluster list -n ${KUBE_NS} ${GRAS_NAME} >/dev/null 2>&1; then
         yq -i ".metadata.name=\"$GRAS_NAME\"" $kubeblocks_template_file_dest
         kubectl apply -n ${KUBE_NS} -f $kubeblocks_template_file_dest
         status_log $TYPE_INFO "created internal db"
