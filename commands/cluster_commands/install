@@ -435,7 +435,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
   extract_kubectl_cli_version
 
   if ! minikube addons list | grep enabled | grep ingress >/dev/null 2>&1; then
-    if [ "${AUTO_CONFIRM}" != "true" ]; then
+    if [ "${AUTO_CONFIRM}" != "true" ] && [ "$TTY" == "enabled" ]; then
       gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     fi
     echo "enabling ingress addons for minikube"
@@ -451,7 +451,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
     search_order 1
     timeout 5" > /tmp/minikube-test
 
-    if [ "${AUTO_CONFIRM}" != "true" ]; then
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
       status_log $TYPE_INFO "please run the following commands before clicking on 'confirm':"
     else
       status_log $TYPE_INFO "going to run following command"
@@ -462,7 +462,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
       --align center --width 100 --margin "1 2" --padding "2 4" \
       'sudo cp /tmp/minikube-test /etc/resolver/minikube-test' >&2
 
-    if [ "${AUTO_CONFIRM}" != "true" ]; then
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
       gum confirm "Proceed with ingress configuration?" || (echo "grapple cannot be installed without dns / ingress configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     else
       sudo cp /tmp/minikube-test /etc/resolver/minikube-test
@@ -595,7 +595,7 @@ cat /tmp/values-override.yaml
 
 
 # Use gum to confirm before proceeding
-if [ "${AUTO_CONFIRM}" != "true" ]; then
+if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
 
   status_log $TYPE_DEFAULT "Going to deploy grpl on ${TARGET_PLATFORM} with following configurations"  
   if [ "${TARGET_PLATFORM}" == $CIVO ]; then 
