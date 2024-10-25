@@ -13,6 +13,25 @@ cli_help() {
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 
+extract_creds_from_secrets() {
+
+  # Extract and decode the password and username from the secret
+  if kubectl get secret -n grpl-system grpl-e-d-external-sec -o jsonpath="{.data.password}" > /dev/null 2>&1; then
+    password=$(kubectl get secret -n grpl-system grpl-e-d-external-sec -o jsonpath="{.data.password}" | base64 --decode)
+  else
+    status_log $TYPE_ERROR "Failed to get creds for grpl example deployment"
+    exit 1
+  fi
+  
+  if kubectl get secret -n grpl-system grpl-e-d-external-sec -o jsonpath="{.data.username}" > /dev/null 2>&1; then
+    username=$(kubectl get secret -n grpl-system grpl-e-d-external-sec -o jsonpath="{.data.username}" | base64 --decode)
+  else
+    status_log $TYPE_ERROR "Failed to get creds for grpl example deployment"
+    exit 1
+  fi
+
+}
+
 # valid arguments array
 valid_args=(
     "GRAS_TEMPLATE"
@@ -35,7 +54,7 @@ status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 MODELS='customer:{"base":"Entity","name":"customer","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"customername":{"type":"string"},"emaildomain":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}|email:{"base":"Entity","name":"email","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"emaildomain":{"type":"string","required":true},"email":{"type":"string","required":true}}}|cluster:{"base":"Entity","name":"cluster","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"clustername":{"type":"string"},"clusteridentifier":{"type":"string"},"clusterdns":{"type":"string"},"customerId":{"type":"string"},"emailId":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}'
 
-DATASOURCES='classicmodelsid:{"name":"classicmodelsid","connector":"mysql","url":"","host":"aurora-mysql-test.cpfyybdyajmx.eu-central-1.rds.amazonaws.com","port":"3306","user":"admin","password":"florida2012","database":"classicmodelsid"}'
+DATASOURCES='classicmodelsid:{"name":"classicmodelsid","connector":"mysql","url":"","host":"aurora-mysql-test.cpfyybdyajmx.eu-central-1.rds.amazonaws.com","port":"3306","user":"%s","password":"%s","database":"classicmodelsid"}'
 
 SOURCE_DATA=https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql
 
@@ -65,6 +84,8 @@ fi
 
 #grpl r d mysql model  external
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
+  extract_creds_from_secrets
+  DATASOURCES=$(printf "$DATASOURCES\n" "$username" "$password")
   grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-mysql --KUBE_NS=grpl-mdl-ext --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$EXTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --DATASOURCES=$DATASOURCES --RELATIONS=""  --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA
   exit 0
 fi
@@ -77,6 +98,8 @@ fi
 
 #grpl r d mysql discovery  external
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
+  extract_creds_from_secrets
+  DATASOURCES=$(printf "$DATASOURCES\n" "$username" "$password")
   grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-ext --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB --DATASOURCES=$DATASOURCES --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS="" --ENABLE_GRUIM=true --DATABASE_SCHEMA=$DATABASE_SCHEMA
   exit 0
 fi
