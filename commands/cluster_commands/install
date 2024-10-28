@@ -47,6 +47,7 @@ valid_args=(
     "KUBEFIRST_CLOUD_REGION"
     "KUBEFIRST_CLUSTER_ID"
     "KUBEFIRST_CLUSTER_NAME"
+    "INSTALL_KUBEBLOCKS"
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
@@ -244,6 +245,25 @@ extract_email_from_gitlab_username(){
     echo "Email found: $EMAIL"
   else
     echo "No matching commit author found."
+  fi
+}
+
+kubeblocks_installation() {
+  if ! kbcli; then
+      echo "installing kbcli"
+      check_and_install_kbcli
+  fi
+
+  if ! kubectl get deployment kubeblocks -n kb-system; then
+    echo "checking kubeblocks"
+    check_and_install_kubeblocks
+
+    echo "waiting for configs to apply"
+    for i in $(kubectl get clusterversion -o name); do 
+      kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
+    done
+  else 
+    echo "kubeblocks is already installed"
   fi
 }
 
@@ -661,6 +681,11 @@ helm_deploy() {
 
 }
 
+if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
+    status_log $TYPE_INFO "Installing kubeblocks in background"
+    kubeblocks_installation >/dev/null 2>&1 &
+fi
+
 if ([ "${TARGET_PLATFORM}" = $CIVO ] || [ "${TARGET_PLATFORM}" = $Kubernetes ]) && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
@@ -764,3 +789,10 @@ cli_log "cluster install END"
 rm /tmp/values-override.yaml
 
 status_log $TYPE_SUCCESS "Successfuly Installed grpl"
+
+
+if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
+  status_log $TYPE_INFO "Waiting for kubeblocks to be installed"
+  wait
+  status_log $TYPE_SUCCESS "kubeblocks is installed"
+fi

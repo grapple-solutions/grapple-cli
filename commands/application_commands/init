@@ -21,58 +21,87 @@ status_log $TYPE_INFO "application initialization is in progress"
 valid_args=(
     "PROJECT_NAME"
     "AUTO_CONFIRM"
+    "GITHUBTOKEN"
   )
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-help_menu_cmd="grpl app init help"
-extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
+extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@")
 
 #check if input from params is valid or not
 check_if_param_avaiable_in_non_interactive_mode "PROJECT_NAME" "$PROJECT_NAME" "${help_menu_cmd}"
 if [ "${PROJECT_NAME}" != "" ]; then 
   is_value_correct_wrt_regex $PROJECT_NAME $alphaNum_plus_hyphen_and_underscope_regex "Project name can only contain alpha numaric characters, '-'and '_' as special characters"
 fi
-PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
+PROJECT_NAME=$(if [ "${PROJECT_NAME}" != "" ]; then echo ${PROJECT_NAME}; else [ $TTY == "enabled" ] &&  prompt_for_input_with_validation "Enter PROJECT_NAME: " "Provide project name" "$alphaNum_plus_hyphen_and_underscope_regex" "Project name can only contain alpha numaric characters, '-' and '_' as special characters"; fi) || exit $?
 echo "project name: ${PROJECT_NAME}"
 
 # ----------------------- params code ended ---------------------------
 
-if ! ls $GRPL_WORKDIR | grep "$PROJECT_NAME" >/dev/null 2>&1; then
-
-  # Check if the repo already exists in the GitHub account
-  cli_log "checking if the repository already exists in your GitHub account"
-  if gh repo view "$PROJECT_NAME" >/dev/null 2>&1; then
-  # clone the grapple-template repo
-    status_log $TYPE_INFO "cloning a grapple-template repo"
-    check_and_install_git
-    if ! eval "$(getGumSpinnerOrLogger "cloning grapple template" ) git clone \"https://github.com/grapple-solutions/grapple-template.git\" $PROJECT_NAME"; then
-      status_log $TYPE_ERROR "failed to clone grapple template due to following error"
-      errMsg=$(git clone "https://github.com/grapple-solutions/grapple-template.git" $PROJECT_NAME)
-      status_log $TYPE_ERROR "$errMsg"
-      exit 1
-    fi
-  else
-    # Repo does not exist, prompt to create it
-    status_log $TYPE_INFO "Repository does not exist in your GitHub account."
-    if [ "${AUTO_CONFIRM}" != "true" ] &&  [ $TTY == "enabled" ]; then
-      gum confirm "This repo does not exist in your GitHub account. Shall it be created?" || (status_log $TYPE_ERROR "Repository creation canceled by the user" && exit 1)
-    fi
-    # Create and clone the repository
-    status_log $TYPE_INFO "Creating the repository on GitHub."
-    check_and_install_gh
-    if ! gh repo create $PROJECT_NAME --template grapple-solutions/grapple-template --clone --public >/dev/null; then
-      status_log $TYPE_ERROR "failed to create the repository due to the above error"
-      exit 1
-    fi
+if ls | grep "$PROJECT_NAME" >/dev/null 2>&1; then
+  
+  status_log $TYPE_INFO "folder $PROJECT_NAME already exists"
+  if [ "${AUTO_CONFIRM}" != "true" ] &&  [ $TTY == "enabled" ]; then
+    gum confirm "Would you like the project to be renamed to resolve the conflict, with an increment added at the end of the project name?" || (status_log $TYPE_ERROR "Repository creation canceled by the user" && exit 1)
   fi
 
-else
-  status_log $TYPE_ERROR "failed to clone grapple template because a folder with this name already exist in the current directory"
-  exit 1
+  increment=1
+  while ls | grep "$PROJECT_NAME" >/dev/null 2>&1; do
+    PROJECT_NAME="${PROJECT_NAME%-$((increment-1))}-$increment"
+    increment=$((increment + 1))
+  done
+
+  status_log $TYPE_INFO  "New project name: $PROJECT_NAME"
+
 fi
 
+status_log $TYPE_INFO "checking if the repository already exists in your GitHub account"
+check_and_install_gh
 
+status_log $TYPE_INFO "checking if gh is authenticated"
+if ! gh auth status >/dev/null 2>&1; then
+  status_log $TYPE_INFO "gh is not authenticated"
+  if [ "${GITHUBTOKEN}" == "" ] &&  [ $TTY != "enabled" ]; then
+    status_log $TYPE_ERROR "grpl cli is running in non-interactive mode, please provide GITHUBTOKEN cli parameter to authenticate gh and continue with grpl application init"
+    exit 1
+  fi
+
+  GITHUBTOKEN=$(if [ "${GITHUBTOKEN}" != "" ]; then echo ${GITHUBTOKEN}; else prompt_for_input_with_validation "Enter GITHUBTOKEN: " "Provide GITHUBTOKEN to authenticate gh" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
+  status_log $TYPE_INFO "authenticating gh"
+  if echo $GITHUBTOKEN | gh auth login --with-token >/dev/null 2>&1; then
+    status_log $TYPE_SUCCESS "gh is authenticated"
+  else
+    status_log $TYPE_ERROR "failed to authenticate gh due to following error"
+    echo $GITHUBTOKEN | gh auth login --with-token
+    exit 1
+  fi
+else
+  status_log $TYPE_INFO "gh is authenticated"
+fi
+
+if gh repo view "$PROJECT_NAME" >/dev/null 2>&1; then
+# clone the grapple-template repo
+  status_log $TYPE_INFO "cloning a grapple-template repo"
+  check_and_install_git
+  if ! eval "$(getGumSpinnerOrLogger "cloning grapple template" ) git clone \"https://github.com/grapple-solutions/grapple-template.git\" $PROJECT_NAME"; then
+    status_log $TYPE_ERROR "failed to clone grapple template due to following error"
+    errMsg=$(git clone "https://github.com/grapple-solutions/grapple-template.git" $PROJECT_NAME)
+    status_log $TYPE_ERROR "$errMsg"
+    exit 1
+  fi
+else
+  # Repo does not exist, prompt to create it
+  status_log $TYPE_INFO "Repository does not exist in your GitHub account."
+  if [ "${AUTO_CONFIRM}" != "true" ] &&  [ $TTY == "enabled" ]; then
+    gum confirm "This repo does not exist in your GitHub account. Shall it be created?" || (status_log $TYPE_ERROR "Repository creation canceled by the user" && exit 1)
+  fi
+  # Create and clone the repository
+  status_log $TYPE_INFO "Creating the repository on GitHub."
+  if ! gh repo create $PROJECT_NAME --template grapple-solutions/grapple-template --clone --public >/dev/null; then
+    status_log $TYPE_ERROR "failed to create the repository due to the above error"
+    exit 1
+  fi
+fi
 
 
 if ! awk -v repl="$PROJECT_NAME" '{gsub("grapple-template", repl)}1' "$PROJECT_NAME/README.md" > temp && mv temp "$PROJECT_NAME/README.md" >/dev/null 2>&1; then
@@ -85,3 +114,12 @@ fi
 cli_log "application init COMPLETED"
 status_log $TYPE_SUCCESS "application initialization is complete"
 
+# move into the project
+status_log $TYPE_INFO "moving into the project $PROJECT_NAME"
+cd "$PROJECT_NAME"
+
+status_log $TYPE_INFO "What's Next?"
+status_log $TYPE_INFO "run 'grpl dev help' to displays help menu for grpl dev"
+status_log $TYPE_INFO "run 'grpl dev' to start the project"
+
+$SHELL
