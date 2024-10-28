@@ -306,7 +306,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   echo "here1"
 
-  [ $TTY == "enabled" ] && extract_kubectl_cli_version
+  extract_kubectl_cli_version
 
   echo "here2"
 
