@@ -139,7 +139,7 @@ take_relation_input_from_cli() {
     status_log $TYPE_INFO "Do you want to add a relationship?"
     local another_rule=$(gum choose "Yes" "No") || exit $?
     
-    if [ "$another_rule" == "No" ]; thench
+    if [ "$another_rule" == "No" ]; then
         return 0
     fi
     
