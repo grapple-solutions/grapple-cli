@@ -29,6 +29,7 @@ valid_args=(
 extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@")
 
 #check if input from params is valid or not
+check_if_param_avaiable_in_non_interactive_mode "PROJECT_NAME" "$PROJECT_NAME" "${help_menu_cmd}"
 if [ "${PROJECT_NAME}" != "" ]; then 
   is_value_correct_wrt_regex $PROJECT_NAME $alphaNum_plus_hyphen_and_underscope_regex "Project name can only contain alpha numaric characters, '-'and '_' as special characters"
 fi
@@ -122,4 +123,3 @@ status_log $TYPE_INFO "run 'grpl dev help' to displays help menu for grpl dev"
 status_log $TYPE_INFO "run 'grpl dev' to start the project"
 
 $SHELL
-

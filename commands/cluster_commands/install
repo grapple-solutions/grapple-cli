@@ -51,8 +51,8 @@ valid_args=(
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-extract_input_params_from_cli $valid_args "grpl c i h" $(echo "$@")
-
+help_menu_cmd="grpl cluster install help"
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
 
 #-------------Functions-------------------
 
@@ -271,10 +271,11 @@ kubeblocks_installation() {
 #------------ TARGET_PLATFORM Input-----------
 
 # if TARGET_PLATFORM is provided using CLI then we need to check if valid TARGET_PLATFORM was provided or not
+check_if_param_avaiable_in_non_interactive_mode "TARGET_PLATFORM" "${TARGET_PLATFORM}" "${help_menu_cmd}"
 if [ "${TARGET_PLATFORM}" != "" ]; then 
   is_correct_target_platform_provided $TARGET_PLATFORM 
 fi
-TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else [ $TTY == "enabled" ] && gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
 
@@ -286,7 +287,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
 #------------ CIVO_API_KEY Input-----------
   
-  if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [ $TTY == "enabled" ]; then
+  if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [[ $TTY == "enabled" ]]; then
     CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
   fi
 
@@ -297,22 +298,23 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
 #------------ CIVO_REGION Input-----------
 
-  if [ "${CIVO_REGION}" != "" ]; then 
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_REGION" "${CIVO_REGION}" "${help_menu_cmd}"
+  if [ "${CIVO_REGION}" != "" ] && [ $TTY == "enabled" ]; then 
     is_correct_civo_region_provided $CIVO_REGION 
   fi
-
-  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else [ $TTY == "enabled" ] &&  gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
 
 #------------ CIVO_CLUSTER Input-----------
 
-  if [ "${CIVO_CLUSTER}" != "" ]; then 
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER" "${CIVO_CLUSTER}" "${help_menu_cmd}"
+  if [ "${CIVO_CLUSTER}" != "" ] && [ $TTY == "enabled" ]; then 
     is_correct_civo_cluster_provided $CIVO_CLUSTER 
   fi
-  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if [ $TTY == "enabled" ] && gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name > /dev/null; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name > /dev/null; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
   echo "selected civo cluster: ${CIVO_CLUSTER}"
 
-  if ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
+  if [ $TTY == "enabled" ] && ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
     if ! eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl get ns"; then
       status_log $TYPE_ERROR "Failed to switch to ${CIVO_CLUSTER} due to following reason"
       # following is to show the reason for failure
@@ -327,7 +329,8 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 #------------ CIVO_CLUSTER_ID Input-----------
 
   # if a CIVO cluster was selected, pre-set the configuration
-  CIVO_CLUSTER_ID=$(eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID")
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER_ID" "${CIVO_CLUSTER_ID}" "${help_menu_cmd}"
+  CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID"; fi)
 
 #------------ GRAPPLE_DNS Input-----------
 
@@ -342,13 +345,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
       GRAPPLE_DOMAIN=".grapple-demo.com"
   fi
   
-
   CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
-
-#------------ CIVO_CLUSTER_ID Input-----------
-
-  CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_CLUSTER_ID: " "Provide an ID for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
-  echo "selected civo cluster ID: ${CIVO_CLUSTER_ID}"
 
 #------------ CIVO_CLUSTER_NAME Input-----------
 
@@ -357,16 +354,18 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
 #------------ CLUSTER_IP Input-----------
 
+  check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" "${help_menu_cmd}"
   CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
   echo "selected civo master ip: ${CLUSTER_IP}"
 
 #------------ CIVO_EMAIL_ADDRESS Input-----------
 
   #check if input from params is valid or not
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_EMAIL_ADDRESS" "${CIVO_EMAIL_ADDRESS}" "${help_menu_cmd}"
   if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then 
     is_value_correct_wrt_regex $CIVO_EMAIL_ADDRESS $email_regex "Invalid email address format. Please try again"
   fi
-  CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
+  CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
   echo "selected civo email address: ${CIVO_EMAIL_ADDRESS}"
   EMAIL=$CIVO_EMAIL_ADDRESS
   if [[ $ORGANIZATION == "" ]]; then
@@ -380,7 +379,7 @@ fi
 if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
 
 #------------ GRAPPLE_DNS Input-----------
-
+  check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "${GRAPPLE_DNS}" "${help_menu_cmd}"
   # check if a full domain-name was passed in GRAPPLE_DNS
   if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
       status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
@@ -416,8 +415,8 @@ else
 fi
 
 
-
-  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" "${help_menu_cmd}"
+  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
   echo "kuberenetes cluster ip: ${CLUSTER_IP}"
 
 fi
@@ -442,7 +441,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
   extract_kubectl_cli_version
 
   if ! minikube addons list | grep enabled | grep ingress >/dev/null 2>&1; then
-    if [ "${AUTO_CONFIRM}" != "true" ] && [ $TTY == "enabled" ]; then
+    if [ "${AUTO_CONFIRM}" != "true" ] && [ "$TTY" == "enabled" ]; then
       gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     fi
     echo "enabling ingress addons for minikube"
@@ -458,7 +457,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
     search_order 1
     timeout 5" > /tmp/minikube-test
 
-    if [ "${AUTO_CONFIRM}" != "true" ]; then
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
       status_log $TYPE_INFO "please run the following commands before clicking on 'confirm':"
     else
       status_log $TYPE_INFO "going to run following command"
@@ -469,7 +468,7 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
       --align center --width 100 --margin "1 2" --padding "2 4" \
       'sudo cp /tmp/minikube-test /etc/resolver/minikube-test' >&2
 
-    if [ "${AUTO_CONFIRM}" != "true" ]; then
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
       gum confirm "Proceed with ingress configuration?" || (echo "grapple cannot be installed without dns / ingress configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
     else
       sudo cp /tmp/minikube-test /etc/resolver/minikube-test
@@ -517,7 +516,8 @@ fi
 
 # Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
 if [ "${TARGET_PLATFORM}" != $Minikube ]; then
-  GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
+  check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "$GRAPPLE_DNS" "${help_menu_cmd}"
+  GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
   echo "installing dns: ${GRAPPLE_DNS}"
 fi
 
@@ -601,7 +601,7 @@ cat /tmp/values-override.yaml
 
 
 # Use gum to confirm before proceeding
-if [ "${AUTO_CONFIRM}" != "true" ]; then
+if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
 
   status_log $TYPE_DEFAULT "Going to deploy grpl on ${TARGET_PLATFORM} with following configurations"  
   if [ "${TARGET_PLATFORM}" == $CIVO ]; then 
