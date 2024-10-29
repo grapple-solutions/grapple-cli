@@ -92,10 +92,10 @@ transform_discoveries_input_to_yaml() {
     # Split the input string by pipe symbol (|)
     IFS='|' read -ra discoveries <<< "$json_string"
 
-    # Iterate over each model data
+    # Iterate over each discovery data
     index=0
     for discovery in "${discoveries[@]}"; do
-        # Extract the model name and its properties
+        # Extract the discovery name and its properties
         IFS=':' read -r discovery_name properties <<< "$discovery"
         yq -i ".grapi.discoveries[$index].name=\"$discovery_name\" | .grapi.discoveries[$index].name style=\"double\"" $template_file_dest
 
@@ -105,6 +105,30 @@ transform_discoveries_input_to_yaml() {
         
         # Parse the properties JSON and format it as YAML
         yq eval ".grapi.discoveries[$index].spec += $properties" -i $template_file_dest
+        ((index+=1))
+    done
+
+}
+
+transform_relation_input_to_yaml() {
+    
+
+    local dsq=$1
+    # Convert the JSON-like string to valid JSON by replacing single quotes with double quotes
+    json_string="${dsq//\'/\"}"
+
+    # Split the input string by pipe symbol (|)
+    IFS='|' read -ra relations <<< "$json_string"
+
+    # Iterate over each relation data
+    index=0
+    for relation in "${relations[@]}"; do
+        # Extract the model name and its properties
+        IFS=':' read -r relation_name properties <<< "$relation"
+        yq -i ".grapi.relations[$index].name=\"$relation_name\" | .grapi.relations[$index].name style=\"double\"" $template_file_dest
+        
+        # Parse the properties JSON and format it as YAML
+        yq eval ".grapi.relations[$index].spec += $properties" -i $template_file_dest
         ((index+=1))
     done
 
@@ -749,6 +773,8 @@ fi
 cli_args=$@
 if [[ "${cli_args[@]}" =~ "--RELATIONS" ]] && [[ $RELATIONS == "" ]] ; then
     yq eval 'del(.grapi.relations)' -i $template_file_dest
+elif [[ "${cli_args[@]}" =~ "--RELATIONS" ]] && [[ $RELATIONS != "" ]] ; then
+    transform_relation_input_to_yaml $RELATIONS
 else
     check_if_param_avaiable_in_non_interactive_mode "RELATIONS" "$RELATIONS" "${help_menu_cmd}"
     take_relation_input_from_cli "${models_name[@]}"
