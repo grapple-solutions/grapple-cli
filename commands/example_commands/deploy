@@ -58,8 +58,6 @@ MODELS='customer:{"base":"Entity","name":"customer","properties":{"id":{"type":"
 
 DATASOURCES='classicmodelsid:{"name":"classicmodelsid","connector":"mysql","url":"","host":"aurora-mysql-test.cpfyybdyajmx.eu-central-1.rds.amazonaws.com","port":"3306","user":"%s","password":"%s","database":"classicmodelsid"}'
 
-RELATIONS='employees:{"destinationModel":"Employees","foreignKeyName":"employeesId","registerInclusionResolver":true,"relationName":"employees","relationType":"belongsTo","sourceModel":"Customers"}'
-
 SOURCE_DATA=https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql
 
 DATABASE_SCHEMA="classicmodelsid"
@@ -97,7 +95,7 @@ fi
 
 #grpl r d mysql discovery  internal
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $INTERNAL_DB ]]; then
-  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-int --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$INTERNAL_DB --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true  --DATABASE_SCHEMA=$DATABASE_SCHEMA
+  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-int --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$INTERNAL_DB --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS="" --ENABLE_GRUIM=true  --DATABASE_SCHEMA=$DATABASE_SCHEMA
   exit 0
 fi
 
@@ -105,6 +103,6 @@ fi
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
   extract_creds_from_secrets
   DATASOURCES=$(printf "$DATASOURCES\n" "$username" "$password")
-  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-ext --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB --DATASOURCES=$DATASOURCES --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true --DATABASE_SCHEMA=$DATABASE_SCHEMA
+  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-ext --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB --DATASOURCES=$DATASOURCES --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS="" --ENABLE_GRUIM=true --DATABASE_SCHEMA=$DATABASE_SCHEMA
   exit 0
 fi
