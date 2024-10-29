@@ -682,11 +682,9 @@ if [[ $DB_TYPE == "$INTERNAL_DB" ]]; then
 
 elif [[ $DB_TYPE == "$EXTERNAL_DB" ]]; then
 
-<<<<<<< HEAD
     check_if_param_avaiable_in_non_interactive_mode "DATASOURCES" "$DATASOURCES" "${help_menu_cmd}"
-=======
+
     # get datasources details either from params or cli
->>>>>>> main
     if [[ $DATASOURCES != "" ]]; then
         transform_datasources_input_to_yaml $DATASOURCES
     else
