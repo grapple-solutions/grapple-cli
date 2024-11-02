@@ -66,6 +66,9 @@ if ! gh auth status >/dev/null 2>&1; then
     exit 1
   fi
 
+  # incase an other session was expired
+  unset GITHUB_TOKEN
+  
   GITHUBTOKEN=$(if [ "${GITHUBTOKEN}" != "" ]; then echo ${GITHUBTOKEN}; else prompt_for_input_with_validation "Enter GITHUBTOKEN: " "Provide GITHUBTOKEN to authenticate gh" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
   status_log $TYPE_INFO "authenticating gh"
   if echo $GITHUBTOKEN | gh auth login --with-token >/dev/null 2>&1; then
