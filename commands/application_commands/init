@@ -118,11 +118,7 @@ cli_log "application init COMPLETED"
 status_log $TYPE_SUCCESS "application initialization is complete"
 
 # move into the project
-status_log $TYPE_INFO "moving into the project $PROJECT_NAME"
-cd "$PROJECT_NAME"
-
 status_log $TYPE_INFO "What's Next?"
+status_log $TYPE_INFO "please run 'cd $PROJECT_NAME' to move into the project $PROJECT_NAME folder"
 status_log $TYPE_INFO "run 'grpl dev help' to displays help menu for grpl dev"
 status_log $TYPE_INFO "run 'grpl dev' to start the project"
-
-$SHELL
