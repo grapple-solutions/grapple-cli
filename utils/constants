@@ -25,6 +25,7 @@ dns_regex="^[A-Za-z0-9]([-A-Za-z0-9]*[A-Za-z0-9])?(\.[A-Za-z0-9]([-A-Za-z0-9]*[A
 grpl_dns_regex="^([[:alnum:]-]+\.)+[[:alnum:]-]{2,}$"
 non_empty_regex=".+" 
 alphaNum_plus_hyphen_and_underscope_regex="^[a-zA-Z0-9_-]+$"
+numeric_regex="^[1-9][0-9]*$"
 url_validation_regex="^$|^(http(s)?:\/\/)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$"
 abs_path_regex="^$|^(.+)\/([^\/]+)$"
 # exist on interupt message colors

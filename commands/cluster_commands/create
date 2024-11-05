@@ -1,5 +1,8 @@
 #!/bin/bash
 set -e
+
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
 . "$GRPL_WORKDIR/utils/help_menus"
 
 cli_help() {
@@ -10,7 +13,126 @@ cli_help() {
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 cli_log "cluster create BEGIN"
+status_log $TYPE_INFO "Cluster creation is in progress"
+
+common_valid_args=(
+   "TARGET_PLATFORM"
+   "CLUSTER_NAME"
+)
+
+civo_valid_args=(
+    "a" "applications"
+    "cluster-type"
+    "p" "cni-plugin"
+    "c" "create-firewall"
+    "e" "existing-firewall"
+    "u" "firewall-rules"
+    "h" "help"
+    "m" "merge"
+    "t" "network"
+    "n" "nodes"
+    "r" "remove-applications"
+    "save"
+    "s" "size"
+    "switch"
+    "v" "version"
+    "w" "wait"
+    "config"
+    "f" "fields"
+    "o" "output"
+    "pretty"
+    "region"
+    "y" "yes"
+)
 
 
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+help_menu_cmd="grpl cluster create help"
+combined_args=("${common_valid_args[@]}" "${civo_valid_args[@]}")
+extract_input_params_from_cli $combined_args "${help_menu_cmd}" $(echo "$@")
+
+#-------------Functions-------------------
+
+build_cluster_creation_command() {
+    local base_command=$1
+    local valid_args=$2
+    for arg in "${valid_args[@]}"; do
+        # Check if a variable named after the argument exists and has a value
+        if [[ -n "${!arg}" ]]; then
+            # If the argument has a short flag (single letter), prepend a dash
+            if [[ ${#arg} -eq 1 ]]; then
+                base_command+=" --$arg=${!arg}"
+            else
+                base_command+=" --$arg=${!arg}"
+            fi
+        fi
+    done
+    
+    echo "$base_command"
+}
+
+
+civo_cluster_create() {
+
+  #------------ size Input-----------
+
+  size_value=${size} || ${s}
+  check_if_param_avaiable_in_non_interactive_mode "size" "${size_value}" "${help_menu_cmd}"
+  size=$(if [ "${size}" != "" ]; then echo ${size}; else prompt_for_input_with_validation "Enter size of the cluster: " "Provide the size" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
+  status_log $TYPE_INFO "size: ${size}"
+
+
+  #------------ nodes Input-----------
+
+  nodes_value=${nodes} || ${n}
+  check_if_param_avaiable_in_non_interactive_mode "nodes" "${nodes_value}" "${help_menu_cmd}"
+  nodes=$(if [ "${nodes}" != "" ]; then echo ${nodes}; else prompt_for_input_with_validation "Enter number of nodes: " "Provide the number of nodes" "$numeric_regex" "The input must be a numeric value that does not start with 0"; fi) || exit $?
+  status_log $TYPE_INFO "nodes: ${nodes}"
+
+  #------------ nodes Input-----------
+
+  applications_value=${applications} || ${a}
+  check_if_param_avaiable_in_non_interactive_mode "applications" "${applications_value}" "${help_menu_cmd}"
+  applications=$(if [ "${applications}" != "" ]; then echo ${applications}; else prompt_for_input_with_validation "Enter comma separated applicaitons list: " "Provide the applications you want to install" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
+  status_log $TYPE_INFO "applications: ${applications}"
+
+  base_command="civo k8s create $CLUSTER_NAME"
+
+  final_command=$(build_cluster_creation_command "$base_command" $civo_valid_args)
+
+  status_log $TYPE_INFO "final command: ${final_command}"
+  if ! eval "$(getGumSpinnerOrLogger "Creating Civo cluster with name ${CLUSTER_NAME}") ${final_command}"  >&2 ; then
+    status_log $TYPE_ERROR "Failed to create Civo cluster with name ${CLUSTER_NAME} due to following error"
+    eval ${final_command}
+    exit 1
+  fi
+
+  status_log $TYPE_SUCCESS "Successfully created civo cluster"
+  
+}
+
+#------------ CLUSTER_NAME Input-----------
+
+check_if_param_avaiable_in_non_interactive_mode "CLUSTER_NAME" "${CLUSTER_NAME}" "${help_menu_cmd}"
+CLUSTER_NAME=$(if [ "${CLUSTER_NAME}" != "" ]; then echo ${CLUSTER_NAME}; else prompt_for_input_with_validation "Enter cluster name: " "Provide a name for the cluster" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
+echo "CLUSTER_NAME: ${CLUSTER_NAME}"  
+
+
+#------------ TARGET_PLATFORM Input-----------
+
+# if TARGET_PLATFORM is provided using CLI then we need to check if valid TARGET_PLATFORM was provided or not
+check_if_param_avaiable_in_non_interactive_mode "TARGET_PLATFORM" "${TARGET_PLATFORM}" "${help_menu_cmd}"
+if [ "${TARGET_PLATFORM}" != "" ]; then 
+  is_correct_target_platform_provided $TARGET_PLATFORM 
+fi
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
+echo "selected target platform: ${TARGET_PLATFORM}"
+
+if [ "${TARGET_PLATFORM}" = $CIVO ]; then
+  civo_cluster_create
+  exit 0
+fi
 
 cli_log "cluster create END"
+
