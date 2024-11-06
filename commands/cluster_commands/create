@@ -19,6 +19,7 @@ common_valid_args=(
    "TARGET_PLATFORM"
    "CLUSTER_NAME"
    "CIVO_API_KEY"
+   "AUTO_CONFIRM"
 )
 
 civo_valid_args=(
@@ -80,8 +81,55 @@ build_cluster_creation_command() {
     echo "$base_command"
 }
 
+wait_for_civo_cluster_ready() {
+  local cluster_name=$1
+  local max_wait_time=300  # 5 minutes in seconds
+  local wait_interval=20   # Check every 20 seconds
+  local elapsed_time=0
+
+  status_log $TYPE_INFO "Waiting for cluster '${cluster_name}' to be ready (max 5 minutes)..."
+
+  while (( elapsed_time < max_wait_time )); do
+    # Check the cluster status
+    cluster_status=$(civo k8s ls --output=json | jq -r --arg cluster_name "$cluster_name" '
+      .[] | select(.name == $cluster_name) | .status
+    ')
+
+    # Check if the status is ACTIVE
+    if [[ "$cluster_status" == "ACTIVE" ]]; then
+      status_log $TYPE_SUCCESS "Cluster '${cluster_name}' is ready."
+      return 0  # Return true (success)
+    else
+      status_log $TYPE_INFO "Cluster not ready yet. Current status: $cluster_status. Next status check after $wait_interval sec..."
+      sleep $wait_interval
+      (( elapsed_time += wait_interval ))
+    fi
+  done
+
+  # If we reach here, the cluster was not ready within the max wait time
+  status_log $TYPE_INFO "Cluster '${cluster_name}' was not ready within 5 minutes."
+  return 1  # Return false (failure)
+}
+
+
+check_civo_cluster_exists() {
+  # Parse the JSON output to check if any cluster has the specified name
+  status_log $TYPE_INFO "Checking if cluster with name '${CLUSTER_NAME}' already exists..."
+  existing_cluster=$(civo k8s ls --output=json | jq -r --arg cluster_name "$CLUSTER_NAME" '.[] | select(.name == $cluster_name) | .name')
+  
+  if [[ -n "$existing_cluster" ]]; then
+    status_log $TYPE_ERROR "Error: Cluster with name '${CLUSTER_NAME}' already exists."
+    exit 1  # Cluster exists
+  else
+    status_log $TYPE_INFO "No cluster found with the name '${CLUSTER_NAME}'. Proceeding with creation."  # Cluster does not exist
+  fi
+}
+
 
 civo_cluster_create() {
+
+  #------------ check if a cluster with CLUSTER_NAME exists -----------
+  check_civo_cluster_exists
 
   #------------ size Input-----------
 
@@ -106,7 +154,8 @@ civo_cluster_create() {
 
   final_command=$(build_cluster_creation_command "$base_command")
 
-  status_log $TYPE_SUCCESS "Successfuly formed cluster create command: ${final_command}"
+  status_log $TYPE_INFO "Successfuly formed cluster create command"
+  status_log $TYPE_INFO "${final_command}"
   if ! eval "$(getGumSpinnerOrLogger "Creating Civo cluster with name ${CLUSTER_NAME}") ${final_command}"  >&2 ; then
     status_log $TYPE_ERROR "Failed to create Civo cluster with name ${CLUSTER_NAME} due to following error"
     eval ${final_command}
@@ -114,6 +163,30 @@ civo_cluster_create() {
   fi
 
   status_log $TYPE_SUCCESS "Successfully created civo cluster"
+
+  wait_for_civo_cluster_ready "$CLUSTER_NAME"
+
+  if [[ "$cluster_status" == "ACTIVE" ]]; then
+    if [ "${AUTO_CONFIRM}" != "true" ] && [ "$TTY" == "enabled" ]; then
+      gum confirm "Would you like to switch to the newly created cluster?"
+      eval "$(getGumSpinnerOrLogger "switching to ${CLUSTER_NAME}") civo k8s config ${CLUSTER_NAME} --save --switch"
+    else
+      eval "$(getGumSpinnerOrLogger "switching to ${CLUSTER_NAME}") civo k8s config ${CLUSTER_NAME} --save --switch"
+    fi
+
+    status_log $TYPE_SUCCESS "Successfully switched to newly created cluster ${CLUSTER_NAME}"
+  else
+    status_log $TYPE_INFO "Can't switch to cluster '${cluster_name}'"
+  fi
+
+  if [ "${AUTO_CONFIRM}" != "true" ] && [ "$TTY" == "enabled" ]; then
+    gum confirm "Would you like to see the status of the cluster?"
+    eval "$(getGumSpinnerOrLogger "getting status of ${CLUSTER_NAME}") civo k8s show ${CLUSTER_NAME} >&2"
+  else
+    eval "$(getGumSpinnerOrLogger "getting status of ${CLUSTER_NAME}") civo k8s show ${CLUSTER_NAME} >&2"
+  fi
+
+  status_log $TYPE_SUCCESS "Successfully got status of cluster ${CLUSTER_NAME}"
   
 }
 
