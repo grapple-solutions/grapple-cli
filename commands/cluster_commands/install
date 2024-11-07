@@ -332,11 +332,6 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER_ID" "${CIVO_CLUSTER_ID}" "${help_menu_cmd}"
   CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID"; fi)
 
-#------------ CIVO_CLUSTER Input-----------
-
-  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_CLUSTER: " "Provide an name for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
-  echo "selected civo cluster name: ${CIVO_CLUSTER}"
-
 #------------ GRAPPLE_DNS Input-----------
 
   # check if a full domain-name was passed in GRAPPLE_DNS
