@@ -344,13 +344,6 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
       GRAPPLE_DNS=${CIVO_CLUSTER}
       GRAPPLE_DOMAIN=".grapple-demo.com"
   fi
-  
-  CIVO_CLUSTER_NAME=${CIVO_CLUSTER}
-
-#------------ CIVO_CLUSTER_NAME Input-----------
-
-  CIVO_CLUSTER_NAME=$(if [ "${CIVO_CLUSTER_NAME}" != "" ]; then echo ${CIVO_CLUSTER_NAME}; else [ $TTY == "enabled" ] && prompt_for_input_with_validation "Enter CIVO_CLUSTER_NAME: " "Provide an name for the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
-  echo "selected civo cluster name: ${CIVO_CLUSTER_NAME}"
 
 #------------ CLUSTER_IP Input-----------
 
@@ -583,7 +576,7 @@ config:
   ssl: "$SSL_ENABLE"
   sslissuer: "$SSL_ISSUER"
   CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}
-  CIVO_CLUSTER_NAME: ${CIVO_CLUSTER_NAME}
+  CIVO_CLUSTER_NAME: ${CIVO_CLUSTER}
   CIVO_REGION: ${CIVO_REGION}
   CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}
   CIVO_MASTER_IP: ${CLUSTER_IP}
@@ -606,7 +599,7 @@ if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
   status_log $TYPE_DEFAULT "Going to deploy grpl on ${TARGET_PLATFORM} with following configurations"  
   if [ "${TARGET_PLATFORM}" == $CIVO ]; then 
     status_log $TYPE_DEFAULT "CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}"
-    status_log $TYPE_DEFAULT "CIVO_CLUSTER_NAME: ${CIVO_CLUSTER_NAME}"
+    status_log $TYPE_DEFAULT "CIVO_CLUSTER: ${CIVO_CLUSTER}"
     status_log $TYPE_DEFAULT "CIVO_REGION: ${CIVO_REGION}"
     status_log $TYPE_DEFAULT "CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}"
     status_log $TYPE_DEFAULT "CLUSTER_IP: ${CLUSTER_IP}"
