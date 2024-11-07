@@ -18,8 +18,9 @@ status_log $TYPE_INFO "Cluster creation is in progress"
 common_valid_args=(
    "TARGET_PLATFORM"
    "CLUSTER_NAME"
-   "CIVO_API_KEY"
    "AUTO_CONFIRM"
+   "CIVO_API_KEY"
+   "CIVO_REGION"
 )
 
 civo_valid_args=(
@@ -144,6 +145,16 @@ civo_cluster_create() {
     civo apikey current grapple
   fi
 
+  #------------ CIVO_REGION Input-----------
+
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_REGION" "${CIVO_REGION}" "${help_menu_cmd}"
+  if [ "${CIVO_REGION}" != "" ] && [ $TTY == "enabled" ]; then 
+    is_correct_civo_region_provided $CIVO_REGION 
+  fi
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
+  civo region use ${CIVO_REGION} | true
+  
+
   #------------ check if a cluster with CLUSTER_NAME exists -----------
   check_civo_cluster_exists
 
@@ -151,20 +162,27 @@ civo_cluster_create() {
 
   size_value=${size} || ${s}
   check_if_param_avaiable_in_non_interactive_mode "size" "${size_value}" "${help_menu_cmd}"
-  size=$(if [ "${size}" != "" ]; then echo ${size}; else prompt_for_input_with_validation "Enter size of the cluster: " "Provide the size" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
-
+  size=$(if [ "${size}" != "" ]; then echo ${size}; else prompt_for_explicit_input_with_validation "Enter size of the cluster: " "Provide the size (default value is 'g4c.kube.small')" ".*" "Input can not be empty"; fi) || exit $?
+  if [ "${size}" == "" ]; then
+    size="g4c.kube.small"
+  fi
 
   #------------ nodes Input-----------
 
   nodes_value=${nodes} || ${n}
   check_if_param_avaiable_in_non_interactive_mode "nodes" "${nodes_value}" "${help_menu_cmd}"
-  nodes=$(if [ "${nodes}" != "" ]; then echo ${nodes}; else prompt_for_input_with_validation "Enter number of nodes: " "Provide the number of nodes" "$numeric_regex" "The input must be a numeric value that does not start with 0"; fi) || exit $?
-
+  nodes=$(if [ "${nodes}" != "" ]; then echo ${nodes}; else prompt_for_explicit_input_with_validation "Enter number of nodes: " "Provide the number of nodes (default value is '2')" "$numeric_regex" "The input must be a numeric value that does not start with 0"; fi) || exit $?
+  if [ "${nodes}" == "" ]; then
+    nodes="2"
+  fi
   #------------ nodes Input-----------
 
   applications_value=${applications} || ${a}
   check_if_param_avaiable_in_non_interactive_mode "applications" "${applications_value}" "${help_menu_cmd}"
-  applications=$(if [ "${applications}" != "" ]; then echo ${applications}; else prompt_for_input_with_validation "Enter comma separated applicaitons list: " "Provide the applications you want to install" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
+  applications=$(if [ "${applications}" != "" ]; then echo ${applications}; else prompt_for_explicit_input_with_validation "Enter comma separated applicaitons list: " "Provide the applications you want to install (default value is 'traefik2-nodeport,civo-cluster-autoscaler,metrics-server ')" ".*" "Input can not be empty"; fi) || exit $?
+  if [ "${applications}" == "" ]; then
+    applications="traefik2-nodeport,civo-cluster-autoscaler,metrics-server"
+  fi
 
   base_command="civo k8s create $CLUSTER_NAME"
 

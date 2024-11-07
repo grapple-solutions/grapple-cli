@@ -16,8 +16,8 @@ is_correct_target_platform_provided() {
 
 is_correct_civo_region_provided() {
 
-    output=$( eval "$(getGumSpinnerOrLogger "fetching civo regions") civo region ls -o custom -f code") 
-    region=$1
+    local output=$( eval "$(getGumSpinnerOrLogger "fetching civo regions") civo region ls -o custom -f code") 
+    local region=$1
 
 
     # Declare an empty array
