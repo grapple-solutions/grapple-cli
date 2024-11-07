@@ -976,10 +976,12 @@ Examples:
 
 Variables:
 
-    PROJECT_NAME=Name of the project
-    AUTO_CONFIRM='false' / 'true'
-    GITHUBTOKEN=Token to authenticate gh"
+    PROJECT_NAME= Name of the project
+    AUTO_CONFIRM= 'false' / 'true'
+    GITHUBTOKEN= Token to authenticate gh
+    GRAPPLE_TEMPLATE= the grapple-template repository to clone (default grapple-solutions/grapple-template)
 
+"
     if [ "$type" == $WEB_DOC ]; then
         return 0
     else

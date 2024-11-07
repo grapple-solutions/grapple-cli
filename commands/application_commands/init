@@ -22,11 +22,17 @@ valid_args=(
     "PROJECT_NAME"
     "AUTO_CONFIRM"
     "GITHUBTOKEN"
+    "GRAPPLE_TEMPLATE"
   )
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
 extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@")
+
+if [[ $GRAPPLE_TEMPLATE == "" ]]; then
+  GRAPPLE_TEMPLATE="grapple-solutions/grapple-template"
+fi
+
 
 #check if input from params is valid or not
 check_if_param_avaiable_in_non_interactive_mode "PROJECT_NAME" "$PROJECT_NAME" "${help_menu_cmd}"
@@ -86,9 +92,9 @@ if gh repo view "$PROJECT_NAME" >/dev/null 2>&1; then
 # clone the grapple-template repo
   status_log $TYPE_INFO "cloning a grapple-template repo"
   check_and_install_git
-  if ! eval "$(getGumSpinnerOrLogger "cloning grapple template" ) git clone \"https://github.com/grapple-solutions/grapple-template.git\" $PROJECT_NAME"; then
+  if ! eval "$(getGumSpinnerOrLogger "cloning grapple template" ) git clone \"https://github.com/$GRAPPLE_TEMPLATE.git\" $PROJECT_NAME"; then
     status_log $TYPE_ERROR "failed to clone grapple template due to following error"
-    errMsg=$(git clone "https://github.com/grapple-solutions/grapple-template.git" $PROJECT_NAME)
+    errMsg=$(git clone "https://github.com/$GRAPPLE_TEMPLATE.git" $PROJECT_NAME)
     status_log $TYPE_ERROR "$errMsg"
     exit 1
   fi
@@ -100,7 +106,7 @@ else
   fi
   # Create and clone the repository
   status_log $TYPE_INFO "Creating the repository on GitHub."
-  if ! gh repo create $PROJECT_NAME --template grapple-solutions/grapple-template --clone --public >/dev/null; then
+  if ! gh repo create $PROJECT_NAME --template $GRAPPLE_TEMPLATE --clone --public >/dev/null; then
     status_log $TYPE_ERROR "failed to create the repository due to the above error"
     exit 1
   fi
