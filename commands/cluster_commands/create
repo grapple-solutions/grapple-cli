@@ -128,6 +128,22 @@ check_civo_cluster_exists() {
 
 civo_cluster_create() {
 
+  check_and_install_civo
+
+#------------ CIVO_API_KEY Input-----------
+
+  if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [[ $TTY == "enabled" ]]; then
+    CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
+  elif [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [[ $TTY == "disabled" ]]; then
+    status_log $TYPE_ERROR "CIVO_API_KEY is required in non-tty mode"
+    exit 1
+  fi
+
+  if [ "${CIVO_API_KEY}" != "" ]; then
+    civo apikey add grapple $CIVO_API_KEY
+    civo apikey current grapple
+  fi
+
   #------------ check if a cluster with CLUSTER_NAME exists -----------
   check_civo_cluster_exists
 
@@ -189,17 +205,6 @@ civo_cluster_create() {
   status_log $TYPE_SUCCESS "Successfully got status of cluster ${CLUSTER_NAME}"
   
 }
-
-#------------ CIVO_API_KEY Input-----------
-  
-  if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [[ $TTY == "enabled" ]]; then
-    CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
-  fi
-
-  if [ "${CIVO_API_KEY}" != "" ]; then
-    civo apikey add grapple $CIVO_API_KEY
-    civo apikey current grapple
-  fi
 
 #------------ CLUSTER_NAME Input-----------
 
