@@ -1,5 +1,8 @@
 #!/bin/bash
 set -e
+
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
 . "$GRPL_WORKDIR/utils/help_menus"
 
 cli_help() {
@@ -10,7 +13,240 @@ cli_help() {
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 cli_log "cluster create BEGIN"
+status_log $TYPE_INFO "Cluster creation is in progress"
+
+common_valid_args=(
+   "TARGET_PLATFORM"
+   "CLUSTER_NAME"
+   "AUTO_CONFIRM"
+   "CIVO_API_KEY"
+   "CIVO_REGION"
+)
+
+civo_valid_args=(
+    "a" "applications"
+    "cluster-type"
+    "p" "cni-plugin"
+    "c" "create-firewall"
+    "e" "existing-firewall"
+    "u" "firewall-rules"
+    "h" "help"
+    "m" "merge"
+    "t" "network"
+    "n" "nodes"
+    "r" "remove-applications"
+    "save"
+    "s" "size"
+    "switch"
+    "v" "version"
+    "w" "wait"
+    "config"
+    "f" "fields"
+    "o" "output"
+    "pretty"
+    "region"
+    "y" "yes"
+)
 
 
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+help_menu_cmd="grpl cluster create help"
+valid_args=("${common_valid_args[@]}" "${civo_valid_args[@]}")
+
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
+
+#-------------Functions-------------------
+
+build_cluster_creation_command() {
+    local base_command=$1
+    local valid_args
+    if [[ $TARGET_PLATFORM = $CIVO ]]; then
+          valid_args=("${civo_valid_args[@]}")
+    fi
+
+    for arg in "${valid_args[@]}"; do
+        # Check if a variable named after the argument exists and has a value
+        local var_name=${arg//-/_}
+
+        if [[ -n "${!var_name}" ]]; then
+            # If the argument has a short flag (single letter), prepend a dash
+            if [[ ${#var_name} -eq 1 ]]; then
+                base_command+=" -$arg=${!var_name}"
+            else
+                base_command+=" --$arg=${!var_name}"
+            fi
+        fi
+    done
+    
+    echo "$base_command"
+}
+
+wait_for_civo_cluster_ready() {
+  local cluster_name=$1
+  local max_wait_time=300  # 5 minutes in seconds
+  local wait_interval=20   # Check every 20 seconds
+  local elapsed_time=0
+
+  status_log $TYPE_INFO "Waiting for cluster '${cluster_name}' to be ready (max 5 minutes)..."
+
+  while (( elapsed_time < max_wait_time )); do
+    # Check the cluster status
+    cluster_status=$(civo k8s ls --output=json | jq -r --arg cluster_name "$cluster_name" '
+      .[] | select(.name == $cluster_name) | .status
+    ')
+
+    # Check if the status is ACTIVE
+    if [[ "$cluster_status" == "ACTIVE" ]]; then
+      status_log $TYPE_SUCCESS "Cluster '${cluster_name}' is ready."
+      return 0  # Return true (success)
+    else
+      status_log $TYPE_INFO "Cluster not ready yet. Current status: $cluster_status. Next status check after $wait_interval sec..."
+      sleep $wait_interval
+      (( elapsed_time += wait_interval ))
+    fi
+  done
+
+  # If we reach here, the cluster was not ready within the max wait time
+  status_log $TYPE_INFO "Cluster '${cluster_name}' was not ready within 5 minutes."
+  return 1  # Return false (failure)
+}
+
+
+check_civo_cluster_exists() {
+  # Parse the JSON output to check if any cluster has the specified name
+  status_log $TYPE_INFO "Checking if cluster with name '${CLUSTER_NAME}' already exists..."
+  existing_cluster=$(civo k8s ls --output=json | jq -r --arg cluster_name "$CLUSTER_NAME" '.[] | select(.name == $cluster_name) | .name')
+  
+  if [[ -n "$existing_cluster" ]]; then
+    status_log $TYPE_ERROR "Error: Cluster with name '${CLUSTER_NAME}' already exists."
+    exit 1  # Cluster exists
+  else
+    status_log $TYPE_INFO "No cluster found with the name '${CLUSTER_NAME}'. Proceeding with creation."  # Cluster does not exist
+  fi
+}
+
+
+civo_cluster_create() {
+
+  check_and_install_civo
+
+#------------ CIVO_API_KEY Input-----------
+
+  if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [[ $TTY == "enabled" ]]; then
+    CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
+  elif [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [[ $TTY == "disabled" ]]; then
+    status_log $TYPE_ERROR "CIVO_API_KEY is required in non-tty mode"
+    exit 1
+  fi
+
+  if [ "${CIVO_API_KEY}" != "" ]; then
+    civo apikey add grapple $CIVO_API_KEY
+    civo apikey current grapple
+  fi
+
+  #------------ CIVO_REGION Input-----------
+
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_REGION" "${CIVO_REGION}" "${help_menu_cmd}"
+  if [ "${CIVO_REGION}" != "" ] && [ $TTY == "enabled" ]; then 
+    is_correct_civo_region_provided $CIVO_REGION 
+  fi
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
+  civo region use ${CIVO_REGION} | true
+  
+
+  #------------ check if a cluster with CLUSTER_NAME exists -----------
+  check_civo_cluster_exists
+
+  #------------ size Input-----------
+
+  size_value=${size} || ${s}
+  check_if_param_avaiable_in_non_interactive_mode "size" "${size_value}" "${help_menu_cmd}"
+  size=$(if [ "${size}" != "" ]; then echo ${size}; else prompt_for_explicit_input_with_validation "Enter size of the cluster: " "Provide the size (default value is 'g4c.kube.small')" ".*" "Input can not be empty"; fi) || exit $?
+  if [ "${size}" == "" ]; then
+    size="g4c.kube.small"
+  fi
+
+  #------------ nodes Input-----------
+
+  nodes_value=${nodes} || ${n}
+  check_if_param_avaiable_in_non_interactive_mode "nodes" "${nodes_value}" "${help_menu_cmd}"
+  nodes=$(if [ "${nodes}" != "" ]; then echo ${nodes}; else prompt_for_explicit_input_with_validation "Enter number of nodes: " "Provide the number of nodes (default value is '2')" "$numeric_regex" "The input must be a numeric value that does not start with 0"; fi) || exit $?
+  if [ "${nodes}" == "" ]; then
+    nodes="2"
+  fi
+  #------------ nodes Input-----------
+
+  applications_value=${applications} || ${a}
+  check_if_param_avaiable_in_non_interactive_mode "applications" "${applications_value}" "${help_menu_cmd}"
+  applications=$(if [ "${applications}" != "" ]; then echo ${applications}; else prompt_for_explicit_input_with_validation "Enter comma separated applicaitons list: " "Provide the applications you want to install (default value is 'traefik2-nodeport,civo-cluster-autoscaler,metrics-server ')" ".*" "Input can not be empty"; fi) || exit $?
+  if [ "${applications}" == "" ]; then
+    applications="traefik2-nodeport,civo-cluster-autoscaler,metrics-server"
+  fi
+
+  base_command="civo k8s create $CLUSTER_NAME"
+
+  final_command=$(build_cluster_creation_command "$base_command")
+
+  status_log $TYPE_INFO "Successfuly formed cluster create command"
+  status_log $TYPE_INFO "${final_command}"
+  if ! eval "$(getGumSpinnerOrLogger "Creating Civo cluster with name ${CLUSTER_NAME}") ${final_command}"  >&2 ; then
+    status_log $TYPE_ERROR "Failed to create Civo cluster with name ${CLUSTER_NAME} due to following error"
+    eval ${final_command}
+    exit 1
+  fi
+
+  status_log $TYPE_SUCCESS "Successfully created civo cluster"
+
+  wait_for_civo_cluster_ready "$CLUSTER_NAME"
+
+  if [[ "$cluster_status" == "ACTIVE" ]]; then
+    if [ "${AUTO_CONFIRM}" != "true" ] && [ "$TTY" == "enabled" ]; then
+      gum confirm "Would you like to switch to the newly created cluster?"
+      eval "$(getGumSpinnerOrLogger "switching to ${CLUSTER_NAME}") civo k8s config ${CLUSTER_NAME} --save --switch"
+    else
+      eval "$(getGumSpinnerOrLogger "switching to ${CLUSTER_NAME}") civo k8s config ${CLUSTER_NAME} --save --switch"
+    fi
+
+    status_log $TYPE_SUCCESS "Successfully switched to newly created cluster ${CLUSTER_NAME}"
+  else
+    status_log $TYPE_INFO "Can't switch to cluster '${cluster_name}'"
+  fi
+
+  if [ "${AUTO_CONFIRM}" != "true" ] && [ "$TTY" == "enabled" ]; then
+    gum confirm "Would you like to see the status of the cluster?"
+    eval "$(getGumSpinnerOrLogger "getting status of ${CLUSTER_NAME}") civo k8s show ${CLUSTER_NAME} >&2"
+  else
+    eval "$(getGumSpinnerOrLogger "getting status of ${CLUSTER_NAME}") civo k8s show ${CLUSTER_NAME} >&2"
+  fi
+
+  status_log $TYPE_SUCCESS "Successfully got status of cluster ${CLUSTER_NAME}"
+  
+}
+
+#------------ CLUSTER_NAME Input-----------
+
+check_if_param_avaiable_in_non_interactive_mode "CLUSTER_NAME" "${CLUSTER_NAME}" "${help_menu_cmd}"
+CLUSTER_NAME=$(if [ "${CLUSTER_NAME}" != "" ]; then echo ${CLUSTER_NAME}; else prompt_for_input_with_validation "Enter cluster name: " "Provide a name for the cluster" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
+echo "CLUSTER_NAME: ${CLUSTER_NAME}"  
+
+
+#------------ TARGET_PLATFORM Input-----------
+
+# if TARGET_PLATFORM is provided using CLI then we need to check if valid TARGET_PLATFORM was provided or not
+check_if_param_avaiable_in_non_interactive_mode "TARGET_PLATFORM" "${TARGET_PLATFORM}" "${help_menu_cmd}"
+if [ "${TARGET_PLATFORM}" != "" ]; then 
+  is_correct_target_platform_provided $TARGET_PLATFORM 
+fi
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
+echo "selected target platform: ${TARGET_PLATFORM}"
+
+if [ "${TARGET_PLATFORM}" = $CIVO ]; then
+  civo_cluster_create
+  exit 0
+fi
+
+status_log $TYPE_INFO "cluster creation is not support for target platform: ${TARGET_PLATFORM}"
 
 cli_log "cluster create END"
+

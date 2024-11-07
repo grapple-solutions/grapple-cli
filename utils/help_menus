@@ -561,7 +561,6 @@ Examples:
 
 
 grpl_cluster_create_cli_help() {
-
     if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
       extract_grapple_cli_version
     fi
@@ -575,10 +574,17 @@ Version: $(cat $GRPL_WORKDIR/VERSION)
 
 https://grapple-solutions.com/
 "
-    if [ "$type" == $WEB_DOC ]; then
+    if [ "$type" == "$WEB_DOC" ]; then
         cli_name="=== grpl cluster create"
         meta=""
     fi
+
+    civo_help_menu=$(civo k8s create --help | awk '
+/^Notes:/ {print "        Notes:"; in_notes=1; next}
+/^Flags:/ {print "        Flags:"; in_notes=0; in_flags=1; next}
+/^Global Flags:/ {print "        Global Flags:"; in_flags=0; in_global_flags=1; next}
+/^$/ {in_global_flags=0; next}
+in_notes || in_flags || in_global_flags {print "        " $0}')  # Add 8 spaces before each line
 
     grpl_cluster_create_doc="
 $cli_name
@@ -590,7 +596,21 @@ Description:
 
 Usage: 
 
-    grpl cluster create [command]
+  grpl cluster create [command]
+
+Usage with params from cli: 
+
+  grpl cluster create --params --<variable-name>=<variable value>
+  e.g grpl cluster create --params --TARGET_PLATFORM=CIVO
+  OR
+  grpl cluster install --params --<variable-name> <variable value>
+  e.g grpl cluster create --params --TARGET_PLATFORM=CIVO
+
+Usage with params from configfile: 
+
+  grpl cluster create --configfile <file-name>.json
+  e.g grpl cluster create --configfile grpl-create-config.json
+
 
 Commands:
 
@@ -601,14 +621,26 @@ Examples:
 
     grpl c c h    or    grpl cluster create help
     grpl c c *    or    grpl cluster create *
+
+
+Variables:
+
+    Common Parameters:
+        TARGET_PLATFORM= CIVO / Kubernetes / minikube / Kubefirst
+        CLUSTER_NAME= name of the cluster
+        CIVO_API_KEY= civo api key (optional)
+    
+    CIVO Parameters:
+$civo_help_menu
 "
 
-    if [ "$type" == $WEB_DOC ]; then
+    if [ "$type" == "$WEB_DOC" ]; then
         return 0
     else
         echo "$grpl_cluster_create_doc"  >&2
     fi
 }
+
 
 
 grpl_cluster_install_cli_help() {

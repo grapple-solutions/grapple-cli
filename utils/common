@@ -200,7 +200,9 @@ extract_input_params_from_cli() {
               done
 
               if  $valid; then
-                  export $config_param
+                  local key=${key//-/_}
+                  local value=${parts[1]}
+                  export "$key=$value"
               else
                   status_log $TYPE_ERROR "Error: $key is not a valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
                   return 1
@@ -212,6 +214,7 @@ extract_input_params_from_cli() {
               config_param="${arg1#--}"
               # Check if the argument is valid
               if [[ " ${valid_args[@]} " =~ " $config_param " ]]; then
+                  local config_param=${config_param//-/_}
                   export "$config_param=$arg2"
               else
                   status_log $TYPE_ERROR "Error: $config_param is a not valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
