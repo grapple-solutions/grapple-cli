@@ -284,22 +284,29 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   # first check if civo is installed or not, if not? then install it
   check_and_install_civo
+  
 
 #------------ CIVO_API_KEY Input-----------
   
-  if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [[ $TTY == "enabled" ]]; then
+  INSIDE_CLUSTER=false
+  if [ "${CIVO_CLUSTER_ID}" != "" ]; then
+    INSIDE_CLUSTER=true
+  fi
+
+  if [ $INSIDE_CLUSTER == "false" ] && [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json >/dev/null 2>&1 && [[ $TTY == "enabled" ]]; then
     CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
   fi
 
   if [ "${CIVO_API_KEY}" != "" ]; then
     civo apikey add grapple $CIVO_API_KEY
     civo apikey current grapple
+    INSIDE_CLUSTER=false
   fi
 
 #------------ CIVO_REGION Input-----------
 
   check_if_param_avaiable_in_non_interactive_mode "CIVO_REGION" "${CIVO_REGION}" "${help_menu_cmd}"
-  if [ "${CIVO_REGION}" != "" ] && [ $TTY == "enabled" ]; then 
+  if [ $INSIDE_CLUSTER == "false" ] && [ "${CIVO_REGION}" != "" ] && [ $TTY == "enabled" ]; then 
     is_correct_civo_region_provided $CIVO_REGION 
   fi
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
@@ -308,13 +315,13 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 #------------ CIVO_CLUSTER Input-----------
 
   check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER" "${CIVO_CLUSTER}" "${help_menu_cmd}"
-  if [ "${CIVO_CLUSTER}" != "" ] && [ $TTY == "enabled" ]; then 
+  if [ $INSIDE_CLUSTER == "false" ] && [ "${CIVO_CLUSTER}" != "" ] && [ $TTY == "enabled" ]; then 
     is_correct_civo_cluster_provided $CIVO_CLUSTER 
   fi
   CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name > /dev/null; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
   echo "selected civo cluster: ${CIVO_CLUSTER}"
 
-  if [ $TTY == "enabled" ] && ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
+  if [ $INSIDE_CLUSTER == "false" ] && [ $TTY == "enabled" ] && ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
     if ! eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl get ns"; then
       status_log $TYPE_ERROR "Failed to switch to ${CIVO_CLUSTER} due to following reason"
       # following is to show the reason for failure
@@ -332,6 +339,12 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
   check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER_ID" "${CIVO_CLUSTER_ID}" "${help_menu_cmd}"
   CIVO_CLUSTER_ID=$(if [ "${CIVO_CLUSTER_ID}" != "" ]; then echo ${CIVO_CLUSTER_ID}; else eval "$(getGumSpinnerOrLogger "fetching cluster id of ${CIVO_CLUSTER} cluster") civo k8s show ${CIVO_CLUSTER} -o custom -f ID"; fi)
 
+#------------ CLUSTER_IP Input-----------
+
+  check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" "${help_menu_cmd}"
+  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
+  echo "selected civo master ip: ${CLUSTER_IP}"
+
 #------------ GRAPPLE_DNS Input-----------
 
   # check if a full domain-name was passed in GRAPPLE_DNS
@@ -345,11 +358,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
       GRAPPLE_DOMAIN=".grapple-demo.com"
   fi
 
-#------------ CLUSTER_IP Input-----------
 
-  check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" "${help_menu_cmd}"
-  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
-  echo "selected civo master ip: ${CLUSTER_IP}"
 
 #------------ CIVO_EMAIL_ADDRESS Input-----------
 
