@@ -343,7 +343,7 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 #------------ CLUSTER_IP Input-----------
 
   if [ "${CLUSTER_IP}" == "" ]; then 
-    CLUSTER_IP=$(kubectl cluster-info | grep "Kubernetes control plane" | sed -E 's/.*https:\/\/([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+):.*/\1/')
+    CLUSTER_IP=$(kubectl cluster-info | grep "Kubernetes control plane" | sed 's|.*https://\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\):.*|\1|')
   fi
   check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" "${help_menu_cmd}"
   CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
