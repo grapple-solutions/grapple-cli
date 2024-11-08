@@ -343,8 +343,22 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 #------------ CLUSTER_IP Input-----------
 
   if [ "${CLUSTER_IP}" == "" ]; then 
-    CLUSTER_IP=$(kubectl cluster-info | grep "Kubernetes control plane" | sed 's|.*https://\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\):.*|\1|')
+    status_log $TYPE_INFO "Retrieving cluster IP from kubectl cluster-info"
+    status_log $TYPE_INFO "Waiting for cluster IP to be ready"
+    while [[ "${CLUSTER_IP}" == "" || "${CLUSTER_IP}" == 10.* ]]; do
+      # Retrieve the IP from kubectl cluster-info if it's empty or starts with "10."
+      CLUSTER_IP=$(kubectl cluster-info | grep "Kubernetes control plane" | sed 's|.*https://\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\):.*|\1|')
+      
+      if [[ "${CLUSTER_IP}" == 10.* ]]; then
+        echo -n "." >&2
+        sleep 10
+      fi
+    done
+
+    sleep 2  # Pause briefly before proceeding
+
   fi
+
   check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" "${help_menu_cmd}"
   CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
   echo "selected civo master ip: ${CLUSTER_IP}"
