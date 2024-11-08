@@ -115,6 +115,26 @@ extract_value_from_json() {
 }
 
 
+is_valid_arg_syntax() {
+    local arg="$1"
+    local config_param=""
+
+    if [[ "$arg" == --* ]]; then
+        # Remove "--" from the start of the string
+        config_param="${arg#--}"
+    elif [[ "$arg" == -* ]]; then
+        # Remove "-" from the start of the string
+        config_param="${arg#-}"
+    else
+        # Show an error if it does not start with "-" or "--"
+        status_log $TYPE_ERROR "Error: $key is not a valid way to pass the argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+        exit 1
+    fi
+
+    echo "$config_param"
+}
+
+
 
 extract_input_params_from_cli() {
 
@@ -187,7 +207,7 @@ extract_input_params_from_cli() {
           # determine which method is used to pass cli params
           if [[ "$arg1" = *=* ]]; then
               
-              config_param="${arg1#--}"
+              config_param=$(is_valid_arg_syntax "$arg1")
               declare -a parts=($(echo "$config_param" | tr '=' ' '))
               key="${parts[0]}"
               # Check if the argument is valid
@@ -211,7 +231,7 @@ extract_input_params_from_cli() {
           else
               arg2=$1
               shift
-              config_param="${arg1#--}"
+              config_param=$(is_valid_arg_syntax "$arg1")
               # Check if the argument is valid
               if [[ " ${valid_args[@]} " =~ " $config_param " ]]; then
                   local config_param=${config_param//-/_}

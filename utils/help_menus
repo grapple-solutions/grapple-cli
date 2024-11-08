@@ -629,6 +629,8 @@ Variables:
         TARGET_PLATFORM= CIVO / Kubernetes / minikube / Kubefirst
         CLUSTER_NAME= name of the cluster
         CIVO_API_KEY= civo api key (optional)
+        CIVO_REGION=Available CIVO regions (e.g. FRA1)
+        INSTALL_GRPL= to install grapple (optional)
     
     CIVO Parameters:
 $civo_help_menu
