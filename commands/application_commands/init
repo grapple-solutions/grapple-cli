@@ -12,8 +12,6 @@ cli_help() {
 
 install_prerequisite
 
-cli_log "application init BEGIN"
-status_log $TYPE_INFO "application initialization is in progress"
 
 # -------------------- first check for input params -----------------------
 
@@ -28,6 +26,9 @@ valid_args=(
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
 extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@")
+
+cli_log "application init BEGIN"
+status_log $TYPE_INFO "application initialization is in progress"
 
 if [[ $GRAPPLE_TEMPLATE == "" ]]; then
   GRAPPLE_TEMPLATE="grapple-solutions/grapple-template"

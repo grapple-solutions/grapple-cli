@@ -12,15 +12,6 @@ cli_help() {
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
-help_menu_cmd="grpl cluster create help"
-# Check if the first argument is non-empty and doesn't start with '-'
-if [ -n "$1" ] && [[ "$1" != -* ]]; then
-    status_log $TYPE_ERROR "Error: unknown command: $1 Run '$help_menu_cmd' to get more info on how to pass agruments from cli"
-    exit 1
-fi
-
-cli_log "cluster create BEGIN"
-status_log $TYPE_INFO "Cluster creation is in progress"
 
 common_valid_args=(
    "TARGET_PLATFORM"
@@ -59,8 +50,13 @@ civo_valid_args=(
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
+help_menu_cmd="grpl cluster create help"
 valid_args=("${common_valid_args[@]}" "${civo_valid_args[@]}")
 extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
+
+
+cli_log "cluster create BEGIN"
+status_log $TYPE_INFO "Cluster creation is in progress"
 
 # if AUTO_CONFIRM is not explicity set to false then set it to true
 if [[ $AUTO_CONFIRM != "false" ]]; then
