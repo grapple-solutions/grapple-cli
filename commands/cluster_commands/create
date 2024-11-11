@@ -19,7 +19,6 @@ common_valid_args=(
    "AUTO_CONFIRM"
    "CIVO_API_KEY"
    "CIVO_REGION"
-   "INSTALL_GRPL"
 )
 
 civo_valid_args=(
@@ -61,6 +60,7 @@ status_log $TYPE_INFO "Cluster creation is in progress"
 # if AUTO_CONFIRM is not explicity set to false then set it to true
 if [[ $AUTO_CONFIRM != "false" ]]; then
     AUTO_CONFIRM="true"
+    applications="traefik2-nodeport,civo-cluster-autoscaler,metrics-server"
 fi
 
 #-------------Functions-------------------
@@ -181,7 +181,7 @@ civo_cluster_create() {
   nodes_value=${nodes:-${n}}
   n=""
   check_if_param_avaiable_in_non_interactive_mode "nodes" "${nodes_value}" "${help_menu_cmd}"
-  nodes=$(if [ "${nodes_value}" != "" ]; then echo ${nodes_value}; else prompt_for_explicit_input_with_validation "Enter number of nodes: " "Provide the number of nodes to create (the master also acts as a node). (default 3)" "$numeric_regex" "The input must be a numeric value that does not start with 0"; fi) || exit $?
+  nodes=$(if [ "${nodes_value}" != "" ]; then echo ${nodes_value}; else prompt_for_explicit_input_with_validation "Enter number of nodes: " "Provide the number of nodes to create (the master also acts as a node). (default 3):" ".*" "The input must be a numeric value that does not start with 0"; fi) || exit $?
   if [ "${nodes}" == "" ]; then
     nodes="3"
   fi
@@ -202,7 +202,7 @@ civo_cluster_create() {
   applications_value=${applications:-${a}}
   a=""
   check_if_param_avaiable_in_non_interactive_mode "applications" "${applications_value}" "${help_menu_cmd}"
-  applications=$(if [ "${applications_value}" != "" ]; then echo ${applications_value}; else prompt_for_explicit_input_with_validation "Enter comma separated applications list: " "Provide the applications you want to install (default value is 'traefik2-nodeport,civo-cluster-autoscaler,metrics-server ')" ".*" "Input can not be empty"; fi) || exit $?
+  applications=$(if [ "${applications_value}" != "" ]; then echo ${applications_value}; else prompt_for_explicit_input_with_validation "Enter comma separated applications list: " "Provide the applications you want to install (default value is 'traefik2-nodeport,civo-cluster-autoscaler,metrics-server ') "  ".*" "Input can not be empty"; fi) || exit $?
   if [ "${applications}" == "" ]; then
     applications="traefik2-nodeport,civo-cluster-autoscaler,metrics-server"
   fi
@@ -238,9 +238,9 @@ civo_cluster_create() {
 
 
   if ! eval "$(getGumSpinnerOrLogger "checking if grpl is installed") kubectl  get configuration.pkg.crossplane.io grpl 2>/dev/null"; then
-    if [ "${INSTALL_GRPL}" == "true" ]; then
+    if [ "${AUTO_CONFIRM}" == "true" ]; then
       grpl cluster install --TARGET_PLATFORM="CIVO" --CIVO_CLUSTER="${CLUSTER_NAME}" --CIVO_REGION="${CIVO_REGION}" --CIVO_API_KEY="${CIVO_API_KEY}" --AUTO_CONFIRM="true" --CIVO_EMAIL_ADDRESS="info@grapple-solutions.com"
-    elif [ "${INSTALL_GRPL}" != "false" ] && [ "$TTY" == "enabled" ]; then
+    elif [ "$TTY" == "enabled" ]; then
       gum confirm "Would you like to install grpl on the cluster?"
       grpl cluster install --TARGET_PLATFORM="CIVO" --CIVO_CLUSTER="${CLUSTER_NAME}" --CIVO_REGION="${CIVO_REGION}" --CIVO_API_KEY="${CIVO_API_KEY}" --AUTO_CONFIRM="true" --CIVO_EMAIL_ADDRESS="info@grapple-solutions.com"
     fi
