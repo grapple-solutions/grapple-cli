@@ -23,8 +23,6 @@ awsregistry="p7h7z5g3"
 SSL_ENABLE="false"
 SSL_ISSUER="letsencrypt-grapple-demo"
 cli_log "cluster install BEGIN"
-status_log $TYPE_INFO "Installation of grpl is in progress"
-
 
 # valid arguments array
 valid_args=(
@@ -53,6 +51,8 @@ valid_args=(
 # if yes? then store then in the respective vars
 help_menu_cmd="grpl cluster install help"
 extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
+
+status_log $TYPE_INFO "Installation of grpl is in progress"
 
 #-------------Functions-------------------
 
