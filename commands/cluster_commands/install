@@ -468,14 +468,18 @@ if [ "${TARGET_PLATFORM}" = $Minikube ]; then
     status_log $TYPE_INFO "enabling ingress addons for minikube"
     minikube addons enable ingress
     minikube addons enable ingress-dns
+    if [[ "$(uname)" == "Darwin" ]]; then
+      brew install chipmk/tap/docker-mac-net-connect
+      sudo brew services start chipmk/tap/docker-mac-net-connect
+    fi
   fi 
 
   status_log $TYPE_INFO "testing domain, this may take upto 5mins"
   if ! grep -r $(minikube ip) /etc/resolver/ >/dev/null 2>&1; then
     echo "domain test
-    nameserver $(minikube ip)
-    search_order 1
-    timeout 5" > /tmp/minikube-test
+nameserver $(minikube ip)
+search_order 1
+timeout 5" > /tmp/minikube-test
 
     if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
       status_log $TYPE_INFO "please run the following commands before clicking on 'confirm':"
