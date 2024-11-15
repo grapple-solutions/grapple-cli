@@ -408,8 +408,10 @@ if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
 
 #---------- KUBE_CONTEXT Input ------------
 
+KUBERNETES_CLUSTER_NAME=""
 if [ -n "$KUBERNETES_SERVICE_HOST" ] && [ -n "$KUBERNETES_SERVICE_PORT" ]; then
     echo "Running inside a Kubernetes cluster"
+    KUBERNETES_CLUSTER_NAME=$(kubectl get nodes -o name | awk -F'/' '{print $2}' | head -n 1)
 else
     echo "Not running inside a Kubernetes cluster"
     if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then
@@ -432,6 +434,8 @@ else
         kubectl config use-context $KUBE_CONTEXT
         status_log $TYPE_DEFAULT "KUBE_CONTEXT: ${KUBE_CONTEXT}"
     fi
+
+    KUBERNETES_CLUSTER_NAME=$KUBE_CONTEXT
 fi
 
 
@@ -586,7 +590,7 @@ else
     GRAPPLE_LICENSE=$license
 fi
 
-CLUSTER_NAME=${CIVO_CLUSTER:-${KUBEFIRST_CLUSTER_NAME}}
+CLUSTER_NAME=${CIVO_CLUSTER:-${KUBEFIRST_CLUSTER_NAME:-${KUBERNETES_CLUSTER_NAME}}}
 
 PROVIDER_CLUSTER_NAME=${TARGET_PLATFORM}
 if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
