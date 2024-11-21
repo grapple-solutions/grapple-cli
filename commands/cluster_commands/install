@@ -355,8 +355,8 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
           CLUSTER_IP=""
           if [ "${CLUSTER_IP}" == "" ]; then
               echo -n "." >&2
-              sleep 1
-              ((ELAPSED++))  # Increment elapsed time by 1 second
+              sleep 10
+              ((ELAPSED+=10))  # Increment elapsed time by 1 second
           fi
       done
 
@@ -837,8 +837,8 @@ if [ "$TARGET_PLATFORM" = $CIVO ] && [ "${CLUSTER_IP}" == "" ]; then
       
       if [ "${CLUSTER_IP}" == "" ]; then
           echo -n "." >&2
-          sleep 1
-          ((ELAPSED++))  # Increment elapsed time by 1 second
+          sleep 10
+          ((ELAPSED+=10))  # Increment elapsed time by 1 second
       fi
   done
 
