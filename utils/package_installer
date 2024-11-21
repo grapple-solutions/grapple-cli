@@ -344,7 +344,7 @@ check_and_install_devspace() {
 
 check_and_install_taskcli() {
 
-    # checks for checking and installing devspace
+    # checks for checking and installing task cli
     if ! task --version  >/dev/null 2>&1; then
         echo "task cli is required"
         echo "installing task cli..."
