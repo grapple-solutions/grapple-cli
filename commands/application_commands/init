@@ -11,7 +11,7 @@ cli_help() {
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 install_prerequisite
-
+check_and_install_taskcli
 
 # -------------------- first check for input params -----------------------
 
@@ -22,6 +22,7 @@ valid_args=(
     "GITHUBTOKEN"
     "GRAPPLE_TEMPLATE"
   )
+  
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
