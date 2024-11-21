@@ -342,30 +342,37 @@ if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
 #------------ CLUSTER_IP Input-----------
 
-  if [ "${CLUSTER_IP}" == "" ]; then 
-      status_log $TYPE_INFO "Retrieving cluster IP from kubectl cluster-info"
-      status_log $TYPE_INFO "Waiting for cluster IP to be ready (30 seconds max)"
-      
-      TIMEOUT=30
-      ELAPSED=0
+if [ "${CLUSTER_IP}" == "" ]; then 
+    status_log $TYPE_INFO "Retrieving cluster IP from kubectl cluster-info"
+    status_log $TYPE_INFO "Waiting for cluster IP to be ready (30 seconds max)"
+    
+    TIMEOUT=30
+    ELAPSED=0
 
-      while [ "${CLUSTER_IP}" == "" ] && [ $ELAPSED -lt $TIMEOUT ]; do
-          # Retrieve the IP from kubectl cluster-info
-          CLUSTER_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
-          CLUSTER_IP=""
-          if [ "${CLUSTER_IP}" == "" ]; then
-              echo -n "." >&2
-              sleep 10
-              ((ELAPSED+=10))  # Increment elapsed time by 1 second
-          fi
-      done
+    while [ "${CLUSTER_IP}" == "" ] && [ $ELAPSED -lt $TIMEOUT ]; do
+        # Loop through all nodes and check for ExternalIP
+        for node in $(kubectl get nodes -o jsonpath='{.items[*].metadata.name}'); do
+            CLUSTER_IP=$(kubectl get node $node -o jsonpath='{.status.addresses[?(@.type=="ExternalIP")].address}')
+            if [ "${CLUSTER_IP}" != "" ]; then
+                break  # Exit the loop as soon as an ExternalIP is found
+            fi
+        done
 
-      if [ "${CLUSTER_IP}" == "" ]; then
-          status_log $TYPE_INFO "Unable to retrieve cluster IP within ${TIMEOUT} seconds"
-      fi
+        if [ "${CLUSTER_IP}" == "" ]; then
+            echo -n "." >&2
+            sleep 10  # Wait for 10 seconds before retrying
+            ((ELAPSED+=10))
+        fi
+    done
 
-      sleep 2  # Pause briefly before proceeding
-  fi
+    if [ "${CLUSTER_IP}" == "" ]; then
+        status_log $TYPE_INFO ""
+        status_log $TYPE_INFO "Unable to retrieve cluster IP within ${TIMEOUT} seconds"
+    fi
+
+    sleep 2  # Pause briefly before proceeding
+fi
+
 
   if  [ $INSIDE_CIVO_CLUSTER == "false" ]; then 
     CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else civo k8s show ${CIVO_CLUSTER} -o custom -f "MasterIP"; fi) || exit $?
@@ -833,17 +840,22 @@ if [ "$TARGET_PLATFORM" = $CIVO ] && [ "${CLUSTER_IP}" == "" ]; then
 
   while [ "${CLUSTER_IP}" == "" ] && [ $ELAPSED -lt $TIMEOUT ]; do
       # Retrieve the IP from kubectl cluster-info
-      CLUSTER_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
-      
+      for node in $(kubectl get nodes -o jsonpath='{.items[*].metadata.name}'); do
+        CLUSTER_IP=$(kubectl get node $node -o jsonpath='{.status.addresses[?(@.type=="ExternalIP")].address}')
+        if [ "${CLUSTER_IP}" != "" ]; then
+            break  # Exit the loop as soon as an ExternalIP is found
+        fi
+      done      
       if [ "${CLUSTER_IP}" == "" ]; then
-          echo -n "." >&2
-          sleep 10
-          ((ELAPSED+=10))  # Increment elapsed time by 1 second
+        echo -n "." >&2
+        sleep 10
+        ((ELAPSED+=10))  # Increment elapsed time by 1 second
       fi
   done
 
   if [ "${CLUSTER_IP}" == "" ]; then
       status_log $TYPE_INFO "Unable to retrieve cluster IP within ${TIMEOUT} seconds"
+      exit 0
   fi
 
   sleep 2  # Pause briefly before proceeding
@@ -853,8 +865,10 @@ if [ "$TARGET_PLATFORM" = $CIVO ] && [ "${CLUSTER_IP}" == "" ]; then
   NAMESPACE="grpl-system"
   SECRET_NAME="grsf-config"
 
+  CLUSTER_IP_ENCODED=$(echo -n $CLUSTER_IP | base64)
+
   if kubectl patch secret $SECRET_NAME -n $NAMESPACE --type='json' -p='[
-    {"op": "add", "path": "/data/CIVO_MASTER_IP", "value":"'"$CLUSTER_IP"'"}
+    {"op": "add", "path": "/data/CIVO_MASTER_IP", "value":"'"$CLUSTER_IP_ENCODED"'"}
   ]'; then
     status_log $TYPE_INFO "Successfully patched secret $SECRET_NAME in namespace $NAMESPACE with CIVO_MASTER_IP=$CLUSTER_IP"
   else
