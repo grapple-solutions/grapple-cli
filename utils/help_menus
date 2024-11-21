@@ -8,6 +8,7 @@ generate_cli_web_doc() {
       extract_grapple_cli_version
     fi
 
+    grpl_cli_installation_help $WEB_DOC
     grpl_cli_help $WEB_DOC
     grpl_cluster_cli_help $WEB_DOC
     grpl_example_cli_help $WEB_DOC
@@ -46,6 +47,7 @@ the grapple cli
 https://grapple-solutions.com/[grapple solution^]
 
 
+$grpl_cli_installation_doc
 $grpl_cli_doc
 $grpl_application_doc
 $grpl_application_init_doc
@@ -1609,6 +1611,46 @@ Examples:
         return 0
     else
         echo "$grpl_license_remove_doc"  >&2
+    fi
+}
+
+
+
+
+
+
+grpl_cli_installation_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grapple cli installation"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grapple cli installation"
+        meta=""
+    fi
+
+    grpl_cli_installation_doc="
+$cli_name
+$meta
+
+    brew tap grapple-solutions/grapple
+    brew install grapple-cli
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_cli_installation_doc"  >&2
     fi
 }
 
