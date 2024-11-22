@@ -51,6 +51,7 @@ display_deployment_details(){
   status_log $TYPE_INFO "Following resources are deployed in ${namespace} namespace"
   status_log $TYPE_INFO "Resource Name: ${resource_name}-grapi can be accessed at ${namespace}-${resource_name}-grapi.${clusterdomain}"
   status_log $TYPE_INFO "Resource Name: ${resource_name}-gruim can be accessed at ${namespace}-${resource_name}-gruim.${clusterdomain}"
+  status_log $TYPE_INFO "It will take a few minutes for the deployment to be ready"
 
 }
 
