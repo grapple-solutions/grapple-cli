@@ -13,6 +13,7 @@ cli_help() {
 
 install_prerequisite
 check_and_install_devspace
+check_and_install_taskcli
 
 cli_args=$@
 
