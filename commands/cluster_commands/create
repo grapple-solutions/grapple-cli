@@ -10,6 +10,9 @@ cli_help() {
   exit 0
 }
 
+check_and_install_civo
+check_and_install_eksctl
+
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
 
@@ -218,9 +221,6 @@ check_civo_cluster_exists() {
 
 civo_cluster_create() {
 
-  check_and_install_civo
-
-
   if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [[ $TTY == "enabled" ]]; then
     CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
   elif [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json && [[ $TTY == "disabled" ]]; then
@@ -340,8 +340,6 @@ aws_cluster_create() {
 
   status_log $TYPE_INFO "Creating AWS cluster with name ${CLUSTER_NAME}, Please make sure the aws cli is configured"
 
-  check_and_install_eksctl
-
   #------------ check if a cluster with CLUSTER_NAME exists -----------
   check_aws_cluster_exists
 
@@ -409,11 +407,11 @@ aws_cluster_create() {
 
   status_log $TYPE_INFO "Successfuly formed cluster create command"
   status_log $TYPE_INFO "${final_command}"
-  # if ! eval "${final_command}"  >&2 ; then
-  #   status_log $TYPE_ERROR "Failed to create aws eks cluster with name ${CLUSTER_NAME} due to following error"
-  #   eval ${final_command}
-  #   exit 1
-  # fi
+  if ! eval "${final_command}"  >&2 ; then
+    status_log $TYPE_ERROR "Failed to create aws eks cluster with name ${CLUSTER_NAME} due to following error"
+    eval ${final_command}
+    exit 1
+  fi
 
   status_log $TYPE_SUCCESS "Successfully created aws cluster"
 
