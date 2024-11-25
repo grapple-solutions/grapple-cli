@@ -227,8 +227,8 @@ extract_input_params_from_cli() {
 
               if  $valid; then
                   local key=${key//-/_}
-                  local value=${parts[1]}
-                  export "$key=$value"
+                  local value=$(printf "=%s" "${parts[@]:1}")
+                  export "$key=${value:1}"
               else
                   status_log $TYPE_ERROR "Error: $key is not a valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
                   return 1
@@ -384,5 +384,13 @@ check_if_param_avaiable_in_non_interactive_mode() {
   if [ "$paramValue" == "" ] && [ "$TTY" == "disabled" ]; then
     status_log $TYPE_ERROR "Error: $paramName is a required argument in non-interactive mode, please run '$help_menu_cmd'  to get more info on how to pass agruments from cli"
     exit 1
+  fi
+}
+
+set_default_value_in_non_interactive_mode() {
+  paramName=$1
+  paramValue=$2
+  if [ "$paramValue" != "" ] && [ "$TTY" == "disabled" ]; then
+    export "$paramName=$paramValue"
   fi
 }

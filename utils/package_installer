@@ -342,6 +342,35 @@ check_and_install_devspace() {
 }
 
 
+check_and_install_eksctl() {
+
+    # checks for checking and installing eksctl
+    if ! eksctl version  >/dev/null 2>&1; then
+        echo "eksctl cli is required"
+        echo "installing eksctl cli..."
+        if [ "${OS}" == "mac" ]; then
+            eval "$(getGumSpinnerOrLogger "eksctl is not installed, now taping eksctl") brew tap weaveworks/tap"
+            eval "$(getGumSpinnerOrLogger "eksctl is not installed, now installing eksctl") brew install weaveworks/tap/eksctl"
+        elif [ "${OS}" == "gnu" ]; then
+            ARCH=amd64
+            PLATFORM=$(uname -s)_$ARCH
+            eval "$(getGumSpinnerOrLogger "eksctl is not installed, now downloading eksctl") curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz""
+            tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+            sudo mv /tmp/eksctl /usr/local/bin
+        else
+            errMsg="Failed to install eksctl, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    extract_eksctl_cli_version
+
+}
+
+
+
 extract_helm_cli_version(){
 
     if ! grep -q "helm" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
@@ -554,6 +583,20 @@ extract_devspace_cli_version(){
 
         # Output the latest version
         echo "      $devspace_version - devspace" >> "$GRPL_WORKDIR/dependency_versions"
+    fi
+
+}
+
+
+extract_eksctl_cli_version(){
+
+    if ! grep -q "eksctl" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
+
+        # Get yq version
+        eksctl_version=$(eksctl version)
+
+        # Output the latest version
+        echo "      $eksctl_version - eksctl" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 
 }

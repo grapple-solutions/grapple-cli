@@ -14,6 +14,18 @@ is_correct_target_platform_provided() {
 
 }
 
+is_correct_target_platform_provided_for_cluster_creation() {
+
+    target_platform=$1
+    if [[ $target_platform != $Minikube && $target_platform != $CIVO && $target_platform != $AWS ]]; then
+        errMsg="Error: Invalid TARGET_PLATFORM provided : $target_platform. Please provide one of the following 1)$AWS 2)$CIVO"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}
+
 is_correct_civo_region_provided() {
 
     local output=$( eval "$(getGumSpinnerOrLogger "fetching civo regions") civo region ls -o custom -f code") 
