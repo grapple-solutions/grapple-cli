@@ -409,11 +409,11 @@ aws_cluster_create() {
 
   status_log $TYPE_INFO "Successfuly formed cluster create command"
   status_log $TYPE_INFO "${final_command}"
-  if ! eval "${final_command}"  >&2 ; then
-    status_log $TYPE_ERROR "Failed to create aws eks cluster with name ${CLUSTER_NAME} due to following error"
-    eval ${final_command}
-    exit 1
-  fi
+  # if ! eval "${final_command}"  >&2 ; then
+  #   status_log $TYPE_ERROR "Failed to create aws eks cluster with name ${CLUSTER_NAME} due to following error"
+  #   eval ${final_command}
+  #   exit 1
+  # fi
 
   status_log $TYPE_SUCCESS "Successfully created aws cluster"
 

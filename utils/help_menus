@@ -586,6 +586,20 @@ https://grapple-solutions.com/
 /^$/ {in_global_flags=0; next}
 in_notes || in_flags || in_global_flags {print "        " $0}')  # Add 8 spaces before each line
 
+
+    awseks_help_menu=$(eksctl create cluster --help | awk '
+/^General flags:/ {print "        General flags:"; in_general_flags=1; next}
+/^Initial nodegroup flags:/ {print "        Initial nodegroup flags:"; in_general_flags=0; in_nodegroup_flags=1; next}
+/^Cluster and nodegroup add-ons flags:/ {print "        Cluster and nodegroup add-ons flags:"; in_nodegroup_flags=0; in_addons_flags=1; next}
+/^VPC networking flags:/ {print "        VPC networking flags:"; in_addons_flags=0; in_vpc_flags=1; next}
+/^Instance Selector options flags:/ {print "        Instance Selector options flags:"; in_vpc_flags=0; in_instance_flags=1; next}
+/^AWS client flags:/ {print "        AWS client flags:"; in_instance_flags=0; in_aws_flags=1; next}
+/^Output kubeconfig flags:/ {print "        Output kubeconfig flags:"; in_aws_flags=0; in_output_flags=1; next}
+/^Common flags:/ {print "        Common flags:"; in_output_flags=0; in_common_flags=1; next}
+/^$/ {in_general_flags=0; in_nodegroup_flags=0; in_addons_flags=0; in_vpc_flags=0; in_instance_flags=0; in_aws_flags=0; in_output_flags=0; in_common_flags=0; next}
+in_general_flags || in_nodegroup_flags || in_addons_flags || in_vpc_flags || in_instance_flags || in_aws_flags || in_output_flags || in_common_flags {print "        " $0}')  # Add 8 spaces before each line
+
+
     grpl_cluster_create_doc="
 $cli_name
 $meta
@@ -633,6 +647,9 @@ Variables:
     
     CIVO Parameters:
 $civo_help_menu
+
+    AWS EKS Parameters:
+$awseks_help_menu
 "
 
     if [ "$type" == "$WEB_DOC" ]; then
