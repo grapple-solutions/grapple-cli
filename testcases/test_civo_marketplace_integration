@@ -1,0 +1,59 @@
+#!/bin/bash
+
+set -e
+. "../utils/constants"
+
+
+CLUSTERNAME=marketplace-test
+echo "creating cluster ${CLUSTERNAME}"
+civo k8s create ${CLUSTERNAME} --size=g4c.kube.small --nodes=2 --applications=traefik2-nodeport,civo-cluster-autoscaler,metrics-server,grapple-solution-framework && while ! civo k8s config ${CLUSTERNAME} --save --switch >/dev/null 2>&1; do echo -n "."; sleep 5; done
+
+echo ""
+echo "waiting for grapple to be ready"
+while ! kubectl get -n grpl-system configuration.pkg.crossplane.io grpl 2>/dev/null; do echo -n "."; sleep 2; done && \
+  sleep 5 && \
+  kubectl wait -n grpl-system configuration.pkg.crossplane.io grpl --for condition=Healthy=True --timeout=300s
+
+echo ""
+echo "deploying example"
+grpl e d --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$EXTERNAL_DB
+
+echo "waiting for example to be ready"
+kubectl rollout status -n grpl-mdl-ext deploy grpl-mdl-ext-gras-mysql-grapi grpl-mdl-ext-gras-mysql-gruim
+
+echo "example is ready"
+
+echo "now testing gruim"
+
+echo "fetching clusterdomain from grsf-config"
+
+# Define the namespace and secret name
+NAMESPACE="grpl-system"
+SECRET_NAME="grsf-config"
+
+# Try to get the secret and check if it exists
+clusterdomain=$(kubectl get secret $SECRET_NAME -n $NAMESPACE -o jsonpath="{.data.clusterdomain}" 2>/dev/null)
+clusterdomain=$(echo "$clusterdomain" | base64 --decode 2>/dev/null)
+
+# Check if the secret or namespace doesn't exist
+if [[ $? -ne 0 ]]; then
+    status_log $TYPE_ERROR "Error: Secret '$SECRET_NAME' or namespace '$NAMESPACE' does not exist."
+    exit 1
+fi
+
+echo "extracted clusterdomain: $clusterdomain"
+echo "testing UI at http://grpl-mdl-ext-gras-mysql-gruim.$clusterdomain"
+URL="http://grpl-mdl-ext-gras-mysql-gruim.$clusterdomain"
+STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" $URL)
+
+if [ "$STATUS" -eq 200 ]; then
+    echo "UI is working fine!"
+else
+    echo "UI is not working. HTTP Status: $STATUS"
+fi
+
+echo "destroying cluster ${CLUSTERNAME}"
+
+civo k8s delete marketplace-test -y
+
+echo "done"
