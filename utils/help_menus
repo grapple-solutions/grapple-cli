@@ -172,12 +172,14 @@ Commands:
     h or help     Help menu
     cli           to generate web documentation for grpl cli 
     crds          to generate web documentation for custom grpl CRDs
+    ui           to generate web documentation for ui module properties
     
 Examples:
 
     grpl doc help
     grpl doc cli
     grpl doc crds
+    grpl doc ui
 "
 
     if [ "$type" == $WEB_DOC ]; then
