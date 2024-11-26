@@ -1699,6 +1699,10 @@ generate_ui_web_doc() {
     fi
     echo "Documentation downloaded successfully to $output_file"
 
+    echo "Patching the title"
+    gruim_version=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.uiimagetag}" | base64 -d)
+    sed -i "s,<title>*</title>,<title>grpl ui components props - $gruim_version</title>,g" $output_file
+
     status_log $TYPE_INFO "Please visit file://$output_file to view the GRPL documentation."
 
     exit 0
