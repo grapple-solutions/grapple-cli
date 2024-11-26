@@ -1666,7 +1666,7 @@ generate_ui_web_doc() {
     gruim_output=$(kubectl get gruim -A)
     
     # Extract the first namespace and resource name for a synced and ready GRUIM resource
-    resource_info=$(echo "$gruim_output" | awk '/True\s+True/ {print $1, $2; exit}')
+    resource_info=$(echo "$gruim_output" | awk '/True[[:space:]]*True/ {print $1, $2; exit}')
     if [[ -z "$resource_info" ]]; then
         status_log $TYPE_ERROR "No synced and ready GRUIM resource found."
         exit 1
