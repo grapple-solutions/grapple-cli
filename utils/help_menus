@@ -1654,3 +1654,50 @@ $meta
     fi
 }
 
+
+
+generate_ui_web_doc() {
+
+    status_log $TYPE_INFO "Generating UI web doc it might take a few minutes..."
+
+    echo "Checking for GRUIM resources across all namespaces..."
+    gruim_output=$(kubectl get gruim -A)
+    
+    # Extract the first namespace and resource name for a synced and ready GRUIM resource
+    resource_info=$(echo "$gruim_output" | awk '/True\s+True/ {print $1, $2; exit}')
+    if [[ -z "$resource_info" ]]; then
+        status_log $TYPE_ERROR "No synced and ready GRUIM resource found."
+        exit 1
+    fi
+
+    read namespace resource_name <<< "$resource_info"
+    echo "Processing GRUIM resource: Namespace=$namespace, Name=$resource_name"
+
+    echo "Checking rollout status for $namespace/$resource_name..."
+    rollout_status=$(kubectl rollout status -n "$namespace" deployment/"$namespace-$resource_name-gruim" 2>&1)
+    if [[ $? -ne 0 ]]; then
+        status_log $TYPE_ERROR "Rollout failed or incomplete for $namespace/$resource_name. Error: $rollout_status"
+        exit 1
+    fi
+    echo "Rollout status: $rollout_status"
+
+    echo "Extracting base URL from muim resource..."
+    muim_base_url=$(kubectl get muim -n "$namespace" "$namespace-$resource_name-gruim" -o jsonpath="{.spec.remoteentry}" 2>/dev/null | awk -F/ 'OFS="/" {$NF=""; sub(/\/$/, ""); print}')
+    if [[ -z "$muim_base_url" ]]; then
+        status_log $TYPE_ERROR "Failed to extract base URL from muim resource for $namespace/$resource_name."
+        exit 1
+    fi
+
+    documentation_url="${muim_base_url}/documentation/"
+    output_file="${HOME}/grpl-${resource_name}-web-doc.html"
+    curl -o "$output_file" "$documentation_url" >/dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        status_log $TYPE_ERROR "Failed to download documentation from $documentation_url."
+        exit 1
+    fi
+    echo "Documentation downloaded successfully to $output_file"
+
+    status_log $TYPE_INFO "Please visit file://$output_file to view the GRPL documentation."
+
+    exit 0
+}
