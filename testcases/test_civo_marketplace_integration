@@ -1,10 +1,19 @@
 #!/bin/bash
 
 set -e
-. "../utils/constants"
+
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+. "$SCRIPT_DIR/../utils/constants"
 
 
 CLUSTERNAME=marketplace-test
+echo "checking if cluster exists"
+if civo k8s show "$CLUSTERNAME" > /dev/null 2>&1; then
+  echo "Cluster '$CLUSTERNAME' exists, exiting the testcase"
+  exit 404
+fi
+
+echo "Cluster '$CLUSTERNAME' does not exist."
 echo "creating cluster ${CLUSTERNAME}"
 civo k8s create ${CLUSTERNAME} --size=g4c.kube.small --nodes=2 --applications=traefik2-nodeport,civo-cluster-autoscaler,metrics-server,grapple-solution-framework && while ! civo k8s config ${CLUSTERNAME} --save --switch >/dev/null 2>&1; do echo -n "."; sleep 5; done
 
@@ -16,10 +25,10 @@ while ! kubectl get -n grpl-system configuration.pkg.crossplane.io grpl 2>/dev/n
 
 echo ""
 echo "deploying example"
-grpl e d --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$EXTERNAL_DB
+grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB
 
 echo "waiting for example to be ready"
-kubectl rollout status -n grpl-mdl-ext deploy grpl-mdl-ext-gras-mysql-grapi grpl-mdl-ext-gras-mysql-gruim
+kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi grpl-disc-ext-gras-mysql-gruim
 
 echo "example is ready"
 
@@ -27,33 +36,25 @@ echo "now testing gruim"
 
 echo "fetching clusterdomain from grsf-config"
 
-# Define the namespace and secret name
-NAMESPACE="grpl-system"
-SECRET_NAME="grsf-config"
+echo "extracted clusterdomain: $clusterdomain"
 
-# Try to get the secret and check if it exists
-clusterdomain=$(kubectl get secret $SECRET_NAME -n $NAMESPACE -o jsonpath="{.data.clusterdomain}" 2>/dev/null)
-clusterdomain=$(echo "$clusterdomain" | base64 --decode 2>/dev/null)
-
-# Check if the secret or namespace doesn't exist
-if [[ $? -ne 0 ]]; then
-    status_log $TYPE_ERROR "Error: Secret '$SECRET_NAME' or namespace '$NAMESPACE' does not exist."
-    exit 1
+echo "Extracting base URL from muim resource..."
+base_url=$(kubectl get muim -n "$namespace" "$namespace-$resource_name-gruim" -o jsonpath="{.spec.remoteentry}" 2>/dev/null | awk -F/ 'OFS="/" {$NF=""; sub(/\/$/, ""); print}')
+if [[ -z "$base_url" ]]; then
+    echo "Failed to extract base URL from muim resource for $namespace/$resource_name."
+    exit 404
 fi
 
-echo "extracted clusterdomain: $clusterdomain"
-echo "testing UI at http://grpl-mdl-ext-gras-mysql-gruim.$clusterdomain"
-URL="http://grpl-mdl-ext-gras-mysql-gruim.$clusterdomain"
-STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" $URL)
+echo "testing UI at $base_url"
+STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" $base_url)
 
 if [ "$STATUS" -eq 200 ]; then
     echo "UI is working fine!"
+    echo "destroying cluster ${CLUSTERNAME}"
+    civo k8s delete marketplace-test -y
+    echo "done"
 else
     echo "UI is not working. HTTP Status: $STATUS"
+    exit 404
 fi
 
-echo "destroying cluster ${CLUSTERNAME}"
-
-civo k8s delete marketplace-test -y
-
-echo "done"
