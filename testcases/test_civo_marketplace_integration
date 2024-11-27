@@ -34,10 +34,6 @@ echo "example is ready"
 
 echo "now testing gruim"
 
-echo "fetching clusterdomain from grsf-config"
-
-echo "extracted clusterdomain: $clusterdomain"
-
 echo "Extracting base URL from muim resource..."
 base_url=$(kubectl get muim -n "$namespace" "$namespace-$resource_name-gruim" -o jsonpath="{.spec.remoteentry}" 2>/dev/null | awk -F/ 'OFS="/" {$NF=""; sub(/\/$/, ""); print}')
 if [[ -z "$base_url" ]]; then
