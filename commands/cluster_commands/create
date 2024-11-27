@@ -19,6 +19,7 @@ common_valid_args=(
    "AUTO_CONFIRM"
    "CIVO_API_KEY"
    "CIVO_REGION"
+   "CIVO_EMAIL_ADDRESS"
 )
 
 civo_valid_args=(
@@ -236,13 +237,28 @@ civo_cluster_create() {
     status_log $TYPE_INFO "Can't switch to cluster '${cluster_name}'"
   fi
 
+  # Wait for the deployment to be ready
+  status_log $TYPE_INFO "Waiting for the coredns deployment to be ready..."
+  while true; do output=$(kubectl rollout status -n kube-system deploy coredns 2>&1); echo "$output" | grep -q "successfully rolled out" && echo "Deployment \"$deployment\" in namespace \"$namespace\" successfully rolled out." && break || echo "..."; sleep 5; done
+  status_log $TYPE_SUCCESS "coredns deployment is ready"
+
+  #------------ CIVO_EMAIL_ADDRESS Input-----------
+
+  #check if input from params is valid or not
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_EMAIL_ADDRESS" "${CIVO_EMAIL_ADDRESS}" "${help_menu_cmd}"
+  if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then 
+    is_value_correct_wrt_regex $CIVO_EMAIL_ADDRESS $email_regex "Invalid email address format. Please try again"
+  fi
+  CIVO_EMAIL_ADDRESS=$(if [ "${CIVO_EMAIL_ADDRESS}" != "" ]; then echo ${CIVO_EMAIL_ADDRESS}; else prompt_for_input_with_validation "Enter CIVO_EMAIL_ADDRESS: " "Provide the email address to be used - valide email address is required" "$email_regex" "Invalid email address format. Please try again."; fi) || exit $?
+  echo "selected civo email address: ${CIVO_EMAIL_ADDRESS}"
+
 
   if ! eval "$(getGumSpinnerOrLogger "checking if grpl is installed") kubectl  get configuration.pkg.crossplane.io grpl 2>/dev/null"; then
     if [ "${AUTO_CONFIRM}" == "true" ]; then
-      grpl cluster install --TARGET_PLATFORM="CIVO" --CIVO_CLUSTER="${CLUSTER_NAME}" --CIVO_REGION="${CIVO_REGION}" --CIVO_API_KEY="${CIVO_API_KEY}" --AUTO_CONFIRM="true" --CIVO_EMAIL_ADDRESS="info@grapple-solutions.com" --INSTALL_KUBEBLOCKS="true"
+      grpl cluster install --TARGET_PLATFORM="CIVO" --CIVO_CLUSTER="${CLUSTER_NAME}" --CIVO_REGION="${CIVO_REGION}" --CIVO_API_KEY="${CIVO_API_KEY}" --AUTO_CONFIRM="true" --CIVO_EMAIL_ADDRESS="${CIVO_EMAIL_ADDRESS}" --INSTALL_KUBEBLOCKS="true"
     elif [ "$TTY" == "enabled" ]; then
       gum confirm "Would you like to install grpl on the cluster?"
-      grpl cluster install --TARGET_PLATFORM="CIVO" --CIVO_CLUSTER="${CLUSTER_NAME}" --CIVO_REGION="${CIVO_REGION}" --CIVO_API_KEY="${CIVO_API_KEY}" --AUTO_CONFIRM="true" --CIVO_EMAIL_ADDRESS="info@grapple-solutions.com" --INSTALL_KUBEBLOCKS="true"
+      grpl cluster install --TARGET_PLATFORM="CIVO" --CIVO_CLUSTER="${CLUSTER_NAME}" --CIVO_REGION="${CIVO_REGION}" --CIVO_API_KEY="${CIVO_API_KEY}" --AUTO_CONFIRM="true" --CIVO_EMAIL_ADDRESS="${CIVO_EMAIL_ADDRESS}" --INSTALL_KUBEBLOCKS="true"
     fi
   else 
     status_log $TYPE_INFO "grpl is already installed"
