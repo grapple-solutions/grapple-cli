@@ -607,7 +607,7 @@ Usage with params from cli:
   grpl cluster create --params --<variable-name>=<variable value>
   e.g grpl cluster create --params --TARGET_PLATFORM=CIVO
   OR
-  grpl cluster install --params --<variable-name> <variable value>
+  grpl cluster create --params --<variable-name> <variable value>
   e.g grpl cluster create --params --TARGET_PLATFORM=CIVO
 
 Usage with params from configfile: 
@@ -634,6 +634,7 @@ Variables:
         CLUSTER_NAME= name of the cluster
         CIVO_API_KEY= civo api key (optional)
         CIVO_REGION=Available CIVO regions (e.g. FRA1)
+        wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready
     
     CIVO Parameters:
 $civo_help_menu
@@ -735,6 +736,7 @@ Variables:
   GITHUB_USERNAME = github username
   GITLAB_USERNAME = gitlab username
   INSTALL_KUBEBLOCKS = 'true' / 'false', set to 'true' if you want to install kubeblocks
+  wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready
 
 " 
 
@@ -905,6 +907,7 @@ Variables:
     GRAS_TEMPLATE: gras template e.g db-file, etc
     DB_TYPE: db type it can either internal or external
     KUBE_CONTEXT: kubectl context you want to use, if its set to "current" then it will use current kubectl context
+    wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready
 
 " 
 
