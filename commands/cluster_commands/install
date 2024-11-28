@@ -837,7 +837,7 @@ status_log $TYPE_SUCCESS "Successfuly Installed grpl"
 
 
 if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
-  status_log $TYPE_INFO "Waiting for kubeblocks to be installed"
+  status_log $TYPE_INFO "Waiting for kubeblocks to be installed it might take a while"
   wait
   status_log $TYPE_SUCCESS "kubeblocks is installed"
 fi
