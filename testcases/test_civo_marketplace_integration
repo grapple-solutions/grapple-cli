@@ -34,10 +34,11 @@ echo "example is ready"
 
 echo "now testing gruim"
 
+
 echo "Extracting base URL from muim resource..."
-base_url=$(kubectl get muim -n "$namespace" "$namespace-$resource_name-gruim" -o jsonpath="{.spec.remoteentry}" 2>/dev/null | awk -F/ 'OFS="/" {$NF=""; sub(/\/$/, ""); print}')
+base_url=$(kubectl get muim -n grpl-disc-ext grpl-disc-ext-gras-mysql-gruim -o jsonpath="{.spec.remoteentry}" 2>/dev/null | awk -F/ 'OFS="/" {$NF=""; sub(/\/$/, ""); print}')
 if [[ -z "$base_url" ]]; then
-    echo "Failed to extract base URL from muim resource for $namespace/$resource_name."
+    echo "Failed to extract base URL from muim resource for grpl-disc-ext-gras-mysql-gruim"
     exit 404
 fi
 
