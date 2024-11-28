@@ -1675,7 +1675,7 @@ generate_ui_web_doc() {
     read namespace resource_name <<< "$resource_info"
     echo "Processing GRUIM resource: Namespace=$namespace, Name=$resource_name"
 
-    echo "Checking rollout status for $namespace/$resource_name..."
+    status_log $TYPE_INFO "Checking rollout status for $namespace/$resource_name..."
     rollout_status=$(kubectl rollout status -n "$namespace" deployment/"$namespace-$resource_name-gruim" 2>&1)
     if [[ $? -ne 0 ]]; then
         status_log $TYPE_ERROR "Rollout failed or incomplete for $namespace/$resource_name. Error: $rollout_status"
@@ -1691,18 +1691,24 @@ generate_ui_web_doc() {
     fi
 
     documentation_url="${muim_base_url}/documentation/"
-    output_file="${HOME}/grpl-${resource_name}-web-doc.html"
+    output_file="${GRPL_WORKDIR}/grpl-${resource_name}-web-doc.html"
     curl -o "$output_file" "$documentation_url" >/dev/null 2>&1
     if [[ $? -ne 0 ]]; then
         status_log $TYPE_ERROR "Failed to download documentation from $documentation_url."
         exit 1
     fi
-    echo "Documentation downloaded successfully to $output_file"
 
     echo "Patching the title"
     gruim_version=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.uiimagetag}" | base64 -d)
-    sed -i '' "s,<title>.*</title>,<title>grpl ui components props - $gruim_version</title>,g" $output_file
-    sed -i '' "s,<h1>.*</h1>,<h1>grpl ui components props - $gruim_version</h1>,g" $output_file
+    awk -v version="$gruim_version" '
+        /<title>/ {
+            gsub(/<title>.*<\/title>/, "<title>grpl ui components props - " version "</title>");
+        }
+        /<h1>/ {
+            gsub(/<h1>.*<\/h1>/, "<h1>grpl ui components props - " version "</h1>");
+        }
+        { print }
+    ' "$output_file" > "${output_file}.tmp" && mv "${output_file}.tmp" "$output_file"
 
     status_log $TYPE_INFO "Please visit file://$output_file to view the GRPL documentation."
 
