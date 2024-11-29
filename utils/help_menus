@@ -1703,3 +1703,135 @@ generate_ui_web_doc() {
 
     exit 0
 }
+
+
+grpl_aws_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl aws"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl aws"
+        meta=""
+    fi
+
+    grpl_aws_doc="
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
+$meta
+
+Description: 
+
+    Displays help menu of grpl aws
+
+Usage: 
+
+    grpl aws [command]
+
+Commands:
+
+    i or install    installation of grpl on was cluster
+    *               Help menu
+    
+Examples:    
+
+    grpl aws i    or    grpl aws install    
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_aws_doc"  >&2
+    fi
+}
+
+
+grpl_aws_install_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl aws install"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="=== grpl aws install"
+        meta=""
+    fi
+
+    grpl_aws_install_doc="
+$cli_name
+$meta
+
+Description: 
+
+    Installs grapple in the aws cluster
+
+Usage: 
+
+  grpl aws install [command]
+
+Usage with params from cli: 
+
+  grpl aws install --params --<variable-name>=<variable value>
+  e.g grpl aws install --params --GRAPPLE_VERSION=0.2.1
+  OR
+  grpl aws install --params --<variable-name> <variable value>
+  e.g grpl aws install --params --GRAPPLE_VERSION 0.2.1
+
+Usage with params from configfile: 
+
+  grpl aws install --configfile <file-name>.json
+  e.g grpl aws install --configfile grpl-config.json
+
+Commands:
+
+    h or help     Help menu
+    *             to install grpl on aws cluster
+    
+Examples:    
+
+    grpl aws i h    or    grpl aws install help
+    grpl aws i *    or    grpl aws install *
+
+
+Variables:
+
+    CLUSTER_NAME = name of the cluster to install grapple in
+    GRAPPLE_VERSION = version of grapple to install
+    AUTO_CONFIRM = 'true' or 'false' to auto confirm installation of grapple
+    GRAPPLE_DNS = domain name of the cluster to install grapple in
+    ORGANIZATION = name of the organization
+    EMAIL = email of the organization
+    INSTALL_KUBEBLOCKS = 'true' or 'false' to install kubeblocks
+    STAGE = stage of the cluster
+    AWSID = aws id
+    AWSKEY = aws key
+    MONITORING = 'true' or 'false' to set monitoring
+    SSL = 'true' or 'false' to set ssl
+
+" 
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_aws_install_doc"  >&2
+    fi
+}
+

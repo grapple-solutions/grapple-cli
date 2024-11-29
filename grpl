@@ -64,6 +64,9 @@ case "$command" in
   license|lic|l)
     "$GRPL_WORKDIR/commands/license" $(echo $updated_cli_params) | tee -ia "$GRPL_WORKDIR/logs/license.log" >/dev/null
     ;;
+  aws)
+    "$GRPL_WORKDIR/commands/aws" $(echo $updated_cli_params) | tee -ia "$GRPL_WORKDIR/logs/aws.log" >/dev/null
+    ;;
   *)
     cli_help
     ;;

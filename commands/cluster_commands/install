@@ -711,7 +711,7 @@ helm_deploy() {
         status_log $TYPE_INFO "We tried retrying 3 times and tried logging out of public.ecr.aws registry but it failed, please run 'helm registry logout public.ecr.aws/<repo>' and try again"
         echo "${i} Failed to Installed"
         status_log $TYPE_ERROR "${i} Failed to Installed due to following error"
-        eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
+        eval "$(getGumSpinnerOrLogger "Extracting Error") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
         exit 1
     else 
       if helm registry logout public.ecr.aws >/dev/null 2>&1; then
