@@ -1821,9 +1821,6 @@ Variables:
     EMAIL = email of the organization
     INSTALL_KUBEBLOCKS = 'true' or 'false' to install kubeblocks
     STAGE = stage of the cluster
-    AWSID = aws id
-    AWSKEY = aws key
-    MONITORING = 'true' or 'false' to set monitoring
     SSL = 'true' or 'false' to set ssl
 
 " 
