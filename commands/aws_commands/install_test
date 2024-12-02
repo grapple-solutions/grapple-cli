@@ -1,0 +1,452 @@
+#!/bin/bash
+set -e
+
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/utils/help_menus"
+
+# --------------------------------- Functions ------------------------------------------
+
+# Print help menu for grpl aws install and exit
+cli_help() {
+  grpl_aws_install_cli_help
+  exit 0
+}
+
+# --------------------------------- CODE ------------------------------------------
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+
+NS=grpl-system
+awsregistry="p7h7z5g3"
+SSL="false"
+SSL_ISSUER="letsencrypt-grapple-demo"
+dependencies_path="$GRPL_WORKDIR/commands/aws_commands/dependencies"
+cli_log "cluster install BEGIN"
+
+# valid arguments array
+valid_args=(
+    "CLUSTER_NAME"
+    "GRAPPLE_VERSION"
+    "AUTO_CONFIRM"
+    "GRAPPLE_DNS"
+    "ORGANIZATION"
+    "EMAIL"
+    "INSTALL_KUBEBLOCKS"
+    "STAGE"
+    "AWSID"
+    "AWSKEY"
+    "MONITORING"
+    "SSL"
+  )
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+help_menu_cmd="grpl aws install help"
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
+
+status_log $TYPE_INFO "Installation of grpl is in progress"
+
+#-------------Functions-------------------
+
+kubeblocks_installation() {
+  if ! kbcli; then
+      echo "installing kbcli"
+      check_and_install_kbcli
+  fi
+
+  if ! kubectl get deployment kubeblocks -n kb-system; then
+    echo "checking kubeblocks"
+    check_and_install_kubeblocks
+
+    echo "waiting for configs to apply"
+    for i in $(kubectl get clusterversion -o name); do 
+      kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
+    done
+  else 
+    echo "kubeblocks is already installed"
+  fi
+}
+
+#-------------Variables-------------------
+
+DEBUG=true
+
+if ${DEBUG}; then
+    echo "filename: $1"
+    echo "input: $2"
+fi
+
+
+if [ "$STAGE" = "awstim" ]; then
+    AWSREGION="eu-central-2"
+else
+    AWSREGION="eu-central-1"
+fi
+
+export AWSREGION=$AWSREGION
+
+PRD=grsf
+NS=grpl-system
+GRAPPLE_DOMAIN=".grpl.io"
+GRAPPLE_DNS=${STAGE:-dev}.grpl.io
+
+TESTNS=grpl-test
+TESTNSJCS=jcs-test
+
+if [ "${awsregistry}" = "" ]; then
+  if [ "$STAGE" = "awstim" ]; then
+    awsregistry=s3w3z3s6
+  else
+    awsregistry=p7h7z5g3
+  fi
+fi
+
+if [ "$(uname -s)" = "Darwin" ]; then 
+    SED=gsed
+else
+    SED=sed
+fi
+
+SKIPTESTS=""
+AUTH_FOR="01_customers 13_jcs-cache"
+CUSTHEAD_FOR="01_customers 02_cm-basic"
+
+list="grsf-init grsf grsf-config grsf-integration grsf-monitoring"
+
+#----------- CLUSTER_NAME input --------
+
+check_if_param_avaiable_in_non_interactive_mode "CLUSTER_NAME" "${CLUSTER_NAME}" "${help_menu_cmd}"
+# if [ "${CLUSTER_NAME}" != "" ] && [ $TTY == "enabled" ]; then 
+#   # TODO add validation
+#   #is_correct_CLUSTER_NAME_provided $CLUSTER_NAME 
+# fi
+CLUSTER_NAME=$(if [ "${CLUSTER_NAME}" != "" ]; then echo "${CLUSTER_NAME}"; else (gum spin --title "fetching aws eks clusters" -- bash -c 'eksctl get cluster | awk "NR>1 {print \$1}" > /dev/null' && eksctl get cluster | awk "NR>1 {print \$1}" | gum choose) || echo ""; fi)
+echo "selected aws cluster: ${CLUSTER_NAME}"
+
+
+#----------- STAGE input --------
+STAGE=$(if [ "${STAGE}" != "" ]; then echo ${STAGE}; else prompt_for_explicit_input_with_validation "Enter STAGE: " "Provide the STAGE e.g dev, prd, demo etc (default dev):" ".*" ""; fi) || exit $?
+if [ "${STAGE}" == "" ]; then
+  STAGE="dev"
+fi
+
+
+#----------- creating complete domain --------
+complete_domain="" 
+if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
+  complete_domain=$GRAPPLE_DNS
+else 
+  complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
+fi
+
+
+#----------- GRAPPLE_VERSION Input --------
+
+if [ "${GRAPPLE_VERSION}" == "latest" ] || [ "${GRAPPLE_VERSION}" == "" ]; then
+  GRAPPLE_VERSION=$(head -n 1 "$GRPL_WORKDIR/grapple-versions")
+  status_log $TYPE_INFO "Installing grapple version: ${GRAPPLE_VERSION}"
+fi
+
+if [ "${GRAPPLE_VERSION}" != "" ]; then 
+  is_correct_grapple_version_provided $GRAPPLE_VERSION 
+fi
+
+
+#----------- ORGANIZATION default value --------
+if [ "${ORGANIZATION}" == "" ]; then 
+  ORGANIZATION="grapple solutions AG"
+fi
+
+
+#----------- Email validation and default value --------
+if [ "${EMAIL}" != "" ]; then 
+  is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
+else 
+  EMAIL="info@grapple-solutions.com"
+fi
+
+
+license=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" 2>/dev/null | base64 --decode 2>/dev/null)
+
+if [[ $? -ne 0 ]]; then
+    GRAPPLE_LICENSE="free"
+elif [[ -z $license ]]; then
+    GRAPPLE_LICENSE="free"
+else
+    GRAPPLE_LICENSE=$license
+fi
+
+
+
+PROVIDER_CLUSTER_NAME=${AWS}
+export CLUSTERDOMAIN=${complete_domain}
+status_log $TYPE_INFO "CLUSTERDOMAIN: ${CLUSTERDOMAIN}"
+
+cat <<EOF > /tmp/values-override.yaml
+# Default values for grsf-init.
+
+clusterdomain: ${complete_domain}
+
+# Configuration
+config:
+  STAGE: "${STAGE}"
+  email: "${EMAIL}"
+  organization: ${ORGANIZATION}
+  clusterdomain: ${complete_domain}
+  grapiversion: "0.0.1"
+  gruimversion: "0.0.1"
+  dev: "false"
+  ssl: "$SSL"
+  sslissuer: "$SSL_ISSUER"
+  MONITORING: "$MONITORING"
+  AWSID: ${AWSID}
+  AWSKEY: ${AWSKEY}
+  GRAPPLE_DNS: ${complete_domain}
+  GRAPPLE_VERSION: ${GRAPPLE_VERSION}
+  GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}
+  CLUSTER_NAME: ${CLUSTER_NAME}
+  PROVIDER_CLUSTER_NAME: ${PROVIDER_CLUSTER_NAME}
+# Additional configurations omitted for brevity
+EOF
+
+cat /tmp/values-override.yaml
+
+
+# Use gum to confirm before proceeding
+if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
+
+  status_log $TYPE_DEFAULT "Going to deploy grpl on ${TARGET_PLATFORM} with following configurations"  
+
+
+  status_log $TYPE_DEFAULT "CLUSTER_NAME: ${CLUSTER_NAME}"
+  status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
+  status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
+  status_log $TYPE_DEFAULT "GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}"
+  status_log $TYPE_DEFAULT "ORGANIZATION: ${ORGANIZATION}"
+  status_log $TYPE_DEFAULT "EMAIL: ${EMAIL}"
+  status_log $TYPE_DEFAULT "STAGE: ${STAGE}"
+  status_log $TYPE_DEFAULT "SSL: ${SSL}"
+  status_log $TYPE_DEFAULT "SSL_ISSUER: ${SSL_ISSUER}"
+  status_log $TYPE_DEFAULT "PROVIDER_CLUSTER_NAME: ${PROVIDER_CLUSTER_NAME}"
+  status_log $TYPE_DEFAULT "MONITORING: ${MONITORING}"
+  status_log $TYPE_DEFAULT "AWSID: ${AWSID}"
+  status_log $TYPE_DEFAULT "AWSKEY: ${AWSKEY}"
+
+  gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
+fi
+
+
+if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
+    status_log $TYPE_INFO "Installing kubeblocks in background"
+    kubeblocks_installation >/dev/null 2>&1 &
+fi
+
+echo 
+echo ----
+
+
+if [ "$GITPOD_WORKSPACE_ID" != "" ]; then
+    if [ "$INSTALL" = "" ]; then
+        INSTALL="minimal"
+    fi
+fi
+
+retries=0
+
+helm_deploy() {
+    i=$1
+    n=$2 # define namespace
+    v=$3 # define injected values
+    if [ "$1" = "base" ]; then WAIT=" --wait"; else WAIT=""; fi
+    echo "------"
+    echo "deploying: $i"
+    # helm dep up k8s/$i
+    # envsubst < k8s/$i/values-override.yaml
+    # --wait makes it slower...
+    # envsubst < k8s/$i/values-override.yaml | helm upgrade --install $i k8s/$i -n ${NS} --wait --create-namespace -f - 
+    # envsubst < k8s/$i/values-override.yaml | helm upgrade --install $i k8s/$i -n ${NS} --create-namespace -f - 
+    if [ "$stage" != "prd" ]; then 
+        ext="-${stage}"
+    else   
+        ext=""
+    fi
+    if [ "$2" != "" ]; then NAMESPACE=" -n $2 "; else NAMESPACE=" -n ${NS} "; fi
+    if [ "$3" != "" ]; then VALUES=" -f $3 "; fi  
+
+    v=$GRAPPLE_VERSION
+    if [ "$v" != "" ]; then 
+      version="--version ${v}"
+    else
+      version=""
+    fi
+    
+
+    echo
+    echo "------"
+    echo "helm upgrade --install ${i} oci://public.ecr.aws/${awsregistry}/${i} ${NAMESPACE}  ${version} --create-namespace ${WAIT} ${VALUES} # + values-override.yaml"
+    echo "------"
+    envsubst < $dependencies_path/values-override.yaml | helm upgrade --install ${i} oci://public.ecr.aws/${awsregistry}/${i} ${NAMESPACE}  ${version} --create-namespace ${WAIT} ${VALUES} -f -
+}
+
+echo "install the metrics server"
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+helm_deploy grsf-init
+
+if [ "${STAGE}" = "awstim" ] && [ "$(uname -s)" != "Darwin" ]; then
+ echo "prepare external secrets for tim"
+ echo -n "${AWSID}" > ./access-key
+ echo -n "${AWSKEY}" > ./secret-access-key
+ sleep 1
+ kubectl -n ${NS} create secret generic awssm-secret --from-file=./access-key  --from-file=./secret-access-key 2>/dev/null || true
+else
+ if [ "$(uname -s)" = "Darwin" ]; then
+  if [ "${AWSID}" = "" ]; then
+    status_log $TYPE_ERROR "AWSID is empty, please set AWSID and AWSKEY"
+    exit 99
+  fi
+  echo -n "${AWSID}" > ./access-key
+  echo -n "${AWSKEY}" > ./secret-access-key
+  kubectl -n kube-system delete secret awssm-secret
+  kubectl -n kube-system create secret generic awssm-secret --from-file=./access-key  --from-file=./secret-access-key 2>/dev/null # || true
+  kubectl -n grpl-system delete secret awssm-secret || true
+  kubectl -n grpl-system create secret generic awssm-secret --from-file=./access-key  --from-file=./secret-access-key 2>/dev/null # || true
+ else
+  echo "prepare external secrets"
+  echo -n "${AWSID}" > ./access-key
+  echo -n "${AWSKEY}" > ./secret-access-key
+  sleep 1
+  kubectl -n ${NS} create secret generic awssm-secret --from-file=./access-key  --from-file=./secret-access-key 2>/dev/null || true
+ fi
+fi
+
+status_log $TYPE_INFO "wait for cert-manager to be ready"
+if helm get -n kube-system notes traefik >/dev/null 2>&1; then 
+    CRD=Middleware && echo "wait for ${CRD} to be deployed:" && until kubectl explain ${CRD} >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "${CRD} deployed"
+fi
+if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; then 
+    kubectl wait deployment -n ${NS} grsf-init-cert-manager --for condition=Available=True --timeout=300s
+    CRD=ClusterIssuer && echo "wait for ${CRD} to be deployed:" && until kubectl explain ${CRD} >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "${CRD} deployed"
+fi
+if kubectl get deploy -n grpl-system crossplane >/dev/null 2>&1; then 
+    CRD=Provider && echo "wait for ${CRD} to be deployed:" && until kubectl explain ${CRD} >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "${CRD} deployed"
+fi
+if kubectl get deploy -n grpl-system grsf-init-external-secrets-webhook >/dev/null 2>&1; then 
+    CRD=ExternalSecrets && echo "wait for ${CRD} to be deployed:" && until kubectl explain ${CRD} >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "${CRD} deployed"
+    echo "wait for external-secrets to be ready"
+    kubectl wait deployment -n ${NS} grsf-init-external-secrets-webhook --for condition=Available=True --timeout=300s
+fi 
+
+status_log $TYPE_SUCCESS "grsf-init is Installed"
+
+helm_deploy grsf
+status_log $TYPE_INFO "wait for grsf to be ready"
+sleep 10
+if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-civo) >/dev/null 2>&1; then 
+    kubectl wait -n ${NS} provider.pkg.crossplane.io/provider-civo --for condition=Healthy=True --timeout=300s
+    echo "wait for provider-civo to be ready"
+    CRD=providerconfigs.civo.crossplane.io  && echo "wait for ${CRD} to be deployed:" && until kubectl explain ${CRD} >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "${CRD} deployed"
+fi 
+for i in $(kubectl get pkg -n ${NS} -o name); do 
+    kubectl wait -n ${NS} $i --for condition=Healthy=True --timeout=300s;
+done
+if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-helm) >/dev/null 2>&1; then 
+    CRD=providerconfigs.helm.crossplane.io  && echo "wait for ${CRD} to be deployed:" && until kubectl explain ${CRD} >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "${CRD} deployed"
+fi 
+if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-kubernetes) >/dev/null 2>&1; then 
+    CRD=providerconfigs.kubernetes.crossplane.io  && echo "wait for ${CRD} to be deployed:" && until kubectl explain ${CRD} >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "${CRD} deployed"
+fi 
+
+status_log $TYPE_SUCCESS "grsf is Installed"
+helm_deploy grsf-config
+status_log $TYPE_INFO "wait for grsf-config to be ready"
+
+if [[ "$STAGE" != "aws"* ]]; then # cluster autoscaler patching not required for AWS clusters...
+    if kubectl get deploy -n kube-system cluster-autoscaler >/dev/null 2>&1; then
+        if ! kubectl get deploy -n kube-system -o yaml | grep scan-interval >/dev/null 2>&1; then
+            echo "amend cluster-autoscaler config"
+            if [[ "$STAGE" = *"demo"* ]]; then
+                kubectl patch deployment cluster-autoscaler -n kube-system --type='json' --patch='[
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--scan-interval=30s" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--nodes=2:10:workers" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--min-replica-count=1" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--cordon-node-before-terminating=true" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--scale-down-utilization-threshold=2" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--scale-down-unneeded-time=60m" }
+                    ]'
+            elif [[ "$STAGE" = *"jcs"* ]] || [[ "$STAGE" = *"mbd"* ]]; then
+                kubectl patch deployment cluster-autoscaler -n kube-system --type='json' --patch='[
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--scan-interval=30s" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--nodes=2:10:workers" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--min-replica-count=1" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--cordon-node-before-terminating=true" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--scale-down-utilization-threshold=2" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--scale-down-unneeded-time=60m" }
+                    ]'
+            else
+                kubectl patch deployment cluster-autoscaler -n kube-system --type='json' --patch='[
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--scan-interval=30s" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--nodes=2:10:workers" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--min-replica-count=1" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--cordon-node-before-terminating=true" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--scale-down-utilization-threshold=2" },
+                        { "op": "add", "path": "/spec/template/spec/containers/0/command/-", "value": "--scale-down-unneeded-time=10m" }
+                    ]'
+            fi
+        fi
+    fi
+fi
+
+
+status_log $TYPE_SUCCESS "grsf-config is Installed"
+
+# install orm-monitoring helm chart
+if [ "$MONITORING" = true ]; then
+    if [ "${SSL}" != true ]; then
+        MONITORINGSSL=" --set kube-prometheus.prometheus.ingress.tls=false --set grafana-operator.grafana.ingress.tls=false "
+    else   
+        MONITORINGSSL=""
+    fi
+fi
+
+
+if [ "$USER" = "gitpod" ]; then 
+    helm_deploy grsf-monitoring grsf-monitoring
+    helm_deploy grsf-integration ${NS} $dependencies_path/values-integration-grpl.yaml
+elif [[ "$STAGE" = "aws"* ]]; then
+    helm_deploy grsf-monitoring grsf-monitoring $dependencies_path/values-integration-aws-monitoring.yaml
+    helm_deploy grsf-integration ${NS} $dependencies_path/values-integration-aws.yaml
+    export CLUSTER_NAME=$CLUSTER_NAME
+    $dependencies_path/createIRSA-AMPIngest.sh
+elif [[ "$STAGE" = *"demo"* ]]; then 
+    helm_deploy grsf-integration 
+elif [[ "$STAGE" = "uat" ]]; then 
+    helm_deploy grsf-monitoring grsf-monitoring
+    helm_deploy grsf-integration ${NS} $dependencies_path/values-integration-grpl.yaml
+elif [[ "$STAGE" = "dev" ]]; then 
+    helm_deploy grsf-monitoring grsf-monitoring
+    helm_deploy grsf-integration ${NS} $dependencies_path/values-integration-grpl.yaml
+elif [[ "$STAGE" = *"grpl"* ]]; then 
+    helm_deploy grsf-monitoring grsf-monitoring
+    helm_deploy grsf-integration ${NS} $dependencies_path/values-integration-grpl.yaml
+else
+    helm_deploy grsf-integration 
+fi
+
+rm /tmp/values-override.yaml
+
+status_log $TYPE_SUCCESS "grsf-integration is Installed"
+
+# remove the DNS job again
+if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
+fi
+
+
+if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
+  status_log $TYPE_INFO "Waiting for kubeblocks to be installed"
+  wait
+  status_log $TYPE_SUCCESS "kubeblocks is installed"
+fi
+
