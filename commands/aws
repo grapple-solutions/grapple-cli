@@ -16,6 +16,9 @@ case "$command" in
   install|i)
     "$GRPL_WORKDIR/commands/aws_commands/install" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/aws_install.log"
     ;;
+  install_deploy|id)
+    "$GRPL_WORKDIR/commands/aws_commands/install_test" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/aws_install.log"
+    ;;
   *)
     cli_help
     ;;

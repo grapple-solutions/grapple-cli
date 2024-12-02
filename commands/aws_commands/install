@@ -83,8 +83,11 @@ fi
 
 PRD=grsf
 NS=grpl-system
-GRAPPLE_DOMAIN=".grpl.io"
-GRAPPLE_DNS=${STAGE:-dev}.grpl.io
+
+if [ "${GRAPPLE_DNS}" == "" ]; then 
+    GRAPPLE_DNS=${CLUSTER_NAME}
+    GRAPPLE_DOMAIN=".grapple-demo.com"
+fi
 
 TESTNS=grpl-test
 TESTNSJCS=jcs-test
@@ -229,16 +232,10 @@ if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
   gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
 fi
 
-
-if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
-    status_log $TYPE_INFO "Installing kubeblocks in background"
-    kubeblocks_installation >/dev/null 2>&1 &
-fi
-
-if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
-  status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
-  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
-  kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --restart=Never
+# Define helm_deploy function 
+if [ "$values_yaml_file_names" != "" ]; then
+  values_yaml_file_names=$(echo "$values_yaml_file_names" | awk -v grpl_workdir="$GRPL_WORKDIR" '{gsub("values-templates", "\"" grpl_workdir "/values-templates\"")}1')
+  values_yaml_file_names=$(echo "$values_yaml_file_names" | sed 's/"//g')
 fi
 
 echo 
@@ -257,24 +254,17 @@ helm_deploy() {
 
   echo "Deploying $i with version $version"
 
-  if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
-    if [[ "$(echo "${KUBEFIRST_CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${K3D}" | tr '[:upper:]' '[:lower:]')" ]]; then
-      Kubefirst_values=" -f ${GRPL_WORKDIR}/template-files/values-kubefirst-k3d.yaml "
-    else
-      Kubefirst_values=" -f ${GRPL_WORKDIR}/template-files/values-kubefirst.yaml "
-    fi
-  else
-    Kubefirst_values=" -f $dependencies_path/values-integration-aws.yaml "
-  fi
+  aws_values=" -f $dependencies_path/values-integration-aws.yaml "
 
-  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values" >/dev/null; then
+
+  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $aws_values" >/dev/null; then
     ((retries+=1))
     status_log $TYPE_INFO "Retry ${retries} - ${i} Failed to Install"
     if [[ $retries == 3 ]]; then
         status_log $TYPE_INFO "We tried retrying 3 times and tried logging out of public.ecr.aws registry but it failed, please run 'helm registry logout public.ecr.aws/<repo>' and try again"
         echo "${i} Failed to Installed"
         status_log $TYPE_ERROR "${i} Failed to Installed due to following error"
-        eval "$(getGumSpinnerOrLogger "Extracting Error") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
+        eval "$(getGumSpinnerOrLogger "Extracting Error") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $aws_values"  >&2  
         exit 1
     else 
       if helm registry logout public.ecr.aws >/dev/null 2>&1; then
