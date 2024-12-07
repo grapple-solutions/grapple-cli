@@ -240,6 +240,7 @@ Commands:
     doc                         Documentation
     grapi                       Grapi commands
     gruim                       Gruim commands
+    ai                          Grapple AI
     *                           Help menu
     
 Examples:    
@@ -254,6 +255,7 @@ Examples:
     grpl grapi [commands]
     grpl gruim [commands]
     grpl doc   [commands]
+    grpl ai    [commands]
     grpl *
 
 "
