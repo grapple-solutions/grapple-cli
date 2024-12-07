@@ -5,8 +5,8 @@ set -e
 . "$GRPL_WORKDIR/commands/ai_commands/utils"
 
 cli_help() {
-#   grpl_ai_resource_cli_help
-  status_log $TYPE_INFO "grpl ai resource cli help menu in development"
+  grpl_ai_resource_cli_help
+  #status_log $TYPE_INFO "grpl ai resource cli help menu in development"
   exit 0
 }
 
@@ -163,7 +163,7 @@ $free_text"
 
 free_text=$(gum input --prompt "Enter the your query: ")
 status_log $TYPE_INFO "your query: $free_text"
-status_log $TYPE_INFO "addressing you query, please wait..."
+status_log $TYPE_INFO "addressing your query, please wait..."
 generate_yaml "$free_text"
 
 yaml_content=$(awk '/```yaml/{flag=1; next} /```/{flag=0} flag' "/tmp/response.md")

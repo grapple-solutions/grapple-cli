@@ -4,8 +4,7 @@ set -e
 . "$GRPL_WORKDIR/utils/help_menus"
 
 cli_help() {
-#   grpl_ai_cli_help
-  status_log $TYPE_INFO "grpl ai cli help menu in development"
+  grpl_ai_cli_help
   exit 0
 }
 
