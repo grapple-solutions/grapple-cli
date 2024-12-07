@@ -342,6 +342,31 @@ check_and_install_devspace() {
 }
 
 
+check_and_install_glow() {
+
+    # checks for checking and installing glow cli
+    if ! glow --version  >/dev/null 2>&1; then
+        echo "glow cli is required"
+        echo "installing glow cli..."
+        if [ "${OS}" == "mac" ]; then
+            eval "$(getGumSpinnerOrLogger "glow cli is not installed, now installing glow cli") brew install glow"
+        elif [ "${OS}" == "gnu" ]; then
+            status_log $TYPE_INFO "going to refresh snap"
+            sudo snap refresh >/dev/null 2>&1
+            eval "$(getGumSpinnerOrLogger "glow cli is not installed, now installing glow cli") sudo snap install glow"
+        else
+            errMsg="Failed to install glow cli, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    extract_glow_cli_version
+    
+}
+
+
 check_and_install_taskcli() {
 
     # checks for checking and installing task cli
@@ -594,5 +619,18 @@ extract_task_cli_version(){
 
         # Output the latest version
         echo "      $task_version - task" >> "$GRPL_WORKDIR/dependency_versions"
+    fi
+}
+
+
+extract_glow_cli_version(){
+
+    if ! grep -q "glow" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
+
+        # Get yq version
+        glow_version=$(glow --version | awk '{print $3}')
+
+        # Output the latest version
+        echo "      $glow_version - glow" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 }

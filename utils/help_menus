@@ -32,6 +32,8 @@ generate_cli_web_doc() {
     grpl_license_install_cli_help $WEB_DOC
     grpl_license_remove_cli_help $WEB_DOC
     grpl_license_status_cli_help $WEB_DOC
+    grpl_ai_cli_help $WEB_DOC
+    grpl_ai_resource_cli_help $WEB_DOC
      doc="
 = grpl cli Documentation - $(cat $GRPL_WORKDIR/VERSION)
 :toc: left
@@ -71,6 +73,8 @@ $grpl_license_doc
 $grpl_license_install_doc
 $grpl_license_remove_doc
 $grpl_license_status_doc
+$grpl_ai_doc
+$grpl_ai_resource_doc
 
 "
 echo "$doc" > "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
@@ -1656,8 +1660,6 @@ $meta
     fi
 }
 
-
-
 generate_ui_web_doc() {
 
     status_log $TYPE_INFO "Generating UI web doc it might take a few minutes..."
@@ -1714,3 +1716,112 @@ generate_ui_web_doc() {
 
     exit 0
 }
+
+
+grpl_ai_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl ai"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl ai"
+        meta=""
+    fi
+
+    grpl_ai_doc="
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
+$meta
+
+Description: 
+
+    Displays help menu of grpl ai
+
+Usage: 
+
+    grpl ai [command]
+
+Commands:
+
+    ai              ai commands
+    *               Help menu
+    
+Examples:    
+
+    grpl ai r    or    grpl ai resource
+    grpl ai *    or    grpl ai *
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_ai_doc"  >&2
+    fi
+}
+
+
+
+grpl_ai_resource_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl ai resource"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="=== grpl ai resource"
+        meta=""
+    fi
+
+    grpl_ai_resource_doc="
+$cli_name
+$meta
+
+Description: 
+
+    helps understand and create grpl resources
+
+Usage: 
+
+    grpl ai resource [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to understand and create grpl resources
+    
+Examples:    
+
+    grpl ai r h    or    grpl ai resource help
+    grpl ai r *    or    grpl ai resource *
+
+Variable:
+
+    RESOURCE_ACTION = deploy (deploys the resource yaml onto the cluster) or render (saves the resource into a yaml file)
+
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_ai_resource_doc"  >&2
+    fi
+}
+

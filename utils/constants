@@ -73,3 +73,8 @@ DigitalOcean="DigitalOcean"
 GoogleCloud="Google Cloud"
 Vultr="Vultr"
 K3D="k3d"
+
+
+# resource actions
+RESOURCE_DEPLOY="deploy"
+RESOURCE_RENDER="render"

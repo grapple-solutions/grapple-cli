@@ -149,3 +149,19 @@ is_correct_kubectl_context_provided() {
     fi
 
 }
+
+
+
+
+
+is_correct_resource_action_provided() {
+    
+    resource_action=$1
+    if [[ $resource_action != $RESOURCE_DEPLOY && $resource_action != $RESOURCE_RENDER ]]; then
+        errMsg="Error: Invalid RESOURCE_DEPLOY provided : $resource_action. Please provide one of the following 1)$RESOURCE_DEPLOY 2)$RESOURCE_RENDER"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}
