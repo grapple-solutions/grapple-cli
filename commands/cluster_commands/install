@@ -127,7 +127,11 @@ extract_email_from_github_username() {
   check_and_install_jq
 
   # Fetch the GitHub user's details (name) using the GitHub username
-  user_details=$(curl -s "https://api.github.com/users/$GITHUB_USERNAME")
+  if [[ "$GITHUB_TOKEN" != "" ]]; then
+    user_details=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/users/$GITHUB_USERNAME")
+  else
+    user_details=$(curl -s "https://api.github.com/users/$GITHUB_USERNAME")
+  fi
   USER_NAME=$(echo "$user_details" | jq -r '.name')
 
   # Fetch 100 events per page
@@ -195,7 +199,12 @@ extract_email_from_gitlab_username() {
   check_and_install_jq
 
   # Fetch the GitLab user ID and name by username
-  user_details=$(curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://gitlab.com/api/v4/users?username=$GITLAB_USERNAME")
+  if [[ "$GITLAB_TOKEN" != "" ]]; then
+    user_details=$(curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://gitlab.com/api/v4/users?username=$GITLAB_USERNAME")
+  else 
+    user_details=$(curl -s "https://gitlab.com/api/v4/users?username=$GITLAB_USERNAME")
+  fi
+
   USER_ID=$(echo "$user_details" | jq -r '.[0].id')
   USER_NAME=$(echo "$user_details" | jq -r '.[0].name')
 
@@ -209,8 +218,12 @@ extract_email_from_gitlab_username() {
   page=1
 
   # Fetch events
-  response=$(curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
-    "https://gitlab.com/api/v4/users/$USER_ID/events?per_page=$per_page&page=$page")
+  if [[ "$GITLAB_TOKEN" != "" ]]; then
+    response=$(curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+      "https://gitlab.com/api/v4/users/$USER_ID/events?per_page=$per_page&page=$page")
+  else
+    response=$(curl -s "https://gitlab.com/api/v4/users/$USER_ID/events?per_page=$per_page&page=$page")
+  fi
 
   # Check if response is empty or contains an error
   if [ -z "$response" ]; then
@@ -275,7 +288,7 @@ extract_email_from_gitlab_username() {
   if [ -n "$EMAIL" ]; then
     echo "Email found: $EMAIL"
   else
-    status_log $TYPE_INFO "Unable to find user email for $GITHUB_USERNAME"
+    status_log $TYPE_INFO "Unable to find user email for $GITLAB_USERNAME"
   fi
 }
 
