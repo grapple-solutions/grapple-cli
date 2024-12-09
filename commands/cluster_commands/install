@@ -591,7 +591,6 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
     if [[ "${EMAIL}" == "" ]]; then EMAIL="info@grapple-solutions.com"; status_log $TYPE_INFO "Using default email : $EMAIL"; else status_log $TYPE_INFO "extracted email : $EMAIL from gitlab username $GITHUB_USERNAME"; fi
   fi
 
-  exit 0
   echo "DNS: $GRAPPLE_DNS"
 
   if [[ "$(echo "${KUBEFIRST_CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${K3D}" | tr '[:upper:]' '[:lower:]')" ]]; then
