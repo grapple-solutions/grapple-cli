@@ -124,66 +124,82 @@ patch_coredns() {
 
 
 extract_email_from_github_username() {
-
   check_and_install_jq
 
-  # fetch the GitHub user's details (name) using the GitHub username
+  # Fetch the GitHub user's details (name) using the GitHub username
   user_details=$(curl -s "https://api.github.com/users/$GITHUB_USERNAME")
   USER_NAME=$(echo "$user_details" | jq -r '.name')
 
-  # for getting paginating results
+  # Pagination setup
   page=1
   per_page=30
 
-  # loop over all events until email is found
+  # Timeout setup
+  start_time=$(date +%s)
+  timeout=60 # 1 minute
+  dot_interval=5
+  last_dot_time=$start_time
+
+  # Loop until email is found or timeout occurs
   while [ -z "$EMAIL" ]; do
-    response=$(curl -s "https://api.github.com/users/$GITHUB_USERNAME/events/public?per_page=$per_page&page=$page")
+    # Check for timeout
+    current_time=$(date +%s)
+    elapsed_time=$((current_time - start_time))
+    if [ "$elapsed_time" -ge "$timeout" ]; then
+      status_log $TYPE_INFO "\nTimeout reached. Exiting."
+      break
+    fi
 
-    # Validate that the response is valid JSON
+    # Print a dot every 5 seconds
+    if [ $((current_time - last_dot_time)) -ge $dot_interval ]; then
+      echo -n "." >&2
+      last_dot_time=$current_time
+    fi
+
+    # Fetch events
+    if [[ $GITHUB_USERNAME != "" ]]; then
+      response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+        "https://api.github.com/users/$GITHUB_USERNAME/events/public?per_page=$per_page&page=$page")
+    else
+      response=$(curl -s "https://api.github.com/users/$GITHUB_USERNAME/events/public?per_page=$per_page&page=$page")
+    fi
+    # Validate the response
     if ! echo "$response" | jq empty > /dev/null 2>&1; then
-      echo "Error: Invalid JSON response from GitHub"
+      echo -e "\nError: Invalid JSON response from GitHub"
       break
     fi
 
-    # Check if response is empty, indicating no more pages
+    # Check for API errors
+    error_message=$(echo "$response" | jq -r '.message // empty')
+    if [ -n "$error_message" ]; then
+      echo -e "\nError: $error_message"
+      break
+    fi
+
+    # Check if response is empty
     if [ "$(echo "$response" | jq length)" -eq 0 ]; then
+      echo -e "\nNo more pages to process."
       break
     fi
 
-    if ! echo "$response" | jq empty > /dev/null 2>&1; then
-      echo "Error: Invalid JSON response from GitHub"
-      break
-    fi
-
-    # remove all spaces
-    response=$(echo "$response" | tr -d '[:space:]')
-
-    # indicating no more pages
-    if [ "$(echo "$response" | jq length)" -eq 0 ]; then
-      break
-    fi
-
-    # loop through each event in the response using jq to filter PushEvent
-    if ! echo "$response" | jq -e '.[] | select(.type == "PushEvent")' > /dev/null 2>&1; then
-      page=$((page + 1))
-      continue
-    fi
+    # Loop through each event to find PushEvent commits
     for row in $(echo "$response" | jq -c '.[] | select(.type == "PushEvent")'); do
-      # loop through all commits in the commit array
       for commit in $(echo "$row" | jq -c '.payload.commits[]'); do
         commit_name=$(echo "$commit" | jq -r '.author.name')
         commit_email=$(echo "$commit" | jq -r '.author.email')
         if { [ "$commit_name" == "$GITHUB_USERNAME" ] || [ "$commit_name" == "$USER_NAME" ]; } && [[ "$commit_email" != *"noreply"* ]]; then
           EMAIL=$commit_email
-          # break both loops
           break 2
         fi
       done
     done
 
+    # Increment page for the next iteration
     page=$((page + 1))
   done
 
+  # Output the result
+  echo -e "\n"
   if [ -n "$EMAIL" ]; then
     echo "Email found: $EMAIL"
   else
@@ -192,55 +208,99 @@ extract_email_from_github_username() {
 }
 
 
-extract_email_from_gitlab_username(){
+
+extract_email_from_gitlab_username() {
 
   check_and_install_jq
 
-  # fetch the GitLab user ID and name by username
+  # Fetch the GitLab user ID and name by username
   user_details=$(curl -s "https://gitlab.com/api/v4/users?username=$GITLAB_USERNAME")
   USER_ID=$(echo "$user_details" | jq -r '.[0].id')
   USER_NAME=$(echo "$user_details" | jq -r '.[0].name')
 
   if [ -z "$USER_ID" ]; then
-    status_log $TYPE_ERROR "No Email found for $GITLAB_USERNAME"
+    echo "Error: No Email found for $GITLAB_USERNAME"
     exit 1
   fi
 
   page=1
   per_page=30
 
-  # loop over all events until email is found
-  while [ -z "$EMAIL" ]; do
-    response=$(curl -s "https://gitlab.com/api/v4/users/$USER_ID/events?per_page=$per_page&page=$page")
+  # Timeout setup
+  start_time=$(date +%s)
+  timeout=60 # 1 minute
+  dot_interval=5
+  last_dot_time=$start_time
 
-    if [ -z "$response" ] || [ "$(echo "$response" | jq length)" -eq 0 ]; then
-      status_log $TYPE_ERROR "No Email found for $GITLAB_USERNAME"
-      exit 1
+  # Loop until email is found or timeout occurs
+  while [ -z "$EMAIL" ]; do
+    # Check for timeout
+    current_time=$(date +%s)
+    elapsed_time=$((current_time - start_time))
+    if [ "$elapsed_time" -ge "$timeout" ]; then
+      status_log $TYPE_INFO "\nTimeout reached. Exiting."
+      break
     fi
 
-    # remove all spaces
-    response=$(echo "$response" | tr -d '[:space:]')
+    # Print a dot every 5 seconds
+    if [ $((current_time - last_dot_time)) -ge $dot_interval ]; then
+      echo -n "."
+      last_dot_time=$current_time
+    fi
 
-    # loop through each event in the response using jq to filter PushEvent
+    # Fetch events
+    if [[ $GITLAB_TOKEN != "" ]]; then
+      response=$(curl -s -H "PRIVATE-TOKEN: $GITLAB_TOKEN" "https://gitlab.com/api/v4/users/$USER_ID/events?per_page=$per_page&page=$page")
+    else
+      response=$(curl -s "https://gitlab.com/api/v4/users/$USER_ID/events?per_page=$per_page&page=$page")
+    fi
+
+    # Check if response is empty or contains an error
+    if [ -z "$response" ]; then
+      echo -e "\nError: Empty response from GitLab API"
+      break
+    fi
+
+    error_message=$(echo "$response" | jq -r '.error // empty')
+    if [ -n "$error_message" ]; then
+      echo -e "\nError: $error_message"
+      break
+    fi
+
+    # Check if no more events are available
+    if [ "$(echo "$response" | jq length)" -eq 0 ]; then
+      echo -e "\nNo more pages to process."
+      break
+    fi
+
+    # Loop through each event in the response to filter PushEvent
     for row in $(echo "$response" | jq -c '.[] | select(.action_name == "pushednew")'); do
-
       project_id=$(echo "$row" | jq -r '.project_id')
       commit_sha=$(echo "$row" | jq -r '.push_data.commit_to')
 
+      # Fetch commit info
       commit_info=$(curl -s "https://gitlab.com/api/v4/projects/$project_id/repository/commits/$commit_sha")
+
+      # Check if commit info contains an error
+      commit_error=$(echo "$commit_info" | jq -r '.error // empty')
+      if [ -n "$commit_error" ]; then
+        echo -e "\nError fetching commit info: $commit_error"
+        break
+      fi
 
       commit_name=$(echo "$commit_info" | jq -r '.author_name')
       commit_email=$(echo "$commit_info" | jq -r '.author_email')
 
       if [ "$commit_name" == "$GITLAB_USERNAME" ] || [ "$commit_name" == "$USER_NAME" ]; then
         EMAIL=$commit_email
-        break
+        break 2
       fi
     done
 
     page=$((page + 1))
   done
 
+  echo -e "\n"
   if [ -n "$EMAIL" ]; then
     echo "Email found: $EMAIL"
   else
