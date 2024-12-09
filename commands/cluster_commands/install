@@ -46,6 +46,7 @@ valid_args=(
     "KUBEFIRST_CLUSTER_ID"
     "KUBEFIRST_CLUSTER_NAME"
     "INSTALL_KUBEBLOCKS"
+    "wait"
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
@@ -887,7 +888,7 @@ status_log $TYPE_SUCCESS "Successfuly Installed grpl"
 
 
 if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
-  status_log $TYPE_INFO "Waiting for kubeblocks to be installed"
+  status_log $TYPE_INFO "Waiting for kubeblocks to be installed it might take a while"
   wait
   status_log $TYPE_SUCCESS "kubeblocks is installed"
 fi
@@ -941,3 +942,11 @@ if [ "$TARGET_PLATFORM" = $CIVO ] && [ "${CLUSTER_IP}" == "" ]; then
 
 fi
 
+if [ "${wait}" == "true" ]; then
+  status_log $TYPE_INFO "Waiting for grpl to be ready"
+  while ! kubectl get -n grpl-system configuration.pkg.crossplane.io grpl 2>/dev/null; do echo -n "."; sleep 2; done && \
+    sleep 5 && \
+    kubectl wait -n grpl-system configuration.pkg.crossplane.io grpl --for condition=Healthy=True --timeout=300s
+
+  status_log $TYPE_SUCCESS "grpl is ready"
+fi
