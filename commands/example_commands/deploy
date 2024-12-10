@@ -45,13 +45,33 @@ display_deployment_details(){
   resource_name=$2
   domain=$3
 
+  if [[ "$wait" == "true" ]]; then
+    status_log $TYPE_INFO "Waiting for deployment to be ready"
+    if ! eval "$(getGumSpinnerOrLogger "waiting for grapi resource to be ready") kubectl rollout status -n ${namespace} deploy ${namespace}-${resource_name}-grapi"; then
+      status_log $TYPE_ERROR "Failed to wait for grapi resource"
+      exit 1
+    fi
+    status_log $TYPE_SUCCESS "grapi resource is ready"
+    if ! eval "$(getGumSpinnerOrLogger "waiting for gruim resource to be ready") kubectl rollout status -n ${namespace} deploy ${namespace}-${resource_name}-gruim"; then
+      status_log $TYPE_ERROR "Failed to wait for gruim resource"
+      exit 1
+    fi
+    status_log $TYPE_SUCCESS "gruim resource is ready"
+
+    status_log $TYPE_SUCCESS "Deployment is ready"
+  fi
+
+  if [[ "$wait" != "true" ]]; then
+    status_log $TYPE_INFO "It will take a few minutes for the deployment to be ready"
+  fi 
+
   if [ "$clusterdomain" != "" ]; then
     status_log $TYPE_INFO "Deployment Details"
     status_log $TYPE_INFO "Following resources are deployed in ${namespace} namespace"
     status_log $TYPE_INFO "Resource Name: ${resource_name}-grapi can be accessed at ${namespace}-${resource_name}-grapi.${clusterdomain}"
     status_log $TYPE_INFO "Resource Name: ${resource_name}-gruim can be accessed at ${namespace}-${resource_name}-gruim.${clusterdomain}"
-    status_log $TYPE_INFO "It will take a few minutes for the deployment to be ready"
   fi
+
 }
 
 
@@ -60,6 +80,7 @@ valid_args=(
     "GRAS_TEMPLATE"
     "DB_TYPE"
     "KUBE_CONTEXT"
+    "wait"
   )
 
 # check if values are already passed form terminal
