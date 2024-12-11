@@ -1533,8 +1533,8 @@ EOM
 )
 
 
-
-declare -a gras_resources=(
+# Plain arrays for resources
+gras_resources=(
     "------------ Following are the examples of gras resources ------------"
     "------------ Following is the example of gras database file resource example ------------"
     "$gras_db_file_gras"
@@ -1548,7 +1548,7 @@ declare -a gras_resources=(
     "$grpl_disc_ext_mysql_gras"
 )
 
-declare -a gruim_resources=(
+gruim_resources=(
     "------------ Following are the examples of gruim resources ------------"
     "------------ Following is the example of gruim database file resource example ------------"
     "$gras_db_file_gruim"
@@ -1562,7 +1562,7 @@ declare -a gruim_resources=(
     "$grpl_disc_ext_mysql_gruim"
 )
 
-declare -a grapi_resources=(
+grapi_resources=(
     "------------ Following are the examples of grapi resources ------------"
     "------------ Following is the example of grapi database file resource example ------------"
     "$gras_db_file_grapi"
@@ -1576,9 +1576,15 @@ declare -a grapi_resources=(
     "$grpl_disc_ext_mysql_grapi"
 )
 
-declare -A grpl_gras_resource_dict=(
-    ["grappleuimodules.grsf.grpl.io"]="${gruim_resources[@]}"
-    ["grappleapis.grsf.grpl.io"]="${grapi_resources[@]}"
-    ["grappleapplicationsets.grsf.grpl.io"]="${gras_resources[@]}"
+# Simulating dictionary with two arrays: keys and values
+grpl_gras_resource_keys=(
+    "grappleuimodules.grsf.grpl.io"
+    "grappleapis.grsf.grpl.io"
+    "grappleapplicationsets.grsf.grpl.io"
 )
 
+grpl_gras_resource_values=(
+    "${gruim_resources[*]}"
+    "${grapi_resources[*]}"
+    "${gras_resources[*]}"
+)
