@@ -35,9 +35,7 @@ extract_creds_from_secrets() {
 extract_domain_from_grpl_config() {
   if kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.clusterdomain}" > /dev/null 2>&1; then
     clusterdomain=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.clusterdomain}" | base64 --decode)
-  else
-    status_log $TYPE_ERROR "Failed to clusterdomain from grsf-config secret"
-  fi  
+  fi
 }
 extract_domain_from_grpl_config
 
@@ -63,14 +61,17 @@ display_deployment_details(){
     status_log $TYPE_SUCCESS "Deployment is ready"
   fi
 
-  status_log $TYPE_INFO "Deployment Details"
-  status_log $TYPE_INFO "Following resources are deployed in ${namespace} namespace"
-  status_log $TYPE_INFO "Resource Name: ${resource_name}-grapi can be accessed at ${namespace}-${resource_name}-grapi.${clusterdomain}"
-  status_log $TYPE_INFO "Resource Name: ${resource_name}-gruim can be accessed at ${namespace}-${resource_name}-gruim.${clusterdomain}"
-  
   if [[ "$wait" != "true" ]]; then
     status_log $TYPE_INFO "It will take a few minutes for the deployment to be ready"
+  fi 
+
+  if [ "$clusterdomain" != "" ]; then
+    status_log $TYPE_INFO "Deployment Details"
+    status_log $TYPE_INFO "Following resources are deployed in ${namespace} namespace"
+    status_log $TYPE_INFO "Resource Name: ${resource_name}-grapi can be accessed at ${namespace}-${resource_name}-grapi.${clusterdomain}"
+    status_log $TYPE_INFO "Resource Name: ${resource_name}-gruim can be accessed at ${namespace}-${resource_name}-gruim.${clusterdomain}"
   fi
+
 }
 
 
