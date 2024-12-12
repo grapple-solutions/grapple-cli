@@ -1820,7 +1820,7 @@ Examples:
 Variable:
 
     RESOURCE_ACTION = deploy (deploys the resource yaml onto the cluster), render (saves the resource into a yaml file), none (does nothing)
-    QUERY = your query to grapple ai
+    QUERY = your query to grapple ai, make sure to enclose the query in double quotes
 
 "
 
