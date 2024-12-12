@@ -118,28 +118,19 @@ fetch_crd_schema() {
         return
     fi
 
-    # Fetch the API response
-    response=$(curl -s "http://localhost:8001/apis/apiextensions.k8s.io/v1/customresourcedefinitions/$resource_type")
+    # Fetch the schema using kubectl
+    schema=$(kubectl get crd "$resource_type" -o jsonpath='{.spec.versions[0].schema.openAPIV3Schema}')
 
-    # Check if the response is empty or contains an error
-    if [[ -z "$response" ]]; then
-        status_log $TYPE_ERROR "Error: No response received from the OpenAPI while fetching schema for Custom Resource Definition '$resource_type'"
-        exit 1
-    fi
-
-    # Check if the resource exists
-    if ! echo "$response" | jq -e '.spec.versions[0].schema.openAPIV3Schema' &>/dev/null; then
+    # Check if schema is empty
+    if [[ -z "$schema" ]]; then
         status_log $TYPE_ERROR "Error: Custom Resource Definition '$resource_type' not found or does not have a schema"
-        exit 1
+        echo "{}"
+        return 1
     fi
 
-    # If we get here, extract the schema
-    schema=$(echo "$response" | jq '.spec.versions[0].schema.openAPIV3Schema')
-
-    # Now you can work with the schema
+    # Output the schema
     echo "$schema"
 }
-
 
 # Validate YAML using external validation tool (simulated)
 validate_yaml() {
@@ -219,19 +210,6 @@ $free_text"
 QUERY=$(if [ "${QUERY}" != "" ]; then echo ${QUERY}; else prompt_for_input_with_validation "Enter your query: " "enter you text here" "$non_empty_regex" "Input can't be empty"; fi) || exit $?
 status_log $TYPE_INFO "your query: $QUERY"
 status_log $TYPE_INFO "addressing your query, it might take 10-15 seconds, please wait..."
-
-# Find and kill any process running on port 8001
-if lsof -i :8001 &> /dev/null; then
-    echo "Killing existing process on port 8001..."
-    lsof -ti:8001 | xargs kill -9
-    sleep 1  # Give time for the process to be killed
-fi
-
-# Start kubectl proxy
-echo "Starting kubectl proxy..."
-kubectl proxy &> /dev/null &
-sleep 2  # Give kubectl proxy time to start
-
 generate_yaml "$QUERY"
 
 yaml_content=$(awk '/```yaml/{flag=1; next} /```/{flag=0} flag' "/tmp/response.md")
