@@ -633,14 +633,15 @@ Examples:
     grpl c c *    or    grpl cluster create *
 
 
-Variables:
+Parameters:
 
     Common Parameters:
         TARGET_PLATFORM= CIVO / Kubernetes / minikube / Kubefirst
         CLUSTER_NAME= name of the cluster
         CIVO_API_KEY= civo api key (optional)
         CIVO_REGION=Available CIVO regions (e.g. FRA1)
-        wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready
+        wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready (default is 'false')
+        AUTO_CONFIRM= 'true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'true')
     
     CIVO Parameters:
 $civo_help_menu
@@ -716,16 +717,16 @@ Examples:
     grpl c i *    or    grpl cluster install *
 
 
-Variables:
+Parameters:
 
   TARGET_PLATFORM=CIVO / Kubernetes / minikube / Kubefirst
   # general configurations
-  GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.0' or '0.2.1')
-  AUTO_CONFIRM='false' / 'true'
+  GRAPPLE_VERSION = version of the grapple deployment e.g. '0.2.0', '0.2.1' (default is 'latest')
+  AUTO_CONFIRM='false' / 'true' (default is 'false')
   EMAIL = email
   ORGANIZATION = organization
   # kubernetes related configurations
-  KUBE_CONTEXT=kubernetes context, if its set to "currnet" then it will use current kubectl context
+  KUBE_CONTEXT=kubernetes context (default is 'current')
   # minikube related configurations
   # no additional configurations
   # CIVO related configurations
@@ -741,8 +742,8 @@ Variables:
   KUBEFIRST_CLUSTER_NAME = cluster name for kubefirst cluster
   GITHUB_USERNAME = github username
   GITLAB_USERNAME = gitlab username
-  INSTALL_KUBEBLOCKS = 'true' / 'false', set to 'true' if you want to install kubeblocks
-  wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready
+  INSTALL_KUBEBLOCKS = 'true' / 'false', set to 'true' if you want to install kubeblocks (default is 'false')
+  wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready (default is 'false')
 
 " 
 
@@ -908,12 +909,12 @@ Examples:
     grpl e d h    or    grpl example deploy help
     grpl e d *    or    grpl example deploy *
 
-Variables:
+Parameters:
 
     GRAS_TEMPLATE: gras template e.g db-file, etc
     DB_TYPE: db type it can either internal or external
-    KUBE_CONTEXT: kubectl context you want to use, if its set to "current" then it will use current kubectl context
-    wait = 'true' / 'false', set to 'true' if you want to wait for grpl resources (grapi/gruim) to be ready
+    KUBE_CONTEXT: kubectl context you want to use (default is 'current')
+    wait = 'true' / 'false', set to 'true' if you want to wait for grpl resources (grapi/gruim) to be ready (default is 'false')
 
 " 
 
@@ -1020,12 +1021,12 @@ Examples:
     grpl a i h    or    grpl app init help    or    grpl application init help
     grpl a i *    or    grpl app init *       or    grpl application init *
 
-Variables:
+Parameters:
 
     PROJECT_NAME= Name of the project
-    AUTO_CONFIRM= 'false' / 'true'
-    GITHUBTOKEN= Token to authenticate gh
-    GRAPPLE_TEMPLATE= the grapple-template repository to clone (default grapple-solutions/grapple-template)
+    AUTO_CONFIRM= 'false' / 'true' (default is 'false')
+    GITHUBTOKEN= Token to authenticate gh 
+    GRAPPLE_TEMPLATE= the grapple-template repository to clone (default is 'grapple-solutions/grapple-template')
 
 "
     if [ "$type" == $WEB_DOC ]; then
@@ -1143,22 +1144,22 @@ Examples:
     grpl r d h    or    grpl resource deploy help
     grpl r d *    or    grpl resource deploy *
 
-Variable:
+Parameters:
 
-    KUBE_CONTEXT: kubectl context you want to use, if its set to "current" then it will use current kubectl context
+    KUBE_CONTEXT: kubectl context you want to use (default is 'current')
     GRAS_NAME: name of the project
     GRAS_TEMPLATE: gras template e.g db-file, etc
     SOURCE_DATA: source of the data
-    DB_FILE_PATH: path where data is stored, default path is /data/db.json
+    DB_FILE_PATH: path where data is store, (default path is /data/db.json)
     DB_TYPE: db type it can either internal or external
     ENABLE_GRUIM: to enable gruim, it can either be "Yes" or "No"
     MODELS: input of models 
     RELATIONS: models relations
-    KUBE_NS: namespace to deploy gras, default ns is 'default'
+    KUBE_NS: namespace to deploy gras (default ns is 'default')
     DATASOURCES: data sources configs
     DISCOVERIES: discoveries configs
     DATABASE_SCHEMA: database schema you want to use
-    AUTO_DISCOVERY: to enable auto discovery
+    AUTO_DISCOVERY: to enable auto discovery it can either be 'true' or 'false' (default is 'false')
     
 "
 
@@ -1817,7 +1818,7 @@ Examples:
     grpl ai r h    or    grpl ai resource help
     grpl ai r *    or    grpl ai resource *
 
-Variable:
+Parameters:
 
     RESOURCE_ACTION = deploy (deploys the resource yaml onto the cluster) or render (saves the resource into a yaml file)
 
