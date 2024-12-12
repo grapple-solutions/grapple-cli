@@ -1,7 +1,8 @@
 #!/bin/bash
-echo "ai resource command"
+
 set -e
 . "$GRPL_WORKDIR/utils/help_menus"
+. "$GRPL_WORKDIR/utils/checks"
 . "$GRPL_WORKDIR/commands/ai_commands/utils"
 
 cli_help() {
@@ -68,6 +69,22 @@ grpl_resources=(
 grpl_resource_keys=("gruim" "grapi" "gras")
 grpl_resource_values=("grappleuimodules.grsf.grpl.io" "grappleapis.grsf.grpl.io" "grappleapplicationsets.grsf.grpl.io")
 
+
+# Unecessary fields
+
+unnecessary_fields=(
+    "metadata.annotations*"
+    "metadata.labels*"
+    "metadata.creationTimestamp"
+    "metadata.finalizers*"
+    "metadata.generation*"
+    "metadata.resourceVersion"
+    "metadata.uid"
+    "spec.composite*"
+    "spec.composition*"
+    "spec.resourceRef*"
+    "status*"
+)
 
 # Function to match resource names
 matched_resource() {
@@ -184,6 +201,8 @@ $free_text"
             value="${grpl_gras_resource_values[$i]}"
             chatgpt_prompt+="\n$key : $value"
         done
+
+        chatgpt_prompt+="\nif yaml is generated then remove following fields from yaml ${unnecessary_fields[*]}"
     fi
 
     # Make GPT API call
