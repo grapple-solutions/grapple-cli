@@ -12,10 +12,10 @@ command=$1
 shift
 case "$command" in
   deploy|d)
-    "$GRPL_WORKDIR/commands/resource_commands/deploy" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/resource_deploy.log"
+    "$GRPL_WORKDIR/commands/resource_commands/deploy" "$@" | tee -ia "$GRPL_WORKDIR/logs/resource_deploy.log"
     ;;
   render|r)
-    "$GRPL_WORKDIR/commands/resource_commands/render" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/resource_render.log"
+    "$GRPL_WORKDIR/commands/resource_commands/render" "$@" | tee -ia "$GRPL_WORKDIR/logs/resource_render.log"
     ;;
   *)
     cli_help

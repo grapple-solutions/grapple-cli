@@ -23,8 +23,13 @@ command=$1
 # valid arguments array
 valid_args=(
     "RESOURCE_ACTION"
+    "QUERY"
 )
 
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+help_menu_cmd="grpl ai resource help"
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
 
 # ----------- Resource Command Code -----------------
 
@@ -200,10 +205,10 @@ $free_text"
 }
 
 
-free_text=$(gum input --prompt "Enter the your query: ")
-status_log $TYPE_INFO "your query: $free_text"
+QUERY=$(if [ "${QUERY}" != "" ]; then echo ${QUERY}; else prompt_for_input_with_validation "Enter your query: " "enter you text here" "$non_empty_regex" "Input can't be empty"; fi) || exit $?
+status_log $TYPE_INFO "your query: $QUERY"
 status_log $TYPE_INFO "addressing your query, please wait..."
-generate_yaml "$free_text"
+generate_yaml "$QUERY"
 
 yaml_content=$(awk '/```yaml/{flag=1; next} /```/{flag=0} flag' "/tmp/response.md")
 if [[ "$yaml_content" != "" ]]; then
@@ -216,7 +221,7 @@ if [[ "$yaml_content" != "" ]]; then
         status_log $TYPE_INFO "deploy: deploys the resource yaml onto the cluster"
         status_log $TYPE_INFO "render: saves the resource into a yaml file"
     fi
-    RESOURCE_ACTION=$(if [ "${RESOURCE_ACTION}" != "" ]; then echo ${RESOURCE_ACTION}; else gum choose $RESOURCE_DEPLOY $RESOURCE_RENDER; fi)
+    RESOURCE_ACTION=$(if [ "${RESOURCE_ACTION}" != "" ]; then echo ${RESOURCE_ACTION}; else gum choose $RESOURCE_DEPLOY $RESOURCE_RENDER $NO_ACTION; fi)
     status_log $TYPE_INFO "selected resource action: ${RESOURCE_ACTION}"
 
     echo "$yaml_content" > /tmp/extracted.yaml

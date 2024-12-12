@@ -12,9 +12,10 @@ install_prerequisite
 
 command=$1
 shift
+
 case "$command" in
   resource|r)
-    "$GRPL_WORKDIR/commands/ai_commands/resource" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/ai_resource.log"
+    "$GRPL_WORKDIR/commands/ai_commands/resource" "$@" | tee -ia "$GRPL_WORKDIR/logs/ai_resource.log"
     ;;
   *)
     cli_help

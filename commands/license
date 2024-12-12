@@ -18,13 +18,13 @@ command=$1
 shift
 case "$command" in
   status|s)
-    "$GRPL_WORKDIR/commands/license_commands/status" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/license_status.log"
+    "$GRPL_WORKDIR/commands/license_commands/status" "$@" | tee -ia "$GRPL_WORKDIR/logs/license_status.log"
     ;;
   install|i)
-    "$GRPL_WORKDIR/commands/license_commands/install" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/license_install.log"
+    "$GRPL_WORKDIR/commands/license_commands/install" "$@" | tee -ia "$GRPL_WORKDIR/logs/license_install.log"
     ;;
   remove|r)
-    "$GRPL_WORKDIR/commands/license_commands/remove" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/license_create.log"
+    "$GRPL_WORKDIR/commands/license_commands/remove" "$@" | tee -ia "$GRPL_WORKDIR/logs/license_create.log"
     ;;
   *)
     cli_help

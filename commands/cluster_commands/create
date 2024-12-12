@@ -53,7 +53,7 @@ civo_valid_args=(
 # if yes? then store then in the respective vars
 help_menu_cmd="grpl cluster create help"
 valid_args=("${common_valid_args[@]}" "${civo_valid_args[@]}")
-extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
 
 
 cli_log "cluster create BEGIN"
