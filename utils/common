@@ -214,8 +214,8 @@ extract_input_params_from_cli() {
           if [[ "$arg1" = *=* ]]; then
               
               config_param=$(is_valid_arg_syntax "$arg1")
-              declare -a parts=($(echo "$config_param" | tr '=' ' '))
-              key="${parts[0]}"
+              key=${config_param%%=*}
+              value=${config_param#*=}
               # Check if the argument is valid
               valid=false
               for valid_arg in "${valid_args[@]}"; do
@@ -227,7 +227,6 @@ extract_input_params_from_cli() {
 
               if  $valid; then
                   local key=${key//-/_}
-                  local value=${parts[1]}
                   export "$key=$value"
               else
                   status_log $TYPE_ERROR "Error: $key is not a valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
@@ -347,21 +346,6 @@ getGumSpinnerOrLogger() {
     gum log $msg
   fi
 
-}
-
-remove_spaces() {
-  local input_string="$1"
-  local output_string="${input_string// /}"
-  echo "$output_string"
-}
-
-process_parameters() {
-  local updated_params=()
-  for param in "$@"; do
-    param_no_spaces=$(remove_spaces "$param")
-    updated_params+=("$param_no_spaces")
-  done
-  echo "${updated_params[@]}"
 }
 
 setTTYModeState() {

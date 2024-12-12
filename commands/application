@@ -12,7 +12,7 @@ command=$1
 shift
 case "$command" in
   init|i)
-    "$GRPL_WORKDIR/commands/application_commands/init" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/app_init.log"
+    "$GRPL_WORKDIR/commands/application_commands/init" "$@" | tee -ia "$GRPL_WORKDIR/logs/app_init.log"
     ;;
   *)
     cli_help

@@ -1,7 +1,8 @@
 #!/bin/bash
-echo "ai resource command"
+
 set -e
 . "$GRPL_WORKDIR/utils/help_menus"
+. "$GRPL_WORKDIR/utils/checks"
 . "$GRPL_WORKDIR/commands/ai_commands/utils"
 
 cli_help() {
@@ -23,13 +24,31 @@ command=$1
 # valid arguments array
 valid_args=(
     "RESOURCE_ACTION"
+    "QUERY"
 )
 
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+help_menu_cmd="grpl ai resource help"
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
 
 # ----------- Resource Command Code -----------------
 
+get_grpl_resource_value() {
+    local key="$1"
+    for i in "${!grpl_resource_keys[@]}"; do
+        if [[ "${grpl_resource_keys[$i]}" == "$key" ]]; then
+            echo "${grpl_resource_values[$i]}"
+            return 0
+        fi
+    done
+    echo ""
+    return 1
+}
+
+
 # Array of GRPL resources
-declare -a grpl_resources=(
+grpl_resources=(
     "compositegrappleapplicationsets.grsf.grpl.io"
     "compositegrappleuimodules.grsf.grpl.io"
     "compositemanageduimodules.grsf.grpl.io"
@@ -46,11 +65,25 @@ declare -a grpl_resources=(
     "manageddatasources.grsf.grpl.io"
 )
 
-# Dictionary for GRPL resources
-declare -A grpl_resource_dict=(
-    ["gruim"]="grappleuimodules.grsf.grpl.io"
-    ["grapi"]="grappleapis.grsf.grpl.io"
-    ["gras"]="grappleapplicationsets.grsf.grpl.io"
+# Dictionary simulation for GRPL resources
+grpl_resource_keys=("gruim" "grapi" "gras")
+grpl_resource_values=("grappleuimodules.grsf.grpl.io" "grappleapis.grsf.grpl.io" "grappleapplicationsets.grsf.grpl.io")
+
+
+# Unecessary fields
+
+unnecessary_fields=(
+    "metadata.annotations*"
+    "metadata.labels*"
+    "metadata.creationTimestamp"
+    "metadata.finalizers*"
+    "metadata.generation*"
+    "metadata.resourceVersion"
+    "metadata.uid"
+    "spec.composite*"
+    "spec.composition*"
+    "spec.resourceRef*"
+    "status*"
 )
 
 # Function to match resource names
@@ -63,17 +96,20 @@ matched_resource() {
         local resource_part1=$(echo "$resource" | cut -d '.' -f 1 | tr '[:upper:]' '[:lower:]')
         local resource_part2=$(echo "$resource" | cut -d '.' -f 2 | tr '[:upper:]' '[:lower:]')
         local resource_part3=$(echo "$resource" | cut -d '.' -f 3 | tr '[:upper:]' '[:lower:]')
-
+    
         # Match each part
-        if [[ "$resource_part1" == "$resource_name" || "$resource_part2" == "$resource_name" || "$resource_part3" == "$resource_name" ]]; then
+        if [[ "$resource" == "$resource_name" || "$resource_part1" == "$resource_name" || "$resource_part2" == "$resource_name" || "$resource_part3" == "$resource_name" ]]; then
             echo "$resource"
             return
         fi
     done
 
-    # If not found, check in the dictionary
-    if [[ -n "${grpl_resource_dict[$resource_name]}" ]]; then
-        echo "${grpl_resource_dict[$resource_name]}"
+
+    # Updated check in the script
+    if resource_value=$(get_grpl_resource_value "$resource_name"); then
+        if [[ -n "$resource_value" ]]; then
+            echo "$resource_value"
+        fi
     fi
 }
 # Process the user query
@@ -93,12 +129,24 @@ process_query() {
 fetch_crd_schema() {
     local resource_type="$1"
     resource_type=$(matched_resource "$resource_type")
+    
     if [[ -z "$resource_type" ]]; then
         echo "{}"
         return
     fi
-    curl -s "http://localhost:8001/apis/apiextensions.k8s.io/v1/customresourcedefinitions/$resource_type" | \
-        jq '.spec.versions[0].schema.openAPIV3Schema'
+
+    # Fetch the schema using kubectl
+    schema=$(kubectl get crd "$resource_type" -o jsonpath='{.spec.versions[0].schema.openAPIV3Schema}')
+
+    # Check if schema is empty
+    if [[ -z "$schema" ]]; then
+        status_log $TYPE_ERROR "Error: Custom Resource Definition '$resource_type' not found or does not have a schema"
+        echo "{}"
+        return 1
+    fi
+
+    # Output the schema
+    echo "$schema"
 }
 
 # Validate YAML using external validation tool (simulated)
@@ -114,10 +162,14 @@ generate_yaml() {
     local resources
     resources=$(process_query "$free_text")
 
-    # Fetch resource schemas
-    declare -A grpl_crds_schemas
+    # Simulate map for schemas using two arrays
+    local grpl_crds_keys=()
+    local grpl_crds_values=()
+
+    # Populate the simulated map with schemas
     for resource in $resources; do
-        grpl_crds_schemas["$resource"]=$(fetch_crd_schema "$resource")
+        grpl_crds_keys+=("$resource")
+        grpl_crds_values+=("$(fetch_crd_schema "$resource")")
     done
 
     # GPT prompt
@@ -125,31 +177,42 @@ generate_yaml() {
 Description:
 $free_text"
 
-    # status_log $TYPE_INFO "$grpl_crds_schemas"
-
-    if [[ ${#grpl_crds_schemas[@]} == 0 ]]; then
-        status_log $TYPE_INFO "No resource found in the query please mentioned one of the following resources"
+    # Check if schemas are empty
+    if [[ ${#grpl_crds_keys[@]} -eq 0 ]]; then
+        status_log $TYPE_INFO "No resource found in the query. Please mention one of the following resources:"
         for resource in ${grpl_resources[@]}; do
             echo "${resource}" >&2
         done
         exit 1
     fi
 
-    if [[ ${#grpl_crds_schemas[@]} -ne 0 ]] && [[ ${#grpl_crds_schemas[@]} -le 5 ]]; then
-        chatgpt_prompt+="Schemas of the resources: ${grpl_crds_schemas[*]}"
-        chatgpt_prompt+="if you are asked to create sample resource manifest then here are the some example resources wrt their schemas as keys ${grpl_gras_resource_dict[@]}"
-    fi
+    # Append schemas to the GPT prompt if available
+    if [[ ${#grpl_crds_keys[@]} -gt 0 ]] && [[ ${#grpl_crds_keys[@]} -le 5 ]]; then
+        chatgpt_prompt+="\nSchemas of the resources:"
+        for i in "${!grpl_crds_keys[@]}"; do
+            key="${grpl_crds_keys[$i]}"
+            value="${grpl_crds_values[$i]}"
+            chatgpt_prompt+="\n$key : $value"
+        done
 
+        chatgpt_prompt+="\nIf you are asked to create a sample resource manifest, here are some example resources with their schemas as keys:"
+        for i in "${!grpl_gras_resource_keys[@]}"; do
+            key="${grpl_gras_resource_keys[$i]}"
+            value="${grpl_gras_resource_values[$i]}"
+            chatgpt_prompt+="\n$key : $value"
+        done
+
+        chatgpt_prompt+="\nif yaml is generated then remove following fields from yaml ${unnecessary_fields[*]}"
+    fi
 
     # Make GPT API call
     local openai_api_key=$OPENAI_API_KEY
     local response
     response=$(curl -s -X POST "https://api.openai.com/v1/chat/completions" \
-    -H "Authorization: Bearer $openai_api_key" \
-    -H "Content-Type: application/json" \
-    --data "$(jq -n --arg model "gpt-4o" --arg prompt "$chatgpt_prompt" --argjson max_tokens 16384 \
-        '{model: $model, messages: [{role: "user", content: $prompt}], max_tokens: $max_tokens}')")
-
+        -H "Authorization: Bearer $openai_api_key" \
+        -H "Content-Type: application/json" \
+        --data "$(jq -n --arg model "gpt-4o" --arg prompt "$chatgpt_prompt" --argjson max_tokens 16384 \
+            '{model: $model, messages: [{role: "user", content: $prompt}], max_tokens: $max_tokens}')")
 
     # Check response
     if [[ $(echo "$response" | jq -r '.choices[0].message.content') != "null" ]]; then
@@ -161,10 +224,12 @@ $free_text"
     fi
 }
 
-free_text=$(gum input --prompt "Enter the your query: ")
-status_log $TYPE_INFO "your query: $free_text"
-status_log $TYPE_INFO "addressing your query, please wait..."
-generate_yaml "$free_text"
+
+
+QUERY=$(if [ "${QUERY}" != "" ]; then echo ${QUERY}; else prompt_for_input_with_validation "Enter your query: " "enter you text here" "$non_empty_regex" "Input can't be empty"; fi) || exit $?
+status_log $TYPE_INFO "your query: $QUERY"
+status_log $TYPE_INFO "addressing your query, it might take 10-15 seconds, please wait..."
+generate_yaml "$QUERY"
 
 yaml_content=$(awk '/```yaml/{flag=1; next} /```/{flag=0} flag' "/tmp/response.md")
 if [[ "$yaml_content" != "" ]]; then
@@ -177,7 +242,7 @@ if [[ "$yaml_content" != "" ]]; then
         status_log $TYPE_INFO "deploy: deploys the resource yaml onto the cluster"
         status_log $TYPE_INFO "render: saves the resource into a yaml file"
     fi
-    RESOURCE_ACTION=$(if [ "${RESOURCE_ACTION}" != "" ]; then echo ${RESOURCE_ACTION}; else gum choose $RESOURCE_DEPLOY $RESOURCE_RENDER; fi)
+    RESOURCE_ACTION=$(if [ "${RESOURCE_ACTION}" != "" ]; then echo ${RESOURCE_ACTION}; else gum choose $RESOURCE_DEPLOY $RESOURCE_RENDER $NO_ACTION; fi)
     status_log $TYPE_INFO "selected resource action: ${RESOURCE_ACTION}"
 
     echo "$yaml_content" > /tmp/extracted.yaml
