@@ -6,26 +6,9 @@ gras_db_file_gras=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleApplicationSet
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-db-file
-    meta.helm.sh/release-namespace: gras-db-file
-  creationTimestamp: "2024-12-06T12:47:22Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/managed-by: Helm
   name: gras-db-file
   namespace: gras-db-file
-  resourceVersion: "257557"
-  uid: 9d77367d-a062-40b1-baab-54c331dadeae
 spec:
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: gras.grsf.grpl.io
-  compositionRevisionRef:
-    name: gras.grsf.grpl.io-9611850
-  compositionUpdatePolicy: Automatic
   grapis:
   - name: gras-db-file
     spec:
@@ -131,20 +114,6 @@ spec:
       config: ""
       style: '{"colors":{"primary":{"DEFAULT":"#34344A","fg":"#fff"},"accent":{"DEFAULT":"#CC5A71","fg":"#fff"}}}'
   name: gras-db-file
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleApplicationSet
-    name: gras-db-file-hjnnh
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T12:47:22Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T12:47:32Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -154,29 +123,11 @@ gras_db_file_grapi=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleApi
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-db-file-gras
-    meta.helm.sh/release-namespace: gras-db-file
-  creationTimestamp: "2024-12-06T12:47:28Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/component: grapi
-    app.kubernetes.io/managed-by: Helm
   name: gras-db-file
   namespace: gras-db-file
-  resourceVersion: "257823"
-  uid: 6ed33586-7add-4808-85df-1637d68f874e
 spec:
   asname: gras-db-file
   autorestartgruim: false
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: grapi.grsf.grpl.io
-  compositionRevisionRef:
-    name: grapi.grsf.grpl.io-64e9461
-  compositionUpdatePolicy: Automatic
   datasources:
   - name: db
     spec:
@@ -262,10 +213,6 @@ spec:
           id: true
           required: true
           type: number
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleApi
-    name: gras-db-file-rcr2j
   restcruds:
   - name: restcrud
     spec:
@@ -276,16 +223,6 @@ spec:
   volumes:
   - emptyDir: {}
     name: data
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T12:47:28Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T12:47:39Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -293,46 +230,14 @@ gras_db_file_gruim=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleUiModule
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-db-file-gras
-    meta.helm.sh/release-namespace: gras-db-file
-  creationTimestamp: "2024-12-06T12:47:28Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/component: gruim
-    app.kubernetes.io/managed-by: Helm
   name: gras-db-file
   namespace: gras-db-file
-  resourceVersion: "257905"
-  uid: 006a3311-3c43-49c4-b7cd-54ec2e169aa3
 spec:
   additionalpackages: ""
   asname: gras-db-file
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: gruim.grsf.grpl.io
-  compositionRevisionRef:
-    name: gruim.grsf.grpl.io-c341603
-  compositionUpdatePolicy: Automatic
   config: ""
   mapi: gras-db-file-gras-db-file-grapi-mapi
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleUiModule
-    name: gras-db-file-dr74q
   style: '{"colors":{"primary":{"DEFAULT":"#34344A","fg":"#fff"},"accent":{"DEFAULT":"#CC5A71","fg":"#fff"}}}'
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T12:47:28Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T12:47:43Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -340,26 +245,9 @@ grpl_mdl_int_mysql_gras=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleApplicationSet
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql
-    meta.helm.sh/release-namespace: grpl-mdl-int
-  creationTimestamp: "2024-12-06T13:21:15Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
   namespace: grpl-mdl-int
-  resourceVersion: "267286"
-  uid: ffae2862-894a-4e87-b58e-485051abf3b9
 spec:
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: gras.grsf.grpl.io
-  compositionRevisionRef:
-    name: gras.grsf.grpl.io-9611850
-  compositionUpdatePolicy: Automatic
   grapis:
   - name: gras-mysql
     spec:
@@ -472,20 +360,6 @@ spec:
       config: ""
       style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
   name: gras-mysql
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleApplicationSet
-    name: gras-mysql-j89ql
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T13:21:15Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T13:21:25Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -494,30 +368,12 @@ grpl_mdl_int_mysql_grapi=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleApi
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql-gras
-    meta.helm.sh/release-namespace: grpl-mdl-int
-  creationTimestamp: "2024-12-06T13:21:17Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/component: grapi
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
   namespace: grpl-mdl-int
-  resourceVersion: "267303"
-  uid: 5d85761b-e91e-4f97-ac86-55b58449c652
 spec:
   asname: gras-mysql
   automigrate: true
   autorestartgruim: false
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: grapi.grsf.grpl.io
-  compositionRevisionRef:
-    name: grapi.grsf.grpl.io-64e9461
-  compositionUpdatePolicy: Automatic
   datasources:
   - name: classicmodelsid
     spec:
@@ -616,24 +472,10 @@ spec:
           id: true
           required: true
           type: number
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleApi
-    name: gras-mysql-xrw76
   restcruds:
   - name: classicmodelsid
     spec:
       datasource: classicmodelsid
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T13:21:17Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T13:21:27Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -642,46 +484,14 @@ grpl_mdl_int_mysql_gruim=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleUiModule
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql-gras
-    meta.helm.sh/release-namespace: grpl-mdl-int
-  creationTimestamp: "2024-12-06T13:21:17Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/component: gruim
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
   namespace: grpl-mdl-int
-  resourceVersion: "267217"
-  uid: 04466692-ab72-40f5-bb3b-970564048c97
 spec:
   additionalpackages: ""
   asname: gras-mysql
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: gruim.grsf.grpl.io
-  compositionRevisionRef:
-    name: gruim.grsf.grpl.io-c341603
-  compositionUpdatePolicy: Automatic
   config: ""
   mapi: grpl-mdl-int-gras-mysql-grapi-mapi
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleUiModule
-    name: gras-mysql-sg7gr
   style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T13:21:17Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T13:21:23Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -689,26 +499,9 @@ grpl_mdl_ext_mysql_gras=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleApplicationSet
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql
-    meta.helm.sh/release-namespace: grpl-mdl-ext
-  creationTimestamp: "2024-12-06T13:25:15Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
   namespace: grpl-mdl-ext
-  resourceVersion: "269123"
-  uid: e1b31bb1-36f1-4c60-a678-1a3ed8e4a763
 spec:
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: gras.grsf.grpl.io
-  compositionRevisionRef:
-    name: gras.grsf.grpl.io-9611850
-  compositionUpdatePolicy: Automatic
   grapis:
   - name: gras-mysql
     spec:
@@ -821,20 +614,6 @@ spec:
       config: ""
       style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
   name: gras-mysql
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleApplicationSet
-    name: gras-mysql-g85tf
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T13:25:15Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T13:25:25Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -842,30 +621,12 @@ grpl_mdl_ext_mysql_grapi=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleApi
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql-gras
-    meta.helm.sh/release-namespace: grpl-mdl-ext
-  creationTimestamp: "2024-12-06T13:25:17Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/component: grapi
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
-  namespace: grpl-mdl-ext
-  resourceVersion: "269076"
-  uid: 924ff14d-1ac2-42e3-94c4-25ac01d2c8a1
+  namespace: grpl-mdl-ext1
 spec:
   asname: gras-mysql
   automigrate: true
   autorestartgruim: false
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: grapi.grsf.grpl.io
-  compositionRevisionRef:
-    name: grapi.grsf.grpl.io-64e9461
-  compositionUpdatePolicy: Automatic
   datasources:
   - name: classicmodelsid
     spec:
@@ -964,24 +725,10 @@ spec:
           id: true
           required: true
           type: number
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleApi
-    name: gras-mysql-j6gph
   restcruds:
   - name: classicmodelsid
     spec:
       datasource: classicmodelsid
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T13:25:17Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T13:25:24Z"
-    reason: Available
-    status: "True"
-    type: Ready
 
 EOM
 )
@@ -990,46 +737,14 @@ grpl_mdl_ext_mysql_gruim=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleUiModule
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql-gras
-    meta.helm.sh/release-namespace: grpl-mdl-ext
-  creationTimestamp: "2024-12-06T13:25:17Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/component: gruim
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
   namespace: grpl-mdl-ext
-  resourceVersion: "269177"
-  uid: de1218f0-bed7-4be6-a725-901dcff215d5
 spec:
   additionalpackages: ""
   asname: gras-mysql
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: gruim.grsf.grpl.io
-  compositionRevisionRef:
-    name: gruim.grsf.grpl.io-c341603
-  compositionUpdatePolicy: Automatic
   config: ""
   mapi: grpl-mdl-ext-gras-mysql-grapi-mapi
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleUiModule
-    name: gras-mysql-l9l6m
   style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T13:25:17Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T13:25:27Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -1037,26 +752,9 @@ grpl_disc_int_mysql_gras=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleApplicationSet
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql
-    meta.helm.sh/release-namespace: grpl-disc-int
-  creationTimestamp: "2024-12-06T13:29:09Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
   namespace: grpl-disc-int
-  resourceVersion: "271006"
-  uid: 7de176c5-b9e3-412b-ba5a-5ae7443a0f06
 spec:
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: gras.grsf.grpl.io
-  compositionRevisionRef:
-    name: gras.grsf.grpl.io-9611850
-  compositionUpdatePolicy: Automatic
   grapis:
   - name: gras-mysql
     spec:
@@ -1120,20 +818,6 @@ spec:
       config: ""
       style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
   name: gras-mysql
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleApplicationSet
-    name: gras-mysql-pq9tv
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T13:29:09Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T13:29:19Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -1141,29 +825,11 @@ grpl_disc_int_mysql_grapi=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleApi
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql-gras
-    meta.helm.sh/release-namespace: grpl-disc-int
-  creationTimestamp: "2024-12-06T13:29:10Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/component: grapi
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
   namespace: grpl-disc-int
-  resourceVersion: "271108"
-  uid: 1499381b-6862-4625-912c-bf771890fb1e
 spec:
   asname: gras-mysql
   autorestartgruim: false
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: grapi.grsf.grpl.io
-  compositionRevisionRef:
-    name: grapi.grsf.grpl.io-64e9461
-  compositionUpdatePolicy: Automatic
   datasources:
   - name: classicmodelsid
     spec:
@@ -1214,24 +880,10 @@ spec:
       relationName: employees
       relationType: belongsTo
       sourceModel: Customers
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleApi
-    name: gras-mysql-gs672
   restcruds:
   - name: classicmodelsid
     spec:
       datasource: classicmodelsid
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T13:29:11Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T13:29:25Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -1239,46 +891,14 @@ grpl_disc_int_mysql_gruim=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleUiModule
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql-gras
-    meta.helm.sh/release-namespace: grpl-disc-int
-  creationTimestamp: "2024-12-06T13:29:10Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/component: gruim
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
   namespace: grpl-disc-int
-  resourceVersion: "270945"
-  uid: f3e704b6-4e25-4e45-b5e0-ca357ea6f9ca
 spec:
   additionalpackages: ""
   asname: gras-mysql
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: gruim.grsf.grpl.io
-  compositionRevisionRef:
-    name: gruim.grsf.grpl.io-c341603
-  compositionUpdatePolicy: Automatic
   config: ""
   mapi: grpl-disc-int-gras-mysql-grapi-mapi
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleUiModule
-    name: gras-mysql-wvpnk
   style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-06T13:29:11Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-06T13:29:18Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -1286,26 +906,9 @@ grpl_disc_ext_mysql_gras=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleApplicationSet
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql
-    meta.helm.sh/release-namespace: grpl-disc-ext
-  creationTimestamp: "2024-12-07T07:46:58Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
   namespace: grpl-disc-ext
-  resourceVersion: "277065"
-  uid: a10348b6-c22f-4b79-afd5-24c8f3c98aa0
 spec:
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: gras.grsf.grpl.io
-  compositionRevisionRef:
-    name: gras.grsf.grpl.io-9611850
-  compositionUpdatePolicy: Automatic
   grapis:
   - name: gras-mysql
     spec:
@@ -1369,21 +972,6 @@ spec:
       config: ""
       style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
   name: gras-mysql
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleApplicationSet
-    name: gras-mysql-pmrqf
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-07T07:46:58Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-07T07:47:08Z"
-    reason: Available
-    status: "True"
-    type: Ready
-
 EOM
 )
 
@@ -1391,29 +979,11 @@ grpl_disc_ext_mysql_grapi=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleApi
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql-gras
-    meta.helm.sh/release-namespace: grpl-disc-ext
-  creationTimestamp: "2024-12-07T07:47:00Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/component: grapi
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
   namespace: grpl-disc-ext
-  resourceVersion: "277045"
-  uid: 5cab9e9a-ef46-42af-9096-c82919c58787
 spec:
   asname: gras-mysql
   autorestartgruim: false
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: grapi.grsf.grpl.io
-  compositionRevisionRef:
-    name: grapi.grsf.grpl.io-64e9461
-  compositionUpdatePolicy: Automatic
   datasources:
   - name: classicmodelsid
     spec:
@@ -1464,24 +1034,10 @@ spec:
       relationName: employees
       relationType: belongsTo
       sourceModel: Customers
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleApi
-    name: gras-mysql-zz4g5
   restcruds:
   - name: classicmodelsid
     spec:
       datasource: classicmodelsid
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-07T07:47:00Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-07T07:47:05Z"
-    reason: Available
-    status: "True"
-    type: Ready
 EOM
 )
 
@@ -1489,46 +1045,15 @@ grpl_disc_ext_mysql_gruim=$(cat <<'EOM'
 apiVersion: grsf.grpl.io/v1alpha1
 kind: GrappleUiModule
 metadata:
-  annotations:
-    meta.helm.sh/release-name: gras-mysql-gras
-    meta.helm.sh/release-namespace: grpl-disc-ext
-  creationTimestamp: "2024-12-07T07:47:00Z"
-  finalizers:
-  - finalizer.apiextensions.crossplane.io
-  generation: 4
-  labels:
-    app.kubernetes.io/component: gruim
-    app.kubernetes.io/managed-by: Helm
   name: gras-mysql
   namespace: grpl-disc-ext
-  resourceVersion: "277080"
-  uid: 93af636d-9e3d-4ee7-a312-e797681b7eef
 spec:
   additionalpackages: ""
   asname: gras-mysql
-  compositeDeletePolicy: Background
-  compositionRef:
-    name: gruim.grsf.grpl.io
-  compositionRevisionRef:
-    name: gruim.grsf.grpl.io-c341603
-  compositionUpdatePolicy: Automatic
   config: ""
   mapi: grpl-disc-ext-gras-mysql-grapi-mapi
-  resourceRef:
-    apiVersion: grsf.grpl.io/v1alpha1
-    kind: CompositeGrappleUiModule
-    name: gras-mysql-s6zpr
   style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
-status:
-  conditions:
-  - lastTransitionTime: "2024-12-07T07:47:00Z"
-    reason: ReconcileSuccess
-    status: "True"
-    type: Synced
-  - lastTransitionTime: "2024-12-07T07:47:10Z"
-    reason: Available
-    status: "True"
-    type: Ready
+
 EOM
 )
 
