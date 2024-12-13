@@ -214,13 +214,13 @@ $free_text"
             chatgpt_prompt+="\n$key : $value"
         done
 
-        chatgpt_prompt+="\nIf you are asked to create a sample resource manifest, return the matching manifest from following list:"
+        chatgpt_prompt+="\n if generated resource is model based or discovery based then values of 'datasources' and 'initContainers' :"
         for i in "${!grpl_gras_resource_keys[@]}"; do
             key="${grpl_gras_resource_keys[$i]}"
             value="${grpl_gras_resource_values[$i]}"
             chatgpt_prompt+="\n$key : $value"
         done
-
+        chatgpt_prompt+="\n if generated resource is model based or discovery based then set extraSecrets' to this format => '{name-of-the-manifest}-conn-credential' "
         chatgpt_prompt+="\nif yaml is generated then remove following fields from yaml ${unnecessary_fields[*]}"
         chatgpt_prompt+="\nby default the metadata.name and namespace fields should have same value"
 
@@ -291,9 +291,27 @@ if [[ "$yaml_content" != "" ]]; then
             status_log $TYPE_INFO "creating namespace with same name in the resource"
             gras_ns=$(yq '.metadata.namespace' $extract_yaml_path)
             kubectl create namespace "$gras_ns"
+            KUBE_NS=$gras_ns
         else
             check_and_create_kubens
         fi
+
+        # check if its model or discovery based then create a db
+        extra_secret=$(yq '.spec.grapis[0].spec.extraSecrets[0]' "$extract_yaml_path")
+        if [[ "$extra_secret" != "null" ]]; then
+            status_log $TYPE_INFO "creating db"
+            kubeblocks_installation
+
+            # check if kubeblocks is installed
+            kubeblocks_template_file_dest="/tmp/kube_db.yaml"
+            cp "$GRPL_WORKDIR/files/db.yaml" $kubeblocks_template_file_dest
+            if ! kbcli cluster list -n ${KUBE_NS} ${gras_name} >/dev/null 2>&1; then
+                yq -i ".metadata.name=\"$gras_name\"" $kubeblocks_template_file_dest
+                kubectl apply -n ${KUBE_NS} -f $kubeblocks_template_file_dest
+                status_log $TYPE_INFO "created db"
+            fi
+        fi
+
 
         status_log $TYPE_INFO "deploying the resource yaml onto the cluster"
         kubectl apply -f $extract_yaml_path
