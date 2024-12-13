@@ -1061,43 +1061,43 @@ EOM
 # Plain arrays for resources
 gras_resources=(
     "------------ Following are the examples of gras resources ------------"
-    "------------ Following is the example of gras database file resource example ------------"
+    "------------ Following is the grappleapplicationsets.grsf.grpl.io database file resource example ------------"
     "$gras_db_file_gras"
-    "------------ Following is the example of gras model internal resource example ------------"
+    "------------ Following is the grappleapplicationsets.grsf.grpl.io model internal resource example ------------"
     "$grpl_mdl_int_mysql_gras"
-    "------------ Following is the example of gras model external resource example ------------"
+    "------------ Following is the grappleapplicationsets.grsf.grpl.io model external resource example ------------"
     "$grpl_mdl_ext_mysql_gras"
-    "------------ Following is the example of gras discovery internal resource example ------------"
+    "------------ Following is the grappleapplicationsets.grsf.grpl.io discovery internal resource example ------------"
     "$grpl_disc_int_mysql_gras"
-    "------------ Following is the example of gras discovery external resource example ------------"
+    "------------ Following is the grappleapplicationsets.grsf.grpl.io discovery external resource example ------------"
     "$grpl_disc_ext_mysql_gras"
 )
 
 gruim_resources=(
     "------------ Following are the examples of gruim resources ------------"
-    "------------ Following is the example of gruim database file resource example ------------"
+    "------------ Following is the grappleuimodules.grsf.grpl.io database file resource example ------------"
     "$gras_db_file_gruim"
-    "------------ Following is the example of gruim model internal resource example ------------"
+    "------------ Following is the grappleuimodules.grsf.grpl.io model internal resource example ------------"
     "$grpl_mdl_int_mysql_gruim"
-    "------------ Following is the example of gruim model external resource example ------------"
+    "------------ Following is the grappleuimodules.grsf.grpl.io model external resource example ------------"
     "$grpl_mdl_ext_mysql_gruim"
-    "------------ Following is the example of gruim discovery internal resource example ------------"
+    "------------ Following is the grappleuimodules.grsf.grpl.io discovery internal resource example ------------"
     "$grpl_disc_int_mysql_gruim"
-    "------------ Following is the example of gruim discovery external resource example ------------"
+    "------------ Following is the grappleuimodules.grsf.grpl.io discovery external resource example ------------"
     "$grpl_disc_ext_mysql_gruim"
 )
 
 grapi_resources=(
     "------------ Following are the examples of grapi resources ------------"
-    "------------ Following is the example of grapi database file resource example ------------"
+    "------------ Following is the grappleapis.grsf.grpl.io database file resource example ------------"
     "$gras_db_file_grapi"
-    "------------ Following is the example of grapi model internal resource example ------------"
+    "------------ Following is the grappleapis.grsf.grpl.io model internal resource example ------------"
     "$grpl_mdl_int_mysql_grapi"
-    "------------ Following is the example of grapi model external resource example ------------"
+    "------------ Following is the grappleapis.grsf.grpl.io model external resource example ------------"
     "$grpl_mdl_ext_mysql_grapi"
-    "------------ Following is the example of grapi discovery internal resource example ------------"
+    "------------ Following is the grappleapis.grsf.grpl.io discovery internal resource example ------------"
     "$grpl_disc_int_mysql_grapi"
-    "------------ Following is the example of grapi discovery external resource example ------------"
+    "------------ Following is the grappleapis.grsf.grpl.io discovery external resource example ------------"
     "$grpl_disc_ext_mysql_grapi"
 )
 
