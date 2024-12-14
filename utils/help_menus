@@ -915,6 +915,8 @@ Parameters:
     DB_TYPE: db type it can either internal or external
     KUBE_CONTEXT: kubectl context you want to use (default is 'current')
     wait = 'true' / 'false', set to 'true' if you want to wait for grpl resources (grapi/gruim) to be ready (default is 'false')
+    DEPLOY_FROM_GITHUB= 'true' / 'false', set to 'true' if you want to deploy from github (default is 'false')
+    GITHUB_PATH= path to the resource manifest in grpl-gras-examples repository
 
 " 
 

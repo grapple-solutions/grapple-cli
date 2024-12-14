@@ -46,6 +46,7 @@ display_deployment_details(){
   domain=$3
 
   if [[ "$wait" == "true" ]]; then
+    sleep 5
     status_log $TYPE_INFO "Waiting for deployment to be ready"
     if ! eval "$(getGumSpinnerOrLogger "waiting for grapi resource to be ready") kubectl rollout status -n ${namespace} deploy ${namespace}-${resource_name}-grapi"; then
       status_log $TYPE_ERROR "Failed to wait for grapi resource"
@@ -75,19 +76,94 @@ display_deployment_details(){
 }
 
 
+deploy_from_github(){
+  # Check and remove existing grpl-gras-example folder
+  if [ -d "/tmp/grpl-gras-examples" ]; then
+    if ! rm -rf /tmp/grpl-gras-examples; then
+      status_log $TYPE_ERROR "Failed to remove existing grpl-gras-examples directory"
+      exit 1
+    fi
+  fi
+
+  # Clone the repository
+  if ! eval "$(getGumSpinnerOrLogger "cloning grpl-gras-examples repository") git clone https://github.com/zahid-iqbal-alpha/grpl-gras-examples.git /tmp/grpl-gras-examples"; then
+    status_log $TYPE_ERROR "Failed to clone grpl-gras-examples repository"
+    exit 1
+  fi
+
+  # Change to repo directory
+  cd /tmp/grpl-gras-examples
+
+  # Check if GITHUB_PATH exists and is a valid YAML file
+  if [ ! -f "${GITHUB_PATH}" ]; then
+    status_log $TYPE_ERROR "File ${GITHUB_PATH} does not exist in the repository"
+    exit 1
+  fi
+
+  if [[ "${GITHUB_PATH}" != *.yaml && "${GITHUB_PATH}" != *.yml ]]; then
+    status_log $TYPE_ERROR "File ${GITHUB_PATH} is not a YAML file"
+    exit 1
+  fi
+
+  # Extract namespace from manifest
+  NAMESPACE=$(yq eval '.metadata.namespace' "${GITHUB_PATH}")
+  
+  if [ -z "${NAMESPACE}" ]; then
+    status_log $TYPE_ERROR "Could not find namespace in ${GITHUB_PATH}"
+    exit 1
+  fi
+
+  # Extract namespace from manifest
+  RESOURCE_NAME=$(yq eval '.metadata.name' "${GITHUB_PATH}")
+  
+  if [ -z "${RESOURCE_NAME}" ]; then
+    status_log $TYPE_ERROR "Could not find resource name in ${GITHUB_PATH}"
+    exit 1
+  fi
+
+  # Check if namespace exists, create if it doesn't
+  if ! kubectl get namespace "${NAMESPACE}" >/dev/null 2>&1; then
+    status_log $TYPE_INFO "Creating namespace ${NAMESPACE}"
+    if ! eval "$(getGumSpinnerOrLogger "creating namespace ${NAMESPACE}") kubectl create namespace ${NAMESPACE}"; then
+      status_log $TYPE_ERROR "Failed to create namespace ${NAMESPACE}"
+      exit 1
+    fi
+  fi
+
+  # Deploy the manifest
+  status_log $TYPE_INFO "Deploying manifest from ${GITHUB_PATH}"
+  if ! eval "$(getGumSpinnerOrLogger "deploying manifest") kubectl apply -f ${GITHUB_PATH}"; then
+    status_log $TYPE_ERROR "Failed to deploy manifest from ${GITHUB_PATH}"
+    exit 1
+  fi
+
+  status_log $TYPE_SUCCESS "Successfully deployed manifest from ${GITHUB_PATH}"
+  display_deployment_details $NAMESPACE $RESOURCE_NAME $clusterdomain
+  exit 0
+
+}
+
 # valid arguments array
 valid_args=(
     "GRAS_TEMPLATE"
     "DB_TYPE"
     "KUBE_CONTEXT"
     "wait"
+    "DEPLOY_FROM_GITHUB"
+    "GITHUB_PATH"
   )
+
+
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
 help_menu_cmd="grpl resource deploy help"
 extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
 
+  # Handle GitHub deployment if specified
+if [[ "${DEPLOY_FROM_GITHUB}" == "true" ]]; then
+  deploy_from_github
+fi
 
 #check if input from params is valid or not
 check_if_param_avaiable_in_non_interactive_mode "GRAS_TEMPLATE" "$GRAS_TEMPLATE" "${help_menu_cmd}"
