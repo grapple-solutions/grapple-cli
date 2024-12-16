@@ -57,10 +57,5 @@ if [[ $# == 1 ]] && [[ "$1" == "enter" ]]; then
 fi
 
 # check to see if grapi prefex needs to be added or not
-if devspace enter --label-selector app.kubernetes.io/name=grapi -- grapi --help | grep "lb4" | grep $1 >/dev/null 2>&1; then
-    devspace enter --label-selector app.kubernetes.io/name=grapi -- grapi $cli_args
-    exit 0
-else 
-    devspace enter --label-selector app.kubernetes.io/name=grapi -- $cli_args
-    exit 0
-fi
+devspace enter --label-selector app.kubernetes.io/name=grapi -- $cli_args
+exit 0

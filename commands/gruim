@@ -59,10 +59,5 @@ fi
 
 
 # check to see if gruim prefex needs to be added or not
-if devspace enter --label-selector app.kubernetes.io/name=gruim -- gruim --help | grep $1 >/dev/null 2>&1; then
-    devspace enter --label-selector app.kubernetes.io/name=gruim -- gruim $cli_args
-    exit 0
-else 
-    devspace enter --label-selector app.kubernetes.io/name=gruim -- $cli_args
-    exit 0
-fi
+devspace enter --label-selector app.kubernetes.io/name=gruim -- $cli_args
+exit 0
