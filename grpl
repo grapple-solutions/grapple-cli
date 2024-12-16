@@ -70,6 +70,3 @@ case "$command" in
     ;;
 esac
 
-
-# test for develop branch release
-exit 0
