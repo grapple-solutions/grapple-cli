@@ -39,8 +39,8 @@ jobs:
 
       - name: Create Stable Release
         run: |
-          gh release create "v${{ env.NEW_VERSION }}" \
-            --title "Release v${{ env.NEW_VERSION }}" \
+          gh release create "${{ env.NEW_VERSION }}" \
+            --title "${{ env.NEW_VERSION }}" \
             --notes "Automated release from main branch." \
 
     env:

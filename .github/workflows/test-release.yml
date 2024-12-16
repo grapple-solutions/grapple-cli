@@ -29,9 +29,9 @@ jobs:
 
       - name: Create Test Release Draft
         run: |
-          gh release create "v${{ env.TEST_VERSION }}" \
+          gh release create "${{ env.TEST_VERSION }}" \
             --draft \
-            --title "Test Release v${{ env.TEST_VERSION }}" \
+            --title "${{ env.TEST_VERSION }}" \
             --notes "Automated test release from develop branch." \
 
     env:
