@@ -19,7 +19,8 @@ jobs:
         id: version
         run: |
           version=$(cat VERSION)
-          echo "VERSION=$version" >> $GITHUB_ENV
+          new_version=$(echo $version | awk -F. '{$NF += 1; OFS="."; print $1, $2, $3}')
+          echo "VERSION=$new_version" >> $GITHUB_ENV
 
       - name: Generate Test Release Version
         id: test_version
@@ -30,9 +31,10 @@ jobs:
       - name: Create Test Release Draft
         run: |
           gh release create "${{ env.TEST_VERSION }}" \
-            --draft \
+            --prerelease \
             --title "${{ env.TEST_VERSION }}" \
             --notes "Automated test release from develop branch." \
+            --target develop
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
