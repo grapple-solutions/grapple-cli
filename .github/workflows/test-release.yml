@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - develop
+    permissions:
+      contents: write 
 
 jobs:
   test-release:
