@@ -69,3 +69,7 @@ case "$command" in
     cli_help
     ;;
 esac
+
+
+# test for develop branch release
+exit 0
