@@ -69,3 +69,4 @@ case "$command" in
     cli_help
     ;;
 esac
+
