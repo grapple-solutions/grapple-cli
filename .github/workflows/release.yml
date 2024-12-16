@@ -4,12 +4,12 @@ on:
   push:
     branches:
       - main
-    permissions:
-      contents: write 
 
 jobs:
   stable-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write 
 
     steps:
       - name: Checkout Code
@@ -25,7 +25,7 @@ jobs:
         id: increment_version
         run: |
           old_version=${VERSION}
-          new_version=$(echo $old_version | awk -F. '{$NF += 1; OFS="."; print $0}')
+          new_version=$(echo $old_version | awk -F. '{$NF += 1; OFS="."; print $1, $2, $3}')
           echo "$new_version" > VERSION
           echo "NEW_VERSION=$new_version" >> $GITHUB_ENV
 
@@ -39,10 +39,9 @@ jobs:
 
       - name: Create Stable Release
         run: |
-          gh release create "v${{ env.NEW_VERSION }}" \
-            --title "Release v${{ env.NEW_VERSION }}" \
+          gh release create "${{ env.NEW_VERSION }}" \
+            --title "${{ env.NEW_VERSION }}" \
             --notes "Automated release from main branch." \
-            || echo "Release already exists"
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

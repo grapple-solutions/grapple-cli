@@ -4,12 +4,12 @@ on:
   push:
     branches:
       - develop
-    permissions:
-      contents: write 
 
 jobs:
   test-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write 
 
     steps:
       - name: Checkout Code
@@ -29,11 +29,10 @@ jobs:
 
       - name: Create Test Release Draft
         run: |
-          gh release create "v${{ env.TEST_VERSION }}" \
+          gh release create "${{ env.TEST_VERSION }}" \
             --draft \
-            --title "Test Release v${{ env.TEST_VERSION }}" \
+            --title "${{ env.TEST_VERSION }}" \
             --notes "Automated test release from develop branch." \
-            || echo "Release already exists"
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
