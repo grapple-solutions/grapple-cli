@@ -1,0 +1,37 @@
+name: Test Release Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  test-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Get Current Version
+        id: version
+        run: |
+          version=$(cat VERSION)
+          echo "VERSION=$version" >> $GITHUB_ENV
+
+      - name: Generate Test Release Version
+        id: test_version
+        run: |
+          test_version="${VERSION}-test.$(date +%Y%m%d%H%M%S)"
+          echo "TEST_VERSION=$test_version" >> $GITHUB_ENV
+
+      - name: Create Test Release Draft
+        run: |
+          gh release create "v${{ env.TEST_VERSION }}" \
+            --draft \
+            --title "Test Release v${{ env.TEST_VERSION }}" \
+            --notes "Automated test release from develop branch." \
+            || echo "Release already exists"
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
