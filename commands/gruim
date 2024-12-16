@@ -58,6 +58,5 @@ if [[ $# == 1 ]] && [[ "$1" == "enter" ]]; then
 fi
 
 
-# check to see if gruim prefex needs to be added or not
-devspace enter --label-selector app.kubernetes.io/name=gruim -- $cli_args
+devspace enter --label-selector app.kubernetes.io/name=gruim -- gruim $cli_args
 exit 0

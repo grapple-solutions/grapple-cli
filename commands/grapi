@@ -56,6 +56,5 @@ if [[ $# == 1 ]] && [[ "$1" == "enter" ]]; then
     exit 0
 fi
 
-# check to see if grapi prefex needs to be added or not
-devspace enter --label-selector app.kubernetes.io/name=grapi -- $cli_args
+devspace enter --label-selector app.kubernetes.io/name=grapi -- grapi $cli_args
 exit 0
