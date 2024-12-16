@@ -33,7 +33,6 @@ jobs:
             --draft \
             --title "Test Release v${{ env.TEST_VERSION }}" \
             --notes "Automated test release from develop branch." \
-            || echo "Release already exists"
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
