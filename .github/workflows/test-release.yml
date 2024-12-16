@@ -19,7 +19,8 @@ jobs:
         id: version
         run: |
           version=$(cat VERSION)
-          echo "VERSION=$version" >> $GITHUB_ENV
+          new_version=$(echo $version | awk -F. '{$NF += 1; OFS="."; print $1, $2, $3}')
+          echo "VERSION=$new_version" >> $GITHUB_ENV
 
       - name: Generate Test Release Version
         id: test_version
