@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -o pipefail
 export GRPL_WORKDIR=$(cd $(dirname $0) && pwd)
 export FULL_COMMAND="$0 $@"
 
@@ -69,4 +70,3 @@ case "$command" in
     cli_help
     ;;
 esac
-
