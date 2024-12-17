@@ -1,0 +1,246 @@
+#!/bin/bash
+set -e
+
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/utils/help_menus"
+
+# --------------------------------- Functions ------------------------------------------
+
+# Print help menu for grpl cluster install and exit
+cli_help() {
+  grpl_cluster_install_cli_help
+  exit 0
+}
+
+connect_to_civo_cluster() {
+
+  # first check if civo is installed or not, if not? then install it
+  check_and_install_civo
+  
+  #------------ CIVO_API_KEY Input-----------
+
+  if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json >/dev/null 2>&1 && [[ $TTY == "enabled" ]]; then
+    CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
+  fi
+
+  if [ "${CIVO_API_KEY}" != "" ]; then
+    civo apikey add grapple $CIVO_API_KEY
+    civo apikey current grapple
+  fi
+
+  #------------ CIVO_REGION Input-----------
+
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_REGION" "${CIVO_REGION}" "${help_menu_cmd}"
+  if [ "${CIVO_REGION}" != "" ] && [ $TTY == "enabled" ]; then 
+    is_correct_civo_region_provided $CIVO_REGION 
+  fi
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
+  civo region use ${CIVO_REGION} | true
+
+  #------------ CIVO_CLUSTER Input-----------
+
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER" "${CIVO_CLUSTER}" "${help_menu_cmd}"
+  if [ "${CIVO_CLUSTER}" != "" ] && [ $TTY == "enabled" ]; then 
+    is_correct_civo_cluster_provided $CIVO_CLUSTER 
+  fi
+  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name > /dev/null; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+  echo "selected civo cluster: ${CIVO_CLUSTER}"
+
+  if ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
+    if ! eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl get ns"; then
+      status_log $TYPE_ERROR "Failed to switch to ${CIVO_CLUSTER} due to following reason"
+      # following is to show the reason for failure
+      reason=$(civo k8s config ${CIVO_CLUSTER} --save --switch)
+      status_log $TYPE_ERROR "${reason}"
+      exit 1
+    fi
+  fi
+
+  status_log $TYPE_SUCCESS "connected to civo cluster: ${CIVO_CLUSTER}"
+
+  extract_kubectl_cli_version
+}
+
+# --------------------------------- CODE ------------------------------------------
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+
+NS=grpl-system
+awsregistry="p7h7z5g3"
+SSL_ENABLE="false"
+SSL_ISSUER="letsencrypt-grapple-demo"
+cli_log "cluster install BEGIN"
+
+# valid arguments array
+valid_args=(
+    "TARGET_PLATFORM"
+    "AUTO_CONFIRM"
+    "KUBE_CONTEXT"
+    "CIVO_REGION"
+    "CIVO_CLUSTER"
+    "CIVO_API_KEY"
+    "GRAPPLE_DNS"
+    "KUBEFIRST_CLOUD_PROVIDER"
+    "KUBEFIRST_CLOUD_REGION"
+    "KUBEFIRST_CLUSTER_ID"
+    "KUBEFIRST_CLUSTER_NAME"
+  )
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+help_menu_cmd="grpl cluster install help"
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
+
+
+#------------ TARGET_PLATFORM Input-----------
+
+# if TARGET_PLATFORM is provided using CLI then we need to check if valid TARGET_PLATFORM was provided or not
+check_if_param_avaiable_in_non_interactive_mode "TARGET_PLATFORM" "${TARGET_PLATFORM}" "${help_menu_cmd}"
+if [ "${TARGET_PLATFORM}" != "" ]; then 
+  is_correct_target_platform_provided $TARGET_PLATFORM 
+fi
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
+echo "selected target platform: ${TARGET_PLATFORM}"
+
+
+# if CIVO, then pre-set the configuration params
+if [ "${TARGET_PLATFORM}" = $CIVO ]; then
+
+  connect_to_civo_cluster
+  exit 0
+fi
+
+
+# if Kubernetes, then pre-set the configuration params
+if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
+
+#------------ GRAPPLE_DNS Input-----------
+  check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "${GRAPPLE_DNS}" "${help_menu_cmd}"
+  # check if a full domain-name was passed in GRAPPLE_DNS
+  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
+      status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
+      GRAPPLE_DOMAIN=".grapple-demo.com"
+  fi
+
+#---------- KUBE_CONTEXT Input ------------
+
+KUBERNETES_CLUSTER_NAME=""
+if [ -n "$KUBERNETES_SERVICE_HOST" ] && [ -n "$KUBERNETES_SERVICE_PORT" ]; then
+    echo "Running inside a Kubernetes cluster"
+    KUBERNETES_CLUSTER_NAME=$(kubectl get nodes -o name | awk -F'/' '{print $2}' | head -n 1)
+else
+    echo "Not running inside a Kubernetes cluster"
+    if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then
+        if kubectl config current-context >/dev/null 2>&1; then
+        KUBE_CONTEXT=$(kubectl config current-context)
+        fi
+    fi
+    
+    # Run the command and store the output in a variable
+    contexts=$(kubectl config get-contexts -o name)
+    # Check if the output is empty
+    if [ -z "$contexts" ]; then
+        status_log $TYPE_ERROR "Error: No contexts found"
+        exit 1
+    else
+        #check if input from params is valid or not
+        is_correct_kubectl_context_provided $KUBE_CONTEXT
+        contexts=$(kubectl config get-contexts -o name)
+        KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else gum choose  --header "Please select kubectl context you want to use" $contexts ; fi) || exit $?
+        kubectl config use-context $KUBE_CONTEXT
+        status_log $TYPE_DEFAULT "KUBE_CONTEXT: ${KUBE_CONTEXT}"
+    fi
+
+    KUBERNETES_CLUSTER_NAME=$KUBE_CONTEXT
+fi
+
+
+  check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" "${help_menu_cmd}"
+  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
+  echo "kuberenetes cluster ip: ${CLUSTER_IP}"
+
+fi
+
+if [ "${TARGET_PLATFORM}" = $Minikube ]; then
+
+  status_log $TYPE_INFO "going to install and run minikube"
+  # first check if minikube is installed or not, if not? then install it
+  check_and_install_minikube
+
+  # check if minikube cluster is running or not, if not? then start it
+  if ! minikube status | grep "host: Running"; then
+      echo "Minikube is not running. Starting Minikube..."
+      if ! eval "$(getGumSpinnerOrLogger "minikube is not running, now starting minikube") minikube start"; then
+        status_log $TYPE_ERROR "Error: minikube failed to start becasue docker or any driver service is not running. Details are listed below"
+        minikube start >&2
+      fi
+  fi
+
+  # switch to minikube
+  kubectl config use-context minikube
+  extract_kubectl_cli_version
+
+  if ! minikube addons list | grep enabled | grep ingress >/dev/null 2>&1; then
+    if [ "${AUTO_CONFIRM}" != "true" ] && [ "$TTY" == "enabled" ]; then
+      gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
+    fi
+    echo "enabling ingress addons for minikube"
+    status_log $TYPE_INFO "enabling ingress addons for minikube"
+    minikube addons enable ingress
+    minikube addons enable ingress-dns
+    if [[ "$(uname)" == "Darwin" ]]; then
+      brew install chipmk/tap/docker-mac-net-connect
+      sudo brew services start chipmk/tap/docker-mac-net-connect
+    fi
+  fi 
+
+  status_log $TYPE_INFO "testing domain, this may take upto 5mins"
+  if ! grep -r $(minikube ip) /etc/resolver/ >/dev/null 2>&1; then
+    echo "domain test
+nameserver $(minikube ip)
+search_order 1
+timeout 5" > /tmp/minikube-test
+
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
+      status_log $TYPE_INFO "please run the following commands before clicking on 'confirm':"
+    else
+      status_log $TYPE_INFO "going to run following command"
+    fi
+  
+    gum style \
+      --foreground 212 --border-foreground 212 --border double \
+      --align center --width 100 --margin "1 2" --padding "2 4" \
+      'sudo cp /tmp/minikube-test /etc/resolver/minikube-test' >&2
+
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
+      gum confirm "Proceed with ingress configuration?" || (echo "grapple cannot be installed without dns / ingress configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
+    else
+      sudo cp /tmp/minikube-test /etc/resolver/minikube-test
+    fi
+  fi 
+
+  GRAPPLE_DNS=test
+  GRAPPLE_DOMAIN=""
+  
+
+fi
+
+
+
+# Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
+if [ "${TARGET_PLATFORM}" != $Minikube ]; then
+  check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "$GRAPPLE_DNS" "${help_menu_cmd}"
+  GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
+  echo "installing dns: ${GRAPPLE_DNS}"
+fi
+
+#----------- creating complete domain --------
+complete_domain="" 
+if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
+  complete_domain=$GRAPPLE_DNS
+else 
+  complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
+fi
+
+
