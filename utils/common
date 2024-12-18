@@ -414,11 +414,11 @@ kubeblocks_installation() {
       check_and_install_kbcli
   fi
 
-  if ! kubectl get deployment kubeblocks -n kb-system; then
+  if ! kubectl get deployment kubeblocks -n kb-system 2>/dev/null; then
     echo "checking kubeblocks"
     check_and_install_kubeblocks
 
-    echo "waiting for configs to apply"
+    status_log $TYPE_INFO "waiting for configs to apply"
     for i in $(kubectl get clusterversion -o name); do 
       kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
     done

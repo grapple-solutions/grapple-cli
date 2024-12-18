@@ -20,6 +20,7 @@ common_valid_args=(
    "CIVO_API_KEY"
    "CIVO_REGION"
    "CIVO_EMAIL_ADDRESS"
+   "INSTALL_KUBEBLOCKS"
    "wait"
 )
 
@@ -63,6 +64,10 @@ status_log $TYPE_INFO "Cluster creation is in progress"
 if [[ $AUTO_CONFIRM != "false" ]]; then
     AUTO_CONFIRM="true"
     applications="traefik2-nodeport,civo-cluster-autoscaler,metrics-server"
+fi
+
+if [[ $INSTALL_KUBEBLOCKS != "false" ]]; then
+    INSTALL_KUBEBLOCKS="true"
 fi
 
 #-------------Functions-------------------
@@ -256,10 +261,10 @@ civo_cluster_create() {
 
   if ! eval "$(getGumSpinnerOrLogger "checking if grpl is installed") kubectl  get configuration.pkg.crossplane.io grpl 2>/dev/null"; then
     if [ "${AUTO_CONFIRM}" == "true" ]; then
-      grpl cluster install --wait="$wait" --TARGET_PLATFORM="CIVO" --CIVO_CLUSTER="${CLUSTER_NAME}" --CIVO_REGION="${CIVO_REGION}" --CIVO_API_KEY="${CIVO_API_KEY}" --AUTO_CONFIRM --CIVO_EMAIL_ADDRESS="${CIVO_EMAIL_ADDRESS}" --INSTALL_KUBEBLOCKS
+      grpl cluster install --wait="$wait" --TARGET_PLATFORM="CIVO" --CIVO_CLUSTER="${CLUSTER_NAME}" --CIVO_REGION="${CIVO_REGION}" --CIVO_API_KEY="${CIVO_API_KEY}" --AUTO_CONFIRM --CIVO_EMAIL_ADDRESS="${CIVO_EMAIL_ADDRESS}" --INSTALL_KUBEBLOCKS="${INSTALL_KUBEBLOCKS}"
     elif [ "$TTY" == "enabled" ]; then
       gum confirm "Would you like to install grpl on the cluster?"
-      grpl cluster install --wait="$wait" --TARGET_PLATFORM="CIVO" --CIVO_CLUSTER="${CLUSTER_NAME}" --CIVO_REGION="${CIVO_REGION}" --CIVO_API_KEY="${CIVO_API_KEY}" --AUTO_CONFIRM --CIVO_EMAIL_ADDRESS="${CIVO_EMAIL_ADDRESS}" --INSTALL_KUBEBLOCKS
+      grpl cluster install --wait="$wait" --TARGET_PLATFORM="CIVO" --CIVO_CLUSTER="${CLUSTER_NAME}" --CIVO_REGION="${CIVO_REGION}" --CIVO_API_KEY="${CIVO_API_KEY}" --AUTO_CONFIRM --CIVO_EMAIL_ADDRESS="${CIVO_EMAIL_ADDRESS}" --INSTALL_KUBEBLOCKS="${INSTALL_KUBEBLOCKS}"
     fi
   else 
     status_log $TYPE_INFO "grpl is already installed"
