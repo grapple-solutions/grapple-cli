@@ -86,7 +86,7 @@ deploy_from_github(){
   fi
 
   # Clone the repository
-  if ! eval "$(getGumSpinnerOrLogger "cloning grpl-gras-examples repository") git clone https://github.com/zahid-iqbal-alpha/grpl-gras-examples.git /tmp/grpl-gras-examples"; then
+  if ! eval "$(getGumSpinnerOrLogger "cloning grpl-gras-examples repository") git clone https://github.com/grapple-solution/grpl-gras-examples.git /tmp/grpl-gras-examples"; then
     status_log $TYPE_ERROR "Failed to clone grpl-gras-examples repository"
     exit 1
   fi
