@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -o pipefail
 . "$GRPL_WORKDIR/utils/help_menus"
 . "$GRPL_WORKDIR/utils/checks"
 . "$GRPL_WORKDIR/utils/common"
@@ -434,7 +435,7 @@ deploy_template() {
     status_log $TYPE_INFO "wait for $GRAS_NAME to be ready" 
     CRD="gras" && echo "Wait for $CRD to be deployed:" && SECONDS=0 && TIMEOUT=60 && until kubectl get $CRD -n $KUBE_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1 || [ $SECONDS -ge $TIMEOUT ]; do echo -n .; sleep 1; done && if [ $SECONDS -ge $TIMEOUT ]; then status_log $TYPE_ERROR "Timeout exceeded, $CRD not deployed after 1 minute"; exit 1; else echo "$CRD deployed"; fi
     status_log $TYPE_SUCCESS "$CRD deployed"
-
+    
 }
 
 ask_guim_enablement(){

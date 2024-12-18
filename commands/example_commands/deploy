@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -o pipefail
 . "$GRPL_WORKDIR/utils/common"
 . "$GRPL_WORKDIR/utils/checks"
 . "$GRPL_WORKDIR/utils/help_menus"
@@ -105,9 +106,12 @@ DATABASE_SCHEMA="classicmodelsid"
 
 # grpl r d db-file
 if [[ "${GRAS_TEMPLATE}" == $DB_FILE ]]; then
-  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-$DB_FILE --KUBE_NS=gras-$DB_FILE --GRAS_TEMPLATE=$DB_FILE --SOURCE_DATA="https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/db.json" --MODELS=$MODELS --DB_FILE_PATH=/tmp/data.json --ENABLE_GRUIM=false  --RELATIONS=""
-  display_deployment_details "gras-$DB_FILE" "gras-$DB_FILE" $clusterdomain
-  exit 0
+  if grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-$DB_FILE --KUBE_NS=gras-$DB_FILE --GRAS_TEMPLATE=$DB_FILE --SOURCE_DATA="https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/db.json" --MODELS=$MODELS --DB_FILE_PATH=/tmp/data.json --ENABLE_GRUIM=false  --RELATIONS=""; then
+    display_deployment_details "gras-$DB_FILE" "gras-$DB_FILE" $clusterdomain
+    exit 0
+  fi
+  status_log $TYPE_ERROR "Failed to deploy example"
+  exit 1
 fi
 
 
@@ -122,9 +126,12 @@ status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
 
 #grpl r d mysql model  internal
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" == $INTERNAL_DB ]]; then
-  grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-mysql --KUBE_NS=grpl-mdl-int --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$INTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --RELATIONS="" --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA
-  display_deployment_details "grpl-mdl-int" "gras-mysql" $clusterdomain
-  exit 0
+  if grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-mysql --KUBE_NS=grpl-mdl-int --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$INTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --RELATIONS="" --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA; then
+    display_deployment_details "grpl-mdl-int" "gras-mysql" $clusterdomain
+    exit 0
+  fi
+  status_log $TYPE_ERROR "Failed to deploy example"
+  exit 1
 fi
 
 
@@ -132,23 +139,33 @@ fi
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
   extract_creds_from_secrets
   DATASOURCES=$(printf "$DATASOURCES\n" "$username" "$password")
-  grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-mysql --KUBE_NS=grpl-mdl-ext --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$EXTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --DATASOURCES=$DATASOURCES --RELATIONS=""  --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA
-  display_deployment_details "grpl-mdl-ext" "gras-mysql" $clusterdomain
-  exit 0
+  if grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-mysql --KUBE_NS=grpl-mdl-ext --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$EXTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --DATASOURCES=$DATASOURCES --RELATIONS=""  --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA; then
+    display_deployment_details "grpl-mdl-ext" "gras-mysql" $clusterdomain
+    exit 0
+  fi
+  status_log $TYPE_ERROR "Failed to deploy example"
+  exit 1
 fi
 
 #grpl r d mysql discovery  internal
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $INTERNAL_DB ]]; then
-  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-int --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$INTERNAL_DB --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true  --DATABASE_SCHEMA=$DATABASE_SCHEMA
-  display_deployment_details "grpl-disc-int" "gras-mysql" $clusterdomain
-  exit 0
+  if grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-int --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$INTERNAL_DB --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true  --DATABASE_SCHEMA=$DATABASE_SCHEMA; then
+    display_deployment_details "grpl-disc-int" "gras-mysql" $clusterdomain
+    exit 0
+  fi
+  status_log $TYPE_ERROR "Failed to deploy example"
+  exit 1
 fi
 
 #grpl r d mysql discovery  external
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
   extract_creds_from_secrets
   DATASOURCES=$(printf "$DATASOURCES\n" "$username" "$password")
-  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-ext --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB --DATASOURCES=$DATASOURCES --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true --DATABASE_SCHEMA=$DATABASE_SCHEMA
-  display_deployment_details "grpl-disc-ext" "gras-mysql" $clusterdomain
-  exit 0
+  if grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-ext --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB --DATASOURCES=$DATASOURCES --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true --DATABASE_SCHEMA=$DATABASE_SCHEMA; then
+    display_deployment_details "grpl-disc-ext" "gras-mysql" $clusterdomain
+    exit 0
+  fi
+  status_log $TYPE_ERROR "Failed to deploy example"
+  exit 1
 fi
+
