@@ -7,7 +7,6 @@ set -e
 
 cli_help() {
   grpl_ai_resource_cli_help
-  #status_log $TYPE_INFO "grpl ai resource cli help menu in development"
   exit 0
 }
 
@@ -25,6 +24,9 @@ command=$1
 valid_args=(
     "RESOURCE_ACTION"
     "QUERY"
+    "KUBE_NS"
+    "AUTO_CONFIRM"
+    "wait"
 )
 
 # check if values are already passed form terminal
@@ -85,6 +87,23 @@ unnecessary_fields=(
     "spec.resourceRef*"
     "status*"
 )
+
+get_deployed_resources() {
+    local gras_kind="$1" 
+    local deployed_resources=() 
+    # Check conditions case-insensitively
+    if [[ "$gras_kind" == *GrappleApplicationSet* ]]; then
+        deployed_resources+=("grapi" "gruim")
+    elif [[ "$gras_kind" == *GrappleApi* ]]; then
+        deployed_resources+=("grapi")
+    elif [[ "$gras_kind" == *GrappleUiModule* ]]; then
+        deployed_resources+=("gruim")
+    fi
+
+    # Return the list as a space-separated string
+    echo "${deployed_resources[@]}"
+}
+
 
 # Function to match resource names
 matched_resource() {
@@ -195,15 +214,18 @@ $free_text"
             chatgpt_prompt+="\n$key : $value"
         done
 
-        chatgpt_prompt+="\nIf you are asked to create a sample resource manifest, here are some example resources with their schemas as keys:"
+        chatgpt_prompt+="\n if generated resource is model based or discovery based then values of 'datasources' and 'initContainers' :"
         for i in "${!grpl_gras_resource_keys[@]}"; do
             key="${grpl_gras_resource_keys[$i]}"
             value="${grpl_gras_resource_values[$i]}"
             chatgpt_prompt+="\n$key : $value"
         done
-
+        chatgpt_prompt+="\n if generated resource is model based or discovery based then set extraSecrets' to this format => '{name-of-the-manifest}-conn-credential' "
         chatgpt_prompt+="\nif yaml is generated then remove following fields from yaml ${unnecessary_fields[*]}"
+        chatgpt_prompt+="\nby default the metadata.name and namespace fields should have same value"
+
     fi
+
 
     # Make GPT API call
     local openai_api_key=$OPENAI_API_KEY
@@ -215,23 +237,22 @@ $free_text"
             '{model: $model, messages: [{role: "user", content: $prompt}], max_tokens: $max_tokens}')")
 
     # Check response
+    
     if [[ $(echo "$response" | jq -r '.choices[0].message.content') != "null" ]]; then
         CONTENT=$(echo "$response" | jq -r '.choices[0].message.content')
-        echo "$CONTENT" > /tmp/response.md
-        eval glow /tmp/response.md >&2
+        echo "$CONTENT" > $glowed_response
+        eval glow $glowed_response >&2
     else
         status_log $TYPE_ERROR "Failed to generate query response: $(echo "$response" | jq -r '.error.message')"
     fi
 }
 
-
-
 QUERY=$(if [ "${QUERY}" != "" ]; then echo ${QUERY}; else prompt_for_input_with_validation "Enter your query: " "enter you text here" "$non_empty_regex" "Input can't be empty"; fi) || exit $?
 status_log $TYPE_INFO "your query: $QUERY"
 status_log $TYPE_INFO "addressing your query, it might take 10-15 seconds, please wait..."
+glowed_response="/tmp/response.md"
 generate_yaml "$QUERY"
-
-yaml_content=$(awk '/```yaml/{flag=1; next} /```/{flag=0} flag' "/tmp/response.md")
+yaml_content=$(awk '/```yaml/{flag=1; next} /```/{flag=0} flag' "$glowed_response")
 if [[ "$yaml_content" != "" ]]; then
 
     #------ RESOURCE_ACTION input ------
@@ -244,9 +265,9 @@ if [[ "$yaml_content" != "" ]]; then
     fi
     RESOURCE_ACTION=$(if [ "${RESOURCE_ACTION}" != "" ]; then echo ${RESOURCE_ACTION}; else gum choose $RESOURCE_DEPLOY $RESOURCE_RENDER $NO_ACTION; fi)
     status_log $TYPE_INFO "selected resource action: ${RESOURCE_ACTION}"
-
-    echo "$yaml_content" > /tmp/extracted.yaml
-    if yq eval /tmp/extracted.yaml > /dev/null; then
+    extract_yaml_path="/tmp/extracted.yaml"
+    echo "$yaml_content" > $extract_yaml_path
+    if yq eval $extract_yaml_path > /dev/null; then
         status_log $TYPE_INFO "YAML is valid"
     else 
         status_log $TYPE_ERROR "YAML is invalid"
@@ -256,16 +277,65 @@ if [[ "$yaml_content" != "" ]]; then
     if [ "${RESOURCE_ACTION}" == $RESOURCE_RENDER ]; then
         filename="resource_yaml_$(date +"%Y-%m-%d_%H-%M-%S").yaml"
         status_log $TYPE_INFO "Saving resource yaml to $filename"
-        cat /tmp/extracted.yaml > "$filename"
+        cat $extract_yaml_path > "$filename"
         status_log $TYPE_SUCCESS "resource yaml saved to $filename"
     elif [ "${RESOURCE_ACTION}" == $RESOURCE_DEPLOY ]; then
+
+
+        gras_ns=$(yq '.metadata.namespace' $extract_yaml_path)
+        gras_name=$(yq '.metadata.name' $extract_yaml_path)
+        gras_kind=$(yq '.kind' $extract_yaml_path)
+
+        
+        if [[ "$AUTO_CONFIRM" == "true" ]]; then
+            status_log $TYPE_INFO "creating namespace with same name in the resource"
+            gras_ns=$(yq '.metadata.namespace' $extract_yaml_path)
+            kubectl create namespace "$gras_ns"
+            KUBE_NS=$gras_ns
+        else
+            check_and_create_kubens
+        fi
+
+        # check if its model or discovery based then create a db
+        extra_secret=$(yq '.spec.grapis[0].spec.extraSecrets[0]' "$extract_yaml_path")
+        if [[ "$extra_secret" != "null" ]]; then
+            status_log $TYPE_INFO "creating db"
+            kubeblocks_installation
+
+            # check if kubeblocks is installed
+            kubeblocks_template_file_dest="/tmp/kube_db.yaml"
+            cp "$GRPL_WORKDIR/files/db.yaml" $kubeblocks_template_file_dest
+            if ! kbcli cluster list -n ${KUBE_NS} ${gras_name} >/dev/null 2>&1; then
+                yq -i ".metadata.name=\"$gras_name\"" $kubeblocks_template_file_dest
+                kubectl apply -n ${KUBE_NS} -f $kubeblocks_template_file_dest
+                status_log $TYPE_INFO "created db"
+            fi
+        fi
+
+
         status_log $TYPE_INFO "deploying the resource yaml onto the cluster"
-        kubectl apply -f /tmp/extracted.yaml
+        kubectl apply -f $extract_yaml_path
         status_log $TYPE_SUCCESS "resource yaml is deployed onto the cluster"
+
+        if [[ "$wait" == "true"  ]]; then
+            status_log $TYPE_INFO "waiting for the resources to be ready"
+            deployed_resources=$(get_deployed_resources $gras_kind)
+            sleep 5
+            extract_domain_from_grpl_config
+            for deploy_resource in $deployed_resources; do
+                if ! eval "$(getGumSpinnerOrLogger "waiting for $deploy_resource resource to be ready") kubectl rollout status -n ${gras_ns} deploy ${gras_ns}-${gras_name}-${deploy_resource}"; then
+                    status_log $TYPE_ERROR "Failed to wait for $deploy_resource resource"
+                    exit 1
+                else 
+                    status_log $TYPE_SUCCESS "$deploy_resource resource is ready, you can now open ${gras_ns}-${gras_name}-${deploy_resource}.${clusterdomain} in the browser"
+                fi
+            done      
+        fi
+
     fi
     
-    rm /tmp/extracted.yaml
-    rm /tmp/response.md
+    rm $extract_yaml_path
+    rm $glowed_response
 
 
 else

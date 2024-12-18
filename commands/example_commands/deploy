@@ -32,11 +32,6 @@ extract_creds_from_secrets() {
 
 }
 
-extract_domain_from_grpl_config() {
-  if kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.clusterdomain}" > /dev/null 2>&1; then
-    clusterdomain=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.clusterdomain}" | base64 --decode)
-  fi
-}
 extract_domain_from_grpl_config
 
 
