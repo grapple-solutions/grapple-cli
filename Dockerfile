@@ -29,14 +29,14 @@ ENV OSTYPE darwin23.0
 USER root
 
 # installing dns utils, for host package (bind)
-RUN if [ "$TARGETARCH" = "arm64" ]; then apt update --allow-insecure-repositories -y && apt install -y dnsutils; fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then apt update --allow-insecure-repositories -y && apt install -y dnsutils gettext; fi
 
 USER user
 
 # install kubectl for arm64 using curl as it was not working with brew...
 RUN brew install gum && \
 	# installing dns utils, for host package (bind)
-	if [ "$TARGETARCH" != "arm64" ]; then brew install kubectl helm bind; fi && \
+	if [ "$TARGETARCH" != "arm64" ]; then brew install kubectl helm bind gettext; fi && \
 	if [ "$TARGETARCH" = "arm64" ]; then curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"; chmod +x kubectl; sudo mv kubectl /usr/bin; fi && \
 	if [ "$TARGETARCH" = "arm64" ]; then curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh; fi && \
 	brew cleanup --prune=all
