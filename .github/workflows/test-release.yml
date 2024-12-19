@@ -15,6 +15,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Checkout Main Branch
+        run: git fetch && git checkout main
+
       - name: Get Current Version
         id: version
         run: |
