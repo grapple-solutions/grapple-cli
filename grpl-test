@@ -1,0 +1,72 @@
+#!/bin/bash
+set -e
+set -o pipefail
+export GRPL_WORKDIR=$(cd $(dirname $0) && pwd)
+export FULL_COMMAND="$0 $@"
+
+. "$GRPL_WORKDIR/utils/package_installer"
+. "$GRPL_WORKDIR/utils/help_menus"
+
+cli_help() {
+  grpl_cli_help
+  exit 0
+}
+
+# its a pre-requsite to create logs folder for log files
+# since we don't want to import everything from common, so just 
+# creating he here
+if ! ls $GRPL_WORKDIR | grep 'logs' >/dev/null 2>&1; then
+  mkdir $GRPL_WORKDIR/logs 2>/dev/null | true
+fi
+
+if [[ $# -eq 0 ]]; then
+  cli_help
+fi
+
+command=$1
+shift
+
+case "$command" in
+  install|i)
+    "$GRPL_WORKDIR/commands/install" "$@" | tee -ia "$GRPL_WORKDIR/logs/install.log" >/dev/null
+    ;;
+  cluster|c)
+    "$GRPL_WORKDIR/commands/cluster" "$@" | tee -ia "$GRPL_WORKDIR/logs/cluster.log" >/dev/null
+    ;;
+  example|e)
+    "$GRPL_WORKDIR/commands/example" "$@" | tee -ia "$GRPL_WORKDIR/logs/example.log" >/dev/null
+    ;;
+  version|v)
+    "$GRPL_WORKDIR/commands/version" "$@" | tee -ia "$GRPL_WORKDIR/logs/version.log"
+    ;;
+  upgrade|u)
+    "$GRPL_WORKDIR/commands/upgrade" "$@" | tee -ia "$GRPL_WORKDIR/logs/upgrade.log" >/dev/null
+    ;;
+  application|app|a)
+    "$GRPL_WORKDIR/commands/application" "$@" | tee -ia "$GRPL_WORKDIR/logs/application.log" >/dev/null
+    ;;
+  doc)
+    "$GRPL_WORKDIR/commands/doc" "$@" | tee -ia "$GRPL_WORKDIR/logs/doc.log" >/dev/null
+    ;;
+  resource|r)
+    "$GRPL_WORKDIR/commands/resource" "$@" | tee -ia "$GRPL_WORKDIR/logs/resource.log" >/dev/null
+    ;;
+  dev|d)
+    "$GRPL_WORKDIR/commands/dev" "$@" | tee -ia "$GRPL_WORKDIR/logs/dev.log"
+    ;;
+  grapi)
+    "$GRPL_WORKDIR/commands/grapi" "$@" | tee -ia "$GRPL_WORKDIR/logs/grapi.log"
+    ;;
+  gruim)
+    "$GRPL_WORKDIR/commands/gruim" "$@" | tee -ia "$GRPL_WORKDIR/logs/gruim.log"
+    ;;
+  license|lic|l)
+    "$GRPL_WORKDIR/commands/license" "$@" | tee -ia "$GRPL_WORKDIR/logs/license.log" >/dev/null
+    ;;
+  ai)
+    "$GRPL_WORKDIR/commands/ai" "$@" | tee -ia "$GRPL_WORKDIR/logs/ai.log" >/dev/null
+    ;;
+  *)
+    cli_help
+    ;;
+esac
