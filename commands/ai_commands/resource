@@ -304,6 +304,7 @@ if [[ "$yaml_content" != "" ]]; then
 
             # check if kubeblocks is installed
             kubeblocks_template_file_dest="/tmp/kube_db.yaml"
+            yq -i ".metadata.namespace=\"$KUBE_NS\"" $extract_yaml_path
             cp "$GRPL_WORKDIR/files/db.yaml" $kubeblocks_template_file_dest
             if ! kbcli cluster list -n ${KUBE_NS} ${gras_name} >/dev/null 2>&1; then
                 yq -i ".metadata.name=\"$gras_name\"" $kubeblocks_template_file_dest
