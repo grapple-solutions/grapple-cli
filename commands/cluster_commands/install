@@ -667,8 +667,6 @@ if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
   PROVIDER_CLUSTER_NAME=${KUBEFIRST_CLOUD_PROVIDER}
 fi
 
-status_log $TYPE_INFO "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
-
 
 cat <<EOF > /tmp/values-override.yaml
 # Default values for grsf-init.
