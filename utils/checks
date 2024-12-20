@@ -19,7 +19,6 @@ is_correct_civo_region_provided() {
     local output=$( eval "$(getGumSpinnerOrLogger "fetching civo regions") civo region ls -o custom -f code") 
     local region=$1
 
-
     # Declare an empty array
     regions_array=()
     while IFS= read -r line; do
@@ -34,6 +33,7 @@ is_correct_civo_region_provided() {
         status_log $TYPE_ERROR "$errMsg"
         exit 1
     fi
+
 
 }
 
