@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -o pipefail
 
 . "$GRPL_WORKDIR/utils/common"
 . "$GRPL_WORKDIR/utils/checks"
@@ -179,7 +178,6 @@ civo_cluster_create() {
   fi
   CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
   civo region use ${CIVO_REGION} | true
-  
 
   #------------ check if a cluster with CLUSTER_NAME exists -----------
   check_civo_cluster_exists

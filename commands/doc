@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -o pipefail
 . "$GRPL_WORKDIR/utils/help_menus"
 
 cli_help() {
