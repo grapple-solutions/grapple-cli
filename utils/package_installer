@@ -392,6 +392,28 @@ check_and_install_taskcli() {
 }
 
 
+check_and_install_aws_cli() {
+
+    # checks for checking and installing aws cli
+    if ! aws --version  >/dev/null 2>&1; then
+        echo "aws cli is required"
+        echo "installing aws cli..."
+        if [ "${OS}" == "mac" ]; then
+            eval "$(getGumSpinnerOrLogger "aws cli is not installed, now installing aws cli") brew install awscli"
+        elif [ "${OS}" == "gnu" ]; then
+            eval "$(getGumSpinnerOrLogger "aws cli is not installed, now installing aws     cli") sudo apt-get update && sudo apt-get install -y unzip && curl 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' -o 'awscliv2.zip' && unzip -q awscliv2.zip && sudo ./aws/install && echo 'export PATH=/usr/local/bin:$PATH' >> ~/.bashrc && source ~/.bashrc && rm -rf aws awscliv2.zip"
+        else
+            errMsg="Failed to install aws cli, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    extract_aws_cli_version
+
+}
+
 
 extract_helm_cli_version(){
 
@@ -424,6 +446,7 @@ extract_kubectl_cli_version(){
     fi
 
 }
+
 
 extract_gum_cli_version(){
 
@@ -632,5 +655,17 @@ extract_glow_cli_version(){
 
         # Output the latest version
         echo "      $glow_version - glow" >> "$GRPL_WORKDIR/dependency_versions"
+    fi
+}
+
+
+extract_aws_cli_version(){
+
+    if ! grep -q "aws" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
+
+        # Get yq version
+        aws_version=$(aws --version | awk '{print $1}' | awk -F'/' '{print $2}')
+        # Output the latest version
+        echo "      $aws_version - aws" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 }

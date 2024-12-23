@@ -66,6 +66,48 @@ connect_to_civo_cluster() {
   extract_kubectl_cli_version
 }
 
+connect_to_aws_cluster() {
+
+  # ------------ AWS_ACCESS_KEY_ID Input-----------
+  if [ "${AWS_ACCESS_KEY_ID}" == "" ] && [ $TTY == "enabled" ]; then
+  AWS_ACCESS_KEY_ID=$(prompt_for_input_with_validation "Enter AWS_ACCESS_KEY_ID: " "Provide the aws access key id to be used - valide access key id is required" "$non_empty_regex" "Invalid access key id format. Please try again." || exit $?)
+  fi
+  export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+
+  # ------------ AWS_SECRET_ACCESS_KEY Input-----------
+  if [ "${AWS_SECRET_ACCESS_KEY}" == "" ] && [ $TTY == "enabled" ]; then
+  AWS_SECRET_ACCESS_KEY=$(prompt_for_input_with_validation "Enter AWS_SECRET_ACCESS_KEY: " "Provide the aws secret access key to be used - valide secret access key is required" "$non_empty_regex" "Invalid secret access key format. Please try again." || exit $?)
+  fi
+  export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+  # ------------ AWS_SESSION_TOKEN Input-----------
+  if [ "${AWS_SESSION_TOKEN}" == "" ] && [ $TTY == "enabled" ]; then
+  AWS_SESSION_TOKEN=$(prompt_for_input_with_validation "Enter AWS_SESSION_TOKEN: " "Provide the aws session token to be used - valide session token is required" "$non_empty_regex" "Invalid session token format. Please try again." || exit $?)
+  fi
+  export AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+
+  check_and_install_aws_cli
+
+  #------------ AWS_REGION Input-----------
+  AWS_REGION=${KUBEFIRST_CLOUD_REGION}
+  check_if_param_avaiable_in_non_interactive_mode "AWS_REGION" "${AWS_REGION}" "${help_menu_cmd}"
+  if [ "${AWS_REGION}" != "" ] && [ $TTY == "enabled" ]; then 
+    is_correct_aws_region_provided $AWS_REGION 
+  fi
+  AWS_REGION=$(prompt_for_input_with_validation "Enter AWS_REGION: " "Provide the aws region to be used - valide region is required" "$non_empty_regex" "Invalid region format. Please try again." || exit $?)
+
+  if ! eval "$(getGumSpinnerOrLogger "connecting to the cluster") aws eks update-kubeconfig --name ${AWS_CLUSTER_NAME} --region ${AWS_REGION}"; then
+    status_log $TYPE_ERROR "Failed to connect to the cluster due to following reason"
+    reason=$(aws eks update-kubeconfig --name ${AWS_CLUSTER_NAME} --region ${AWS_REGION})
+    status_log $TYPE_ERROR "${reason}"
+    exit 1
+  fi
+
+  status_log $TYPE_SUCCESS "connected to the cluster: ${AWS_CLUSTER_NAME}"
+
+
+}
+
 # --------------------------------- CODE ------------------------------------------
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
@@ -89,6 +131,9 @@ valid_args=(
     "KUBEFIRST_CLOUD_PROVIDER"
     "KUBEFIRST_CLOUD_REGION"
     "KUBEFIRST_CLUSTER_NAME"
+    "AWS_ACCESS_KEY_ID"
+    "AWS_SECRET_ACCESS_KEY"
+    "AWS_SESSION_TOKEN"
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
@@ -120,6 +165,8 @@ elif [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
 
   if [[ "$(echo "${KUBEFIRST_CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${Civo}" | tr '[:upper:]' '[:lower:]')" ]]; then
     connect_to_civo_cluster
+  elif [[ "$(echo "${KUBEFIRST_CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${AWS}" | tr '[:upper:]' '[:lower:]')" ]]; then
+    connect_to_aws_cluster
   fi
 
 fi
