@@ -70,41 +70,38 @@ connect_to_aws_cluster() {
 
   # ------------ AWS_ACCESS_KEY_ID Input-----------
   if [ "${AWS_ACCESS_KEY_ID}" == "" ] && [ $TTY == "enabled" ]; then
-  AWS_ACCESS_KEY_ID=$(prompt_for_input_with_validation "Enter AWS_ACCESS_KEY_ID: " "Provide the aws access key id, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid access key id format. Please try again." || exit $?)
+    AWS_ACCESS_KEY_ID=$(prompt_for_input_with_validation "Enter AWS_ACCESS_KEY_ID: " "Provide the aws access key id, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid access key id format. Please try again." || exit $?)
   fi
-  export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
 
   # ------------ AWS_SECRET_ACCESS_KEY Input-----------
   if [ "${AWS_SECRET_ACCESS_KEY}" == "" ] && [ $TTY == "enabled" ]; then
-  AWS_SECRET_ACCESS_KEY=$(prompt_for_input_with_validation "Enter AWS_SECRET_ACCESS_KEY: " "Provide the aws secret access key, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid secret access key format. Please try again." || exit $?)
+    AWS_SECRET_ACCESS_KEY=$(prompt_for_input_with_validation "Enter AWS_SECRET_ACCESS_KEY: " "Provide the aws secret access key, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid secret access key format. Please try again." || exit $?)
   fi
-  export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
   # ------------ AWS_SESSION_TOKEN Input-----------
   if [ "${AWS_SESSION_TOKEN}" == "" ] && [ $TTY == "enabled" ]; then
-  AWS_SESSION_TOKEN=$(prompt_for_input_with_validation "Enter AWS_SESSION_TOKEN: " "Provide the aws session token, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid session token format. Please try again." || exit $?)
+    AWS_SESSION_TOKEN=$(prompt_for_input_with_validation "Enter AWS_SESSION_TOKEN: " "Provide the aws session token, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid session token format. Please try again." || exit $?)
   fi
-  export AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
 
+  # Export AWS credentials to environment
+  export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
 
   check_and_install_aws_cli
-
 
   #------------ AWS_CLUSTER_NAME Input-----------
   AWS_CLUSTER_NAME=${KUBEFIRST_CLUSTER_NAME}
   check_if_param_avaiable_in_non_interactive_mode "AWS_CLUSTER_NAME" "${AWS_CLUSTER_NAME}" "${help_menu_cmd}"
-  if [ "${AWS_CLUSTER_NAME}" != "" ] && [ $TTY == "enabled" ]; then 
-    is_correct_aws_cluster_name_provided $AWS_CLUSTER_NAME 
-  fi
-  AWS_CLUSTER_NAME=$(prompt_for_input_with_validation "Enter AWS_CLUSTER_NAME: " "Provide the aws cluster name to be used - valide cluster name is required" "$non_empty_regex" "Invalid cluster name format. Please try again." || exit $?)
+  AWS_CLUSTER_NAME=$(if [ "${AWS_CLUSTER_NAME}" != "" ]; then echo ${AWS_CLUSTER_NAME}; else prompt_for_input_with_validation "Enter AWS_CLUSTER_NAME: " "Provide the aws cluster name to be used - valide cluster name is required" "$non_empty_regex" "Invalid cluster name format. Please try again." || exit $?; fi)
 
   #------------ AWS_REGION Input-----------
   AWS_REGION=${KUBEFIRST_CLOUD_REGION}
   check_if_param_avaiable_in_non_interactive_mode "AWS_REGION" "${AWS_REGION}" "${help_menu_cmd}"
-  if [ "${AWS_REGION}" != "" ] && [ $TTY == "enabled" ]; then 
-    is_correct_aws_region_provided $AWS_REGION 
+  AWS_REGION=$(if [ "${AWS_REGION}" != "" ]; then echo ${AWS_REGION}; else prompt_for_input_with_validation "Enter AWS_REGION: " "Provide the aws region to be used - valide region is required" "$non_empty_regex" "Invalid region format. Please try again." || exit $?; fi)
+
+  # Source the environment to ensure credentials are available
+  if [ -f ~/.bashrc ]; then
+    source ~/.bashrc
   fi
-  AWS_REGION=$(prompt_for_input_with_validation "Enter AWS_REGION: " "Provide the aws region to be used - valide region is required" "$non_empty_regex" "Invalid region format. Please try again." || exit $?)
 
   if ! eval "$(getGumSpinnerOrLogger "connecting to the cluster") aws eks update-kubeconfig --name ${AWS_CLUSTER_NAME} --region ${AWS_REGION}"; then
     status_log $TYPE_ERROR "Failed to connect to the cluster due to following reason"
@@ -114,7 +111,6 @@ connect_to_aws_cluster() {
   fi
 
   status_log $TYPE_SUCCESS "connected to the cluster: ${AWS_CLUSTER_NAME}"
-
 
 }
 
