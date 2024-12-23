@@ -108,8 +108,20 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 if [ "${TARGET_PLATFORM}" = $CIVO ]; then
 
   connect_to_civo_cluster
-  exit 0
+  
+elif [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
+  
+  check_if_param_avaiable_in_non_interactive_mode "KUBEFIRST_CLOUD_PROVIDER" "${KUBEFIRST_CLOUD_PROVIDER}" "${help_menu_cmd}"
+  KUBEFIRST_CLOUD_PROVIDER=$(if [ "${KUBEFIRST_CLOUD_PROVIDER}" != "" ]; then echo ${KUBEFIRST_CLOUD_PROVIDER}; else gum choose $AWS $Civo $GoogleCloud; fi)
+  echo "selected kubefirst cloud provider: ${KUBEFIRST_CLOUD_PROVIDER}"
+
+  if [[ "$(echo "${KUBEFIRST_CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${Civo}" | tr '[:upper:]' '[:lower:]')" ]]; then
+    connect_to_civo_cluster
+  fi
+
 fi
+
+exit 0
 
 
 # if Kubernetes, then pre-set the configuration params
