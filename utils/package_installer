@@ -399,9 +399,9 @@ check_and_install_aws_cli() {
         echo "aws cli is required"
         echo "installing aws cli..."
         if [ "${OS}" == "mac" ]; then
-            eval "$(getGumSpinnerOrLogger "aws cli is not installed, now installing aws cli") brew install awscli"
+            eval "$(getGumSpinnerOrLogger "aws cli is not installed, now installing aws cli, this may take a while") brew install awscli"
         elif [ "${OS}" == "gnu" ]; then
-            eval "$(getGumSpinnerOrLogger "aws cli is not installed, now installing aws     cli") sudo apt-get update && sudo apt-get install -y unzip && curl 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' -o 'awscliv2.zip' && unzip -q awscliv2.zip && sudo ./aws/install && echo 'export PATH=/usr/local/bin:$PATH' >> ~/.bashrc && source ~/.bashrc && rm -rf aws awscliv2.zip"
+            eval "$(getGumSpinnerOrLogger "aws cli is not installed, now installing aws cli, this may take a while") sudo apt-get update && sudo apt-get install -y unzip && curl 'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip' -o 'awscliv2.zip' && unzip -q awscliv2.zip && sudo ./aws/install && echo 'export PATH=/usr/local/bin:$PATH' >> ~/.bashrc && source ~/.bashrc && rm -rf aws awscliv2.zip"
         else
             errMsg="Failed to install aws cli, OS ${OS} not supported at the moment"
             echo $errMsg
