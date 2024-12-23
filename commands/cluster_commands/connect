@@ -18,6 +18,7 @@ connect_to_civo_cluster() {
   # first check if civo is installed or not, if not? then install it
   check_and_install_civo
   
+  
   #------------ CIVO_API_KEY Input-----------
 
   if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json >/dev/null 2>&1 && [[ $TTY == "enabled" ]]; then
@@ -29,8 +30,10 @@ connect_to_civo_cluster() {
     civo apikey current grapple
   fi
 
-  #------------ CIVO_REGION Input-----------
 
+
+  #------------ CIVO_REGION Input-----------
+  CIVO_REGION=${CIVO_REGION:-${KUBEFIRST_CLOUD_REGION}}
   check_if_param_avaiable_in_non_interactive_mode "CIVO_REGION" "${CIVO_REGION}" "${help_menu_cmd}"
   if [ "${CIVO_REGION}" != "" ] && [ $TTY == "enabled" ]; then 
     is_correct_civo_region_provided $CIVO_REGION 
@@ -40,6 +43,7 @@ connect_to_civo_cluster() {
 
   #------------ CIVO_CLUSTER Input-----------
 
+  CIVO_CLUSTER=${CIVO_CLUSTER:-${KUBEFIRST_CLUSTER_NAME}}
   check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER" "${CIVO_CLUSTER}" "${help_menu_cmd}"
   if [ "${CIVO_CLUSTER}" != "" ] && [ $TTY == "enabled" ]; then 
     is_correct_civo_cluster_provided $CIVO_CLUSTER 
@@ -84,7 +88,6 @@ valid_args=(
     "GRAPPLE_DNS"
     "KUBEFIRST_CLOUD_PROVIDER"
     "KUBEFIRST_CLOUD_REGION"
-    "KUBEFIRST_CLUSTER_ID"
     "KUBEFIRST_CLUSTER_NAME"
   )
 # check if values are already passed form terminal
