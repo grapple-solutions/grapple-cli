@@ -83,26 +83,10 @@ connect_to_aws_cluster() {
     AWS_SESSION_TOKEN=$(prompt_for_input_with_validation "Enter AWS_SESSION_TOKEN: " "Provide the aws session token, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid session token format. Please try again." || exit $?)
   fi
 
-  # Function to update AWS credentials in shell config files
-  update_aws_credentials() {
-    local config_file=$1
-    if [ -f "$config_file" ]; then
-      local temp_file=$(mktemp)
-      awk '!/^export AWS_(ACCESS_KEY_ID|SECRET_ACCESS_KEY|SESSION_TOKEN)=/' "$config_file" > "$temp_file"
-      echo "export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}'" >> "$temp_file"
-      echo "export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}'" >> "$temp_file"
-      echo "export AWS_SESSION_TOKEN='${AWS_SESSION_TOKEN}'" >> "$temp_file"
-      mv "$temp_file" "$config_file"
-    fi
-  }
-
-  # Update credentials in shell config files
-  [ -f ~/.bashrc ] && update_aws_credentials ~/.bashrc
-  [ -f ~/.bash_profile ] && update_aws_credentials ~/.bash_profile
-  [ -f ~/.zshrc ] && update_aws_credentials ~/.zshrc
-
-  # Export for current session
-  export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+  # Configure AWS credentials
+  aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+  aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+  aws configure set aws_session_token "$AWS_SESSION_TOKEN"
 
   check_and_install_aws_cli
 
@@ -126,11 +110,6 @@ connect_to_aws_cluster() {
   status_log $TYPE_SUCCESS "connected to the cluster: ${AWS_CLUSTER_NAME}"
 
   status_log $TYPE_INFO "$(kubectl get nodes)"
-
-  # Source the updated config files to ensure credentials are available in current shell
-  [ -f ~/.bashrc ] && source ~/.bashrc
-  [ -f ~/.bash_profile ] && source ~/.bash_profile
-  [ -f ~/.zshrc ] && source ~/.zshrc
 }
 
 # --------------------------------- CODE ------------------------------------------
