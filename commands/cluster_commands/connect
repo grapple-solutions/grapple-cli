@@ -83,13 +83,24 @@ connect_to_aws_cluster() {
     AWS_SESSION_TOKEN=$(prompt_for_input_with_validation "Enter AWS_SESSION_TOKEN: " "Provide the aws session token, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid session token format. Please try again." || exit $?)
   fi
 
-  # Configure AWS credentials
-  aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
-  aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
-  aws configure set aws_session_token "$AWS_SESSION_TOKEN"
-
   check_and_install_aws_cli
 
+  # Configure AWS credentials
+  if ! aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"; then
+    status_log $TYPE_ERROR "Failed to configure AWS access key ID"
+    exit 1
+  fi
+
+  if ! aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"; then
+    status_log $TYPE_ERROR "Failed to configure AWS secret access key" 
+    exit 1
+  fi
+
+  if ! aws configure set aws_session_token "$AWS_SESSION_TOKEN"; then
+    status_log $TYPE_ERROR "Failed to configure AWS session token"
+    exit 1
+  fi
+  
   #------------ AWS_CLUSTER_NAME Input-----------
   AWS_CLUSTER_NAME=${KUBEFIRST_CLUSTER_NAME}
   check_if_param_avaiable_in_non_interactive_mode "AWS_CLUSTER_NAME" "${AWS_CLUSTER_NAME}" "${help_menu_cmd}"
