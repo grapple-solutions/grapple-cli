@@ -83,7 +83,25 @@ connect_to_aws_cluster() {
     AWS_SESSION_TOKEN=$(prompt_for_input_with_validation "Enter AWS_SESSION_TOKEN: " "Provide the aws session token, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid session token format. Please try again." || exit $?)
   fi
 
-  # Export AWS credentials to environment
+  # Function to update AWS credentials in shell config files
+  update_aws_credentials() {
+    local config_file=$1
+    if [ -f "$config_file" ]; then
+      local temp_file=$(mktemp)
+      awk '!/^export AWS_(ACCESS_KEY_ID|SECRET_ACCESS_KEY|SESSION_TOKEN)=/' "$config_file" > "$temp_file"
+      echo "export AWS_ACCESS_KEY_ID='${AWS_ACCESS_KEY_ID}'" >> "$temp_file"
+      echo "export AWS_SECRET_ACCESS_KEY='${AWS_SECRET_ACCESS_KEY}'" >> "$temp_file"
+      echo "export AWS_SESSION_TOKEN='${AWS_SESSION_TOKEN}'" >> "$temp_file"
+      mv "$temp_file" "$config_file"
+    fi
+  }
+
+  # Update credentials in shell config files
+  [ -f ~/.bashrc ] && update_aws_credentials ~/.bashrc
+  [ -f ~/.bash_profile ] && update_aws_credentials ~/.bash_profile
+  [ -f ~/.zshrc ] && update_aws_credentials ~/.zshrc
+
+  # Export for current session
   export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
 
   check_and_install_aws_cli
@@ -98,11 +116,6 @@ connect_to_aws_cluster() {
   check_if_param_avaiable_in_non_interactive_mode "AWS_REGION" "${AWS_REGION}" "${help_menu_cmd}"
   AWS_REGION=$(if [ "${AWS_REGION}" != "" ]; then echo ${AWS_REGION}; else prompt_for_input_with_validation "Enter AWS_REGION: " "Provide the aws region to be used - valide region is required" "$non_empty_regex" "Invalid region format. Please try again." || exit $?; fi)
 
-  # Source the environment to ensure credentials are available
-  if [ -f ~/.bashrc ]; then
-    source ~/.bashrc
-  fi
-
   if ! eval "$(getGumSpinnerOrLogger "connecting to the cluster") aws eks update-kubeconfig --name ${AWS_CLUSTER_NAME} --region ${AWS_REGION}"; then
     status_log $TYPE_ERROR "Failed to connect to the cluster due to following reason"
     reason=$(aws eks update-kubeconfig --name ${AWS_CLUSTER_NAME} --region ${AWS_REGION})
@@ -112,6 +125,12 @@ connect_to_aws_cluster() {
 
   status_log $TYPE_SUCCESS "connected to the cluster: ${AWS_CLUSTER_NAME}"
 
+  status_log $TYPE_INFO "$(kubectl get nodes)"
+
+  # Source the updated config files to ensure credentials are available in current shell
+  [ -f ~/.bashrc ] && source ~/.bashrc
+  [ -f ~/.bash_profile ] && source ~/.bash_profile
+  [ -f ~/.zshrc ] && source ~/.zshrc
 }
 
 # --------------------------------- CODE ------------------------------------------
@@ -178,137 +197,4 @@ elif [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
 fi
 
 exit 0
-
-
-# if Kubernetes, then pre-set the configuration params
-if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
-
-#------------ GRAPPLE_DNS Input-----------
-  check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "${GRAPPLE_DNS}" "${help_menu_cmd}"
-  # check if a full domain-name was passed in GRAPPLE_DNS
-  if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
-      status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
-      GRAPPLE_DOMAIN=".grapple-demo.com"
-  fi
-
-#---------- KUBE_CONTEXT Input ------------
-
-KUBERNETES_CLUSTER_NAME=""
-if [ -n "$KUBERNETES_SERVICE_HOST" ] && [ -n "$KUBERNETES_SERVICE_PORT" ]; then
-    echo "Running inside a Kubernetes cluster"
-    KUBERNETES_CLUSTER_NAME=$(kubectl get nodes -o name | awk -F'/' '{print $2}' | head -n 1)
-else
-    echo "Not running inside a Kubernetes cluster"
-    if [ "${KUBE_CONTEXT}" == $CURRENT_CONTEXT ] || [ "${KUBE_CONTEXT}" == "" ]; then
-        if kubectl config current-context >/dev/null 2>&1; then
-        KUBE_CONTEXT=$(kubectl config current-context)
-        fi
-    fi
-    
-    # Run the command and store the output in a variable
-    contexts=$(kubectl config get-contexts -o name)
-    # Check if the output is empty
-    if [ -z "$contexts" ]; then
-        status_log $TYPE_ERROR "Error: No contexts found"
-        exit 1
-    else
-        #check if input from params is valid or not
-        is_correct_kubectl_context_provided $KUBE_CONTEXT
-        contexts=$(kubectl config get-contexts -o name)
-        KUBE_CONTEXT=$(if [ "${KUBE_CONTEXT}" != "" ]; then echo ${KUBE_CONTEXT}; else gum choose  --header "Please select kubectl context you want to use" $contexts ; fi) || exit $?
-        kubectl config use-context $KUBE_CONTEXT
-        status_log $TYPE_DEFAULT "KUBE_CONTEXT: ${KUBE_CONTEXT}"
-    fi
-
-    KUBERNETES_CLUSTER_NAME=$KUBE_CONTEXT
-fi
-
-
-  check_if_param_avaiable_in_non_interactive_mode "CLUSTER_IP" "${CLUSTER_IP}" "${help_menu_cmd}"
-  CLUSTER_IP=$(if [ "${CLUSTER_IP}" != "" ]; then echo ${CLUSTER_IP}; else prompt_for_input_with_validation "Enter CLUSTER_IP: " "Provide the IP of the cluster" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?
-  echo "kuberenetes cluster ip: ${CLUSTER_IP}"
-
-fi
-
-if [ "${TARGET_PLATFORM}" = $Minikube ]; then
-
-  status_log $TYPE_INFO "going to install and run minikube"
-  # first check if minikube is installed or not, if not? then install it
-  check_and_install_minikube
-
-  # check if minikube cluster is running or not, if not? then start it
-  if ! minikube status | grep "host: Running"; then
-      echo "Minikube is not running. Starting Minikube..."
-      if ! eval "$(getGumSpinnerOrLogger "minikube is not running, now starting minikube") minikube start"; then
-        status_log $TYPE_ERROR "Error: minikube failed to start becasue docker or any driver service is not running. Details are listed below"
-        minikube start >&2
-      fi
-  fi
-
-  # switch to minikube
-  kubectl config use-context minikube
-  extract_kubectl_cli_version
-
-  if ! minikube addons list | grep enabled | grep ingress >/dev/null 2>&1; then
-    if [ "${AUTO_CONFIRM}" != "true" ] && [ "$TTY" == "enabled" ]; then
-      gum confirm "Configure dns for your minikube?" || (echo "grapple cannot be installed without dns / ingress configuration" &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
-    fi
-    echo "enabling ingress addons for minikube"
-    status_log $TYPE_INFO "enabling ingress addons for minikube"
-    minikube addons enable ingress
-    minikube addons enable ingress-dns
-    if [[ "$(uname)" == "Darwin" ]]; then
-      brew install chipmk/tap/docker-mac-net-connect
-      sudo brew services start chipmk/tap/docker-mac-net-connect
-    fi
-  fi 
-
-  status_log $TYPE_INFO "testing domain, this may take upto 5mins"
-  if ! grep -r $(minikube ip) /etc/resolver/ >/dev/null 2>&1; then
-    echo "domain test
-nameserver $(minikube ip)
-search_order 1
-timeout 5" > /tmp/minikube-test
-
-    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
-      status_log $TYPE_INFO "please run the following commands before clicking on 'confirm':"
-    else
-      status_log $TYPE_INFO "going to run following command"
-    fi
-  
-    gum style \
-      --foreground 212 --border-foreground 212 --border double \
-      --align center --width 100 --margin "1 2" --padding "2 4" \
-      'sudo cp /tmp/minikube-test /etc/resolver/minikube-test' >&2
-
-    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
-      gum confirm "Proceed with ingress configuration?" || (echo "grapple cannot be installed without dns / ingress configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
-    else
-      sudo cp /tmp/minikube-test /etc/resolver/minikube-test
-    fi
-  fi 
-
-  GRAPPLE_DNS=test
-  GRAPPLE_DOMAIN=""
-  
-
-fi
-
-
-
-# Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
-if [ "${TARGET_PLATFORM}" != $Minikube ]; then
-  check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "$GRAPPLE_DNS" "${help_menu_cmd}"
-  GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
-  echo "installing dns: ${GRAPPLE_DNS}"
-fi
-
-#----------- creating complete domain --------
-complete_domain="" 
-if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
-  complete_domain=$GRAPPLE_DNS
-else 
-  complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
-fi
-
 
