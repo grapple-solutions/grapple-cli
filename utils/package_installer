@@ -418,9 +418,9 @@ check_and_install_gcloud() {
 
     os_type=$(uname)
 
-    if [[ "$os_type" == "linux-gnu"* ]]; then
+    if [[ "$os_type" == "Linux"* ]]; then
         os=gnu
-    elif [[ "$os_type" == "darwin"* ]]; then
+    elif [[ "$os_type" == "Darwin"* ]]; then
         os=mac
     else
         os=unknown
