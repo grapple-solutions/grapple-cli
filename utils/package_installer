@@ -436,11 +436,14 @@ check_and_install_gcloud() {
         elif [ "${os}" == "gnu" ]; then
             eval "$(getGumSpinnerOrLogger "updating apt") sudo apt-get update"
             eval "$(getGumSpinnerOrLogger "installing dependencies") sudo apt-get install -y apt-transport-https ca-certificates gnupg"
-            eval "$(getGumSpinnerOrLogger "downloading gcloud") curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share/keyrings/cloud.google.gpg > /dev/null"
-            eval "$(getGumSpinnerOrLogger "adding gcloud repo") curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg"
+            status_log $TYPE_INFO "downloading gcloud"
+            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share/keyrings/cloud.google.gpg"
+            curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg"
+            status_log $TYPE_INFO "installing gcloud"
             eval "$(getGumSpinnerOrLogger "updating apt") sudo apt-get update"
             eval "$(getGumSpinnerOrLogger "installing gcloud") sudo apt-get install -y google-cloud-cli"
             eval "$(getGumSpinnerOrLogger "installing gcloud auth plugin") sudo apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin"
+            status_log $TYPE_SUCCESS "gcloud cli installed successfully"
         else
             errMsg="Failed to install gcloud cli, OS ${OS} not supported at the moment"
             echo $errMsg
