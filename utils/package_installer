@@ -414,6 +414,35 @@ check_and_install_aws_cli() {
 
 }
 
+check_and_install_gcloud() {
+
+    # checks for checking and installing gcloud
+    if ! gcloud --version  >/dev/null 2>&1; then
+        echo "gcloud cli is required"
+        echo "installing gcloud cli..."
+        if [ "${OS}" == "mac" ]; then
+            eval "$(getGumSpinnerOrLogger "gcloud cli is not installed, now installing gcloud cli") brew install gcloud"
+        elif [ "${OS}" == "gnu" ]; then
+
+            eval "$(getGumSpinnerOrLogger "updating apt") sudo apt-get update"
+            eval "$(getGumSpinnerOrLogger "installing dependencies") sudo apt-get install -y apt-transport-https ca-certificates gnupg"
+            eval "$(getGumSpinnerOrLogger "downloading gcloud") curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share/keyrings/cloud.google.gpg > /dev/null"
+            eval "$(getGumSpinnerOrLogger "adding gcloud repo") curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg"
+            eval "$(getGumSpinnerOrLogger "updating apt") sudo apt-get update"
+            eval "$(getGumSpinnerOrLogger "installing gcloud") sudo apt-get install -y google-cloud-cli"
+            eval "$(getGumSpinnerOrLogger "installing gcloud auth plugin") sudo apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin"
+
+        else
+            errMsg="Failed to install gcloud cli, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    extract_gcloud_cli_version
+
+}
 
 extract_helm_cli_version(){
 
@@ -667,5 +696,16 @@ extract_aws_cli_version(){
         aws_version=$(aws --version | awk '{print $1}' | awk -F'/' '{print $2}')
         # Output the latest version
         echo "      $aws_version - aws" >> "$GRPL_WORKDIR/dependency_versions"
+    fi
+}
+
+extract_gcloud_cli_version(){
+
+    if ! grep -q "gcloud" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
+
+        # Get gcloud version
+        gcloud_version=$(gcloud --version | head -n 1 | awk '{print $4}')
+        # Output the latest version
+        echo "      $gcloud_version - gcloud" >> "$GRPL_WORKDIR/dependency_versions"
     fi
 }
