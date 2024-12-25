@@ -132,6 +132,11 @@ connect_to_google_cloud_cluster() {
   check_if_param_avaiable_in_non_interactive_mode "GOOGLE_PROJECT_ID" "${GOOGLE_PROJECT_ID}" "${help_menu_cmd}"
   GOOGLE_PROJECT_ID=$(if [ "${GOOGLE_PROJECT_ID}" != "" ]; then echo ${GOOGLE_PROJECT_ID}; else prompt_for_input_with_validation "Enter GOOGLE_PROJECT_ID: " "Provide the google project id to be used - valide project id is required" "$non_empty_regex" "Invalid project id format. Please try again." || exit $?; fi)
 
+  # for adding line breaks
+  status_log $TYPE_INFO ""
+  status_log $TYPE_INFO ""
+
+
   gcloud config set project ${GOOGLE_PROJECT_ID}
 
   # ------------ KUBEFIRST_CLUSTER_NAME Input-----------
@@ -148,7 +153,10 @@ connect_to_google_cloud_cluster() {
 
   status_log $TYPE_SUCCESS "connected to the cluster: ${KUBEFIRST_CLUSTER_NAME}"
 
+  kubectl get nodes
+
 }
+
 
 
 
