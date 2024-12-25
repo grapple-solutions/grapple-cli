@@ -127,9 +127,7 @@ connect_to_google_cloud_cluster() {
   check_and_install_gcloud
 
   # Check if already authenticated
-  if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" >/dev/null 2>&1; then
-    gcloud auth login >&2
-  fi
+  gcloud auth login >&2
 
   # ------------ GOOGLE_PROJECT_ID Input-----------
   check_if_param_avaiable_in_non_interactive_mode "GOOGLE_PROJECT_ID" "${GOOGLE_PROJECT_ID}" "${help_menu_cmd}"
