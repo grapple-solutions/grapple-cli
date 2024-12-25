@@ -129,11 +129,20 @@ connect_to_google_cloud_cluster() {
   gcloud auth login >&2
 
   # ------------ GOOGLE_PROJECT_ID Input-----------
-  GOOGLE_PROJECT_ID=${KUBEFIRST_CLUSTER_NAME}
   check_if_param_avaiable_in_non_interactive_mode "GOOGLE_PROJECT_ID" "${GOOGLE_PROJECT_ID}" "${help_menu_cmd}"
   GOOGLE_PROJECT_ID=$(if [ "${GOOGLE_PROJECT_ID}" != "" ]; then echo ${GOOGLE_PROJECT_ID}; else prompt_for_input_with_validation "Enter GOOGLE_PROJECT_ID: " "Provide the google project id to be used - valide project id is required" "$non_empty_regex" "Invalid project id format. Please try again." || exit $?; fi)
 
   gcloud config set project ${GOOGLE_PROJECT_ID}
+
+  # ------------ KUBEFIRST_CLUSTER_NAME Input-----------
+  KUBEFIRST_CLUSTER_NAME=${KUBEFIRST_CLUSTER_NAME:-${GOOGLE_PROJECT_ID}}
+  check_if_param_avaiable_in_non_interactive_mode "KUBEFIRST_CLUSTER_NAME" "${KUBEFIRST_CLUSTER_NAME}" "${help_menu_cmd}"
+  KUBEFIRST_CLUSTER_NAME=$(if [ "${KUBEFIRST_CLUSTER_NAME}" != "" ]; then echo ${KUBEFIRST_CLUSTER_NAME}; else prompt_for_input_with_validation "Enter KUBEFIRST_CLUSTER_NAME: " "Provide the kubefirst cluster name to be used - valide cluster name is required" "$non_empty_regex" "Invalid cluster name format. Please try again." || exit $?; fi)
+
+  # ------------ KUBEFIRST_CLOUD_REGION Input-----------
+  KUBEFIRST_CLOUD_REGION=${KUBEFIRST_CLOUD_REGION:-${GOOGLE_PROJECT_ID}}
+  check_if_param_avaiable_in_non_interactive_mode "KUBEFIRST_CLOUD_REGION" "${KUBEFIRST_CLOUD_REGION}" "${help_menu_cmd}"
+  KUBEFIRST_CLOUD_REGION=$(if [ "${KUBEFIRST_CLOUD_REGION}" != "" ]; then echo ${KUBEFIRST_CLOUD_REGION}; else prompt_for_input_with_validation "Enter KUBEFIRST_CLOUD_REGION: " "Provide the kubefirst cloud region to be used - valide cloud region is required" "$non_empty_regex" "Invalid cloud region format. Please try again." || exit $?; fi)
 
   gcloud container clusters get-credentials ${KUBEFIRST_CLUSTER_NAME} --region ${KUBEFIRST_CLOUD_REGION}
 
