@@ -416,14 +416,24 @@ check_and_install_aws_cli() {
 
 check_and_install_gcloud() {
 
+    os_type=$(uname)
+
+    if [[ "$os_type" == "linux-gnu"* ]]; then
+        os=gnu
+    elif [[ "$os_type" == "darwin"* ]]; then
+        os=mac
+    else
+        os=unknown
+    fi
+
     # checks for checking and installing gcloud
     if ! gcloud --version  >/dev/null 2>&1; then
         echo "gcloud cli is required"
         echo "installing gcloud cli..."
-        if [ "${OS}" == "mac" ]; then
-            eval "$(getGumSpinnerOrLogger "gcloud cli is not installed, now installing gcloud cli") brew install gcloud"
-        elif [ "${OS}" == "gnu" ]; then
-
+        if [ "${os}" == "mac" ]; then
+            eval "$(getGumSpinnerOrLogger "gcloud cli is not installed, now installing gcloud cli") brew install --cask google-cloud-sdk"
+            eval "$(getGumSpinnerOrLogger "installing gcloud auth plugin") gcloud components install gke-gcloud-auth-plugin"
+        elif [ "${os}" == "gnu" ]; then
             eval "$(getGumSpinnerOrLogger "updating apt") sudo apt-get update"
             eval "$(getGumSpinnerOrLogger "installing dependencies") sudo apt-get install -y apt-transport-https ca-certificates gnupg"
             eval "$(getGumSpinnerOrLogger "downloading gcloud") curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share/keyrings/cloud.google.gpg > /dev/null"
@@ -431,7 +441,6 @@ check_and_install_gcloud() {
             eval "$(getGumSpinnerOrLogger "updating apt") sudo apt-get update"
             eval "$(getGumSpinnerOrLogger "installing gcloud") sudo apt-get install -y google-cloud-cli"
             eval "$(getGumSpinnerOrLogger "installing gcloud auth plugin") sudo apt-get install -y google-cloud-cli-gke-gcloud-auth-plugin"
-
         else
             errMsg="Failed to install gcloud cli, OS ${OS} not supported at the moment"
             echo $errMsg
