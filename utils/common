@@ -378,7 +378,7 @@ check_if_param_avaiable_in_non_interactive_mode() {
 
 check_if_cluster_is_accessible(){
   # Check if kubectl can access any cluster
-  if eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl cluster-info >/dev/null 2>&1"; then
+  if eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl cluster-info"; then
     return 0
   fi
 
