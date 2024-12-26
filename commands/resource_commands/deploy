@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
+
 . "$GRPL_WORKDIR/utils/help_menus"
 . "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/utils/common"
 
 cli_help() {
   grpl_resource_deploy_cli_help
@@ -27,25 +29,6 @@ tmp_file_dest="/tmp/temp_file"
 
 
 # ----------------------- functions code ---------------------------
-
-kubeblocks_installation() {
-  if ! kbcli; then
-      echo "installing kbcli"
-      check_and_install_kbcli
-  fi
-
-  if ! kubectl get deployment kubeblocks -n kb-system; then
-    echo "checking kubeblocks"
-    check_and_install_kubeblocks
-
-    echo "waiting for configs to apply"
-    for i in $(kubectl get clusterversion -o name); do 
-      kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
-    done
-  else 
-    echo "kubeblocks is already installed"
-  fi
-}
 
 transform_model_input_to_yaml() {
 
@@ -456,30 +439,6 @@ deploy_template() {
     CRD="gras" && echo "Wait for $CRD to be deployed:" && SECONDS=0 && TIMEOUT=60 && until kubectl get $CRD -n $KUBE_NS | awk '{print $3}' | grep -q True >/dev/null 2>&1 || [ $SECONDS -ge $TIMEOUT ]; do echo -n .; sleep 1; done && if [ $SECONDS -ge $TIMEOUT ]; then status_log $TYPE_ERROR "Timeout exceeded, $CRD not deployed after 1 minute"; exit 1; else echo "$CRD deployed"; fi
     status_log $TYPE_SUCCESS "$CRD deployed"
 
-}
-
-check_and_create_kubens() {
-
-    if [[ "$KUBE_NS" != "" ]] && ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
-        status_log $TYPE_INFO "namespace $KUBE_NS doesn't exist, now creating"
-        kubectl create namespace "$KUBE_NS"
-    elif [[ "$KUBE_NS" == "" ]]; then
-        status_log $TYPE_INFO "Do you want to select existing namespace or create new one?"
-        local another_rule=$(gum choose "Select from existing" "Create new") || exit $?
-        
-        if [ "$another_rule" == "Select from existing" ]; then
-            namespaces=$(kubectl get namespaces -o name | awk -F'/' '{print $2}')
-            current_ns="default"
-            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else gum choose  --header "Please select kubectl namespace you want to use" $namespaces --selected=$current_ns ; fi) || exit $?
-        else
-            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else prompt_for_explicit_input_with_validation "Enter KUBE_NS: " "default value is '$GRAS_NAME'" ".*" "kube ns can't be empty"; fi) || exit $?
-            if [ "${KUBE_NS}" == "" ]; then KUBE_NS=$GRAS_NAME; fi
-            if ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
-                    status_log $TYPE_INFO "namespace $KUBE_NS doesn't exist, now creating"
-                    kubectl create namespace "$KUBE_NS"
-            fi
-        fi    
-    fi
 }
 
 ask_guim_enablement(){

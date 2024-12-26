@@ -646,7 +646,9 @@ Parameters:
         CIVO_REGION= CIVO region where cluster is located
         wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready (default is 'false')
         AUTO_CONFIRM= 'true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'true')
-    
+        INSTALL_KUBEBLOCKS= 'true' / 'false', set to 'true' if you want to install kubeblocks (default is 'true')
+
+
     CIVO Parameters:
 $civo_help_menu
 "
@@ -1826,6 +1828,9 @@ Parameters:
 
     RESOURCE_ACTION = deploy (deploys the resource yaml onto the cluster), render (saves the resource into a yaml file), none (does nothing)
     QUERY = your query to grapple ai, make sure to enclose the query in double quotes
+    KUBE_NS = kubernetes namespace where you want to deploy the resource
+    AUTO_CONFIRM= 'true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'false')
+    wait = 'true' / 'false', set to 'true' if you want to wait for the deployment to be ready (default is 'false')
 
 "
 

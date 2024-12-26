@@ -1,12 +1,14 @@
 #!/bin/bash
 
 set -e
+
 . "$GRPL_WORKDIR/utils/help_menus"
 
 cli_help() {
   grpl_resource_cli_help
   exit 0
 }
+
 
 command=$1
 shift
@@ -21,3 +23,4 @@ case "$command" in
     cli_help
     ;;
 esac
+
