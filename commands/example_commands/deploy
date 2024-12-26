@@ -13,9 +13,7 @@ cli_help() {
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
-status_log $TYPE_INFO "checking if cluster is accessible"
 check_if_cluster_is_accessible
-status_log $TYPE_INFO "checking if grpl is installed"
 check_if_grpl_is_installed
 
 
