@@ -9,7 +9,7 @@ set -e
 
 # Print help menu for grpl cluster install and exit
 cli_help() {
-  grpl_cluster_install_cli_help
+  grpl_cluster_connect_cli_help
   exit 0
 }
 
@@ -129,30 +129,33 @@ connect_to_google_cloud_cluster() {
   # Check if already authenticated
   gcloud auth login >&2
 
-  # ------------ GOOGLE_PROJECT_ID Input-----------
-  check_if_param_avaiable_in_non_interactive_mode "GOOGLE_PROJECT_ID" "${GOOGLE_PROJECT_ID}" "${help_menu_cmd}"
-  GOOGLE_PROJECT_ID=$(if [ "${GOOGLE_PROJECT_ID}" != "" ]; then echo ${GOOGLE_PROJECT_ID}; else prompt_for_input_with_validation "Enter GOOGLE_PROJECT_ID: " "Provide the google project id to be used - valide project id is required" "$non_empty_regex" "Invalid project id format. Please try again." || exit $?; fi)
-
   # for adding line breaks
   status_log $TYPE_INFO ""
   status_log $TYPE_INFO ""
 
+  # ------------ GOOGLE_PROJECT_ID Input-----------
+  check_if_param_avaiable_in_non_interactive_mode "GOOGLE_PROJECT_ID" "${GOOGLE_PROJECT_ID}" "${help_menu_cmd}"
+  GOOGLE_PROJECT_ID=$(if [ "${GOOGLE_PROJECT_ID}" != "" ]; then echo ${GOOGLE_PROJECT_ID}; else prompt_for_input_with_validation "Enter GOOGLE_PROJECT_ID: " "Provide the google project id to be used - valide project id is required" "$non_empty_regex" "Invalid project id format. Please try again." || exit $?; fi)
+  status_log $TYPE_INFO "project id: ${GOOGLE_PROJECT_ID}"
 
+  status_log $TYPE_INFO "setting project id"
   gcloud config set project ${GOOGLE_PROJECT_ID}
 
   # ------------ KUBEFIRST_CLUSTER_NAME Input-----------
   check_if_param_avaiable_in_non_interactive_mode "KUBEFIRST_CLUSTER_NAME" "${KUBEFIRST_CLUSTER_NAME}" "${help_menu_cmd}"
   KUBEFIRST_CLUSTER_NAME=$(if [ "${KUBEFIRST_CLUSTER_NAME}" != "" ]; then echo ${KUBEFIRST_CLUSTER_NAME}; else prompt_for_input_with_validation "Enter KUBEFIRST_CLUSTER_NAME: " "Provide the kubefirst cluster name to be used - valide cluster name is required" "$non_empty_regex" "Invalid cluster name format. Please try again." || exit $?; fi)
+  status_log $TYPE_INFO "cluster name: ${KUBEFIRST_CLUSTER_NAME}"
 
   # ------------ KUBEFIRST_CLOUD_REGION Input-----------
   check_if_param_avaiable_in_non_interactive_mode "KUBEFIRST_CLOUD_REGION" "${KUBEFIRST_CLOUD_REGION}" "${help_menu_cmd}"
   KUBEFIRST_CLOUD_REGION=$(if [ "${KUBEFIRST_CLOUD_REGION}" != "" ]; then echo ${KUBEFIRST_CLOUD_REGION}; else prompt_for_input_with_validation "Enter KUBEFIRST_CLOUD_REGION: " "Provide the kubefirst cloud region to be used - valide cloud region is required" "$non_empty_regex" "Invalid cloud region format. Please try again." || exit $?; fi)
+  status_log $TYPE_INFO "cloud region: ${KUBEFIRST_CLOUD_REGION}"
 
+  status_log $TYPE_INFO "connecting to the cluster"
   gcloud container clusters get-credentials ${KUBEFIRST_CLUSTER_NAME} --region ${KUBEFIRST_CLOUD_REGION}
 
   status_log $TYPE_SUCCESS "connected to the cluster: ${KUBEFIRST_CLUSTER_NAME}"
 
-  kubectl get nodes
 
 }
 
@@ -175,8 +178,6 @@ cli_log "cluster install BEGIN"
 # valid arguments array
 valid_args=(
     "TARGET_PLATFORM"
-    "AUTO_CONFIRM"
-    "KUBE_CONTEXT"
     "CIVO_REGION"
     "CIVO_CLUSTER"
     "CIVO_API_KEY"
@@ -202,7 +203,7 @@ check_if_param_avaiable_in_non_interactive_mode "TARGET_PLATFORM" "${TARGET_PLAT
 if [ "${TARGET_PLATFORM}" != "" ]; then 
   is_correct_target_platform_provided $TARGET_PLATFORM 
 fi
-TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $CIVO $Kubefirst; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
 
@@ -223,8 +224,14 @@ elif [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
     connect_to_aws_cluster
   elif [[ "$(echo "${KUBEFIRST_CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${GoogleCloud}" | tr '[:upper:]' '[:lower:]')" ]]; then
     connect_to_google_cloud_cluster
+  else
+    echo "kubefirst cloud provider: ${KUBEFIRST_CLOUD_PROVIDER} is not supported at the moment"
+    exit 1
   fi
 
+else
+  echo "target platform: ${TARGET_PLATFORM} is not supported at the moment"
+  exit 1
 fi
 
 exit 0

@@ -29,7 +29,7 @@ case "$command" in
   patch|p)
     "$GRPL_WORKDIR/commands/cluster_commands/patch" "$@" | tee -ia "$GRPL_WORKDIR/logs/cluster_patch.log"
     ;;
-  connect|co)
+  connect|conn)
     "$GRPL_WORKDIR/commands/cluster_commands/connect" "$@" | tee -ia "$GRPL_WORKDIR/logs/cluster_connect.log"
     ;;
   *)

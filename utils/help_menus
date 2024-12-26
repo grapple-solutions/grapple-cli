@@ -21,6 +21,7 @@ generate_cli_web_doc() {
     grpl_cluster_install_cli_help $WEB_DOC
     grpl_cluster_patch_cli_help $WEB_DOC
     grpl_cluster_status_cli_help $WEB_DOC
+    grpl_cluster_connect_cli_help $WEB_DOC
     grpl_example_deploy_cli_help $WEB_DOC
     grpl_example_status_cli_help $WEB_DOC
     grpl_resource_cli_help $WEB_DOC
@@ -55,6 +56,7 @@ $grpl_application_doc
 $grpl_application_init_doc
 $grpl_cluster_doc
 $grpl_cluster_create_doc
+$grpl_cluster_connect_doc 
 $grpl_cluster_install_doc
 $grpl_cluster_patch_doc
 $grpl_cluster_status_doc
@@ -351,10 +353,11 @@ Usage:
 
 Commands:
 
-    s or status     Cluster status
-    i or install    Cluster installation
-    p or patch      Cluster patch
-    c or create     Cluster creation
+    s or status      Cluster status
+    i or install     Cluster installation
+    p or patch       Cluster patch
+    c or create      Cluster creation
+    conn or connect  Cluster connection
     *               Help menu
     
 Examples:    
@@ -363,6 +366,7 @@ Examples:
     grpl c i    or    grpl cluster install    
     grpl c p    or    grpl cluster patch       
     grpl c c    or    grpl cluster create  
+    grpl c conn or    grpl cluster connect
     grpl c *    or    grpl cluster *
 
 "
@@ -639,7 +643,7 @@ Parameters:
         TARGET_PLATFORM= CIVO / Kubernetes / minikube / Kubefirst
         CLUSTER_NAME= name of the cluster
         CIVO_API_KEY= civo api key (optional)
-        CIVO_REGION=Available CIVO regions (e.g. FRA1)
+        CIVO_REGION= CIVO region where cluster is located
         wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready (default is 'false')
         AUTO_CONFIRM= 'true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'true')
     
@@ -730,11 +734,11 @@ Parameters:
   # minikube related configurations
   # no additional configurations
   # CIVO related configurations
-  CIVO_REGION=Available CIVO regions (e.g. FRA1)
+  CIVO_REGION=CIVO region where cluster is located
   CIVO_CLUSTER=CIVO cluster
   CIVO_CLUSTER_ID=CIVO cluster ID
   CIVO_EMAIL_ADDRESS=email address of your CIVO account
-  CIVO_API_KEY=api key of your CIVO account
+  CIVO_API_KEY=api key of the CIVO account
   CLUSTER_IP= Cluster IP address
   KUBEFIRST_CLOUD_PROVIDER = cloud provider for kubefirst
   KUBEFIRST_CLOUD_REGION = cloud region of kubefirst cloud provider
@@ -1832,3 +1836,70 @@ Parameters:
     fi
 }
 
+
+
+grpl_cluster_connect_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl cluster connect"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl cluster connect"
+        meta=""
+    fi
+
+    grpl_cluster_connect_doc="
+$cli_name
+$meta
+
+Description: 
+
+    connects to a grapple cluster
+
+Usage: 
+
+    grpl cluster connect [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to connect to a grapple cluster
+    
+Examples:    
+
+    grpl c conn h    or    grpl cluster connect help
+    grpl c conn *    or    grpl cluster connect *
+
+Parameters:
+
+    TARGET_PLATFORM = one of your choice 'CIVO' or 'Kubefirst'
+    CIVO_REGION = CIVO region where cluster is located
+    CIVO_CLUSTER = CIVO cluster name
+    CIVO_API_KEY = api key of the CIVO account
+    GRAPPLE_DNS = grapple dns
+    KUBEFIRST_CLOUD_PROVIDER = kubefirst cloud provider (e.g. Civo, AWS, GoogleCloud)
+    KUBEFIRST_CLOUD_REGION = kubefirst cloud region (e.g. fra1, us-east1, eu-central1)
+    KUBEFIRST_CLUSTER_NAME = kubefirst cluster name
+    AWS_ACCESS_KEY_ID = aws access key id ( required if KUBEFIRST_CLOUD_PROVIDER is AWS )
+    AWS_SECRET_ACCESS_KEY = aws secret access key ( required if KUBEFIRST_CLOUD_PROVIDER is AWS )
+    AWS_SESSION_TOKEN = aws session token ( required if KUBEFIRST_CLOUD_PROVIDER is AWS )
+    GOOGLE_PROJECT_ID = google project id ( required if KUBEFIRST_CLOUD_PROVIDER is GoogleCloud )
+
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_cluster_connect_doc"  >&2
+    fi
+}
