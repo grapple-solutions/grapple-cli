@@ -90,8 +90,6 @@ clone_github_repo_and_validate_yaml(){
 
   # Change to repo directory
   GITHUB_PATH="/tmp/grpl-gras-examples/${GITHUB_PATH}"   
-  GRAS_NAME=$(yq eval '.metadata.name' "${GITHUB_PATH}")
-  KUBE_NS=$(yq eval '.metadata.namespace' "${GITHUB_PATH}")   
 
   # Check if GITHUB_PATH exists and is a valid YAML file
   if [ ! -f "${GITHUB_PATH}" ]; then
@@ -104,8 +102,18 @@ clone_github_repo_and_validate_yaml(){
     exit 1
   fi
 
+  # Extract namespace from manifest
+  KUBE_NS=$(yq eval 'select(.kind == "GrappleApplicationSet") | .metadata.namespace' "${GITHUB_PATH}")
   if [ -z "${KUBE_NS}" ]; then
     status_log $TYPE_ERROR "Could not find namespace in ${GITHUB_PATH}"
+    exit 1
+  fi
+
+  # Extract gras name  from manifest
+  GRAS_NAME=$(yq eval 'select(.kind == "GrappleApplicationSet") | .metadata.name' "${GITHUB_PATH}")
+  
+  if [ -z "${GRAS_NAME}" ]; then
+    status_log $TYPE_ERROR "Could not find resource name in ${GITHUB_PATH}"
     exit 1
   fi
 
@@ -133,31 +141,6 @@ deploy_from_github(){
     exit 1
   fi
 
-  # Extract namespace from manifest
-  KUBE_NS=$(yq eval '.metadata.namespace' "${GITHUB_PATH}")
-  
-  if [ -z "${KUBE_NS}" ]; then
-    status_log $TYPE_ERROR "Could not find namespace in ${GITHUB_PATH}"
-    exit 1
-  fi
-
-  # Extract namespace from manifest
-  GRAS_NAME=$(yq eval '.metadata.name' "${GITHUB_PATH}")
-  
-  if [ -z "${GRAS_NAME}" ]; then
-    status_log $TYPE_ERROR "Could not find resource name in ${GITHUB_PATH}"
-    exit 1
-  fi
-
-  # Check if namespace exists, create if it doesn't
-  if ! kubectl get namespace "${KUBE_NS}" >/dev/null 2>&1; then
-    status_log $TYPE_INFO "Creating namespace ${KUBE_NS}"
-    if ! eval "$(getGumSpinnerOrLogger "creating namespace ${KUBE_NS}") kubectl create namespace ${KUBE_NS}"; then
-      status_log $TYPE_ERROR "Failed to create namespace ${KUBE_NS}"
-      exit 1
-    fi
-  fi
-
   # Deploy the manifest
   DISPLAY_PATH=${GITHUB_PATH#/tmp/grpl-gras-examples}
   status_log $TYPE_INFO "Deploying manifest from ${DISPLAY_PATH}"
@@ -172,21 +155,6 @@ deploy_from_github(){
 
 }
 
-create_internal_db(){
-  GRAS_NAME=$1
-  KUBE_NS=$2
-  status_log $TYPE_INFO "creating db"
-  kubeblocks_installation
-
-  # check if kubeblocks is installed
-  kubeblocks_template_file_dest="/tmp/kube_db.yaml"
-  cp "$GRPL_WORKDIR/files/db.yaml" $kubeblocks_template_file_dest
-  if ! kbcli cluster list -n ${KUBE_NS} ${GRAS_NAME} >/dev/null 2>&1; then
-      yq -i ".metadata.name=\"$GRAS_NAME\"" $kubeblocks_template_file_dest
-      kubectl apply -n ${KUBE_NS} -f $kubeblocks_template_file_dest
-      status_log $TYPE_INFO "created db"
-  fi
-}
 
 create_external_db_secret(){
     # now create secret to store the creds
@@ -252,13 +220,17 @@ check_if_param_avaiable_in_non_interactive_mode "GRAS_TEMPLATE" "$GRAS_TEMPLATE"
 if [ "${GRAS_TEMPLATE}" != "" ]; then 
   is_correct_grapple_applicationsets_provided $GRAS_TEMPLATE 
 fi
-GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED; fi) || exit $?
+GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_CACHE_REDIS $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED; fi) || exit $?
 status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 
 # grpl r d db-file
 if [[ "${GRAS_TEMPLATE}" == $DB_FILE ]]; then
   GITHUB_PATH="db-file/resource.yaml"
+  clone_github_repo_and_validate_yaml
+  deploy_from_github
+elif [[ "${GRAS_TEMPLATE}" == $DB_CACHE_REDIS ]]; then
+  GITHUB_PATH="db-cache-redis/resource.yaml"
   clone_github_repo_and_validate_yaml
   deploy_from_github
 fi
@@ -277,7 +249,7 @@ status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" == $INTERNAL_DB ]]; then
   GITHUB_PATH="db-mysql-model-based/internal_resource.yaml"
   clone_github_repo_and_validate_yaml
-  create_internal_db $GRAS_NAME $KUBE_NS
+  kubeblocks_installation
 
 #grpl r d mysql model  external
 elif [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
@@ -289,8 +261,7 @@ elif [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" == $EX
 elif [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $INTERNAL_DB ]]; then
   GITHUB_PATH="db-mysql-discovery-based/internal_resource.yaml"
   clone_github_repo_and_validate_yaml
-  create_internal_db $GRAS_NAME $KUBE_NS
-  
+  kubeblocks_installation  
 
 #grpl r d mysql discovery  external
 elif [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
