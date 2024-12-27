@@ -188,7 +188,7 @@ valid_args=(
   )
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-help_menu_cmd="grpl cluster install help"
+help_menu_cmd="grpl cluster connect help"
 extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
 
 
