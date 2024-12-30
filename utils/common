@@ -219,7 +219,8 @@ extract_input_params_from_cli() {
               # Check if the argument is valid
               valid=false
               for valid_arg in "${valid_args[@]}"; do
-                  if [[ "$key" == "$valid_arg" ]]; then
+                  lowercased_valid_arg=$(echo "$valid_arg" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+                  if [[ "$key" == "$valid_arg" || "$key" == "$lowercased_valid_arg" ]]; then
                       valid=true
                       break
                   fi
@@ -227,7 +228,9 @@ extract_input_params_from_cli() {
 
               if  $valid; then
                   local key=${key//-/_}
+                  local uppercased_key=$(echo "$key" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
                   export "$key=$value"
+                  export "$uppercased_key=$value"
               else
                   status_log $TYPE_ERROR "Error: $key is not a valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
                   return 1
@@ -242,11 +245,23 @@ extract_input_params_from_cli() {
               fi
               config_param=$(is_valid_arg_syntax "$arg1")
               # Check if the argument is valid
-              if [[ " ${valid_args[@]} " =~ " $config_param " ]]; then
+              valid=false
+              for valid_arg in "${valid_args[@]}"; do
+                  lowercased_valid_arg=$(echo "$valid_arg" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+                  if [[ "$config_param" == "$valid_arg" || "$config_param" == "$lowercased_valid_arg" ]]; then
+                      valid=true
+                      break
+                  fi
+              done
+
+              if $valid; then
                   local config_param=${config_param//-/_}
+                  local uppercased_key=$(echo "$key" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
                   export "$config_param=$arg2"
+                  export "$uppercased_key=$value"
+
               else
-                  status_log $TYPE_ERROR "Error: $config_param is a not valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+                  status_log $TYPE_ERROR "Error: $config_param is not a valid argument, please run \'$help_menu_cmd\' to get more info on how to pass arguments from cli"
                   return 1
               fi
           fi
