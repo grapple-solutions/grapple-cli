@@ -72,14 +72,8 @@ sync_differences() {
     else
         # Show the diff for the selected file
         if git diff "template/main" -- "$selected_file"; then
-            status_log $TYPE_INFO "Do you want to apply changes to $selected_file? (y/n)"
-            read -r apply
-            if [[ "$apply" == "y" ]]; then
-                git checkout template/main -- "$selected_file"
-                status_log $TYPE_SUCCESS "$selected_file updated."
-            else
-                status_log $TYPE_INFO "$selected_file not updated."
-            fi
+            git checkout template/main -- "$selected_file"
+            status_log $TYPE_SUCCESS "$selected_file updated."
         else
             status_log $TYPE_INFO "No differences found for $selected_file."
         fi
