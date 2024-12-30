@@ -303,11 +303,13 @@ Usage:
 Commands:
 
     i or init       Initialize new grpl application
+    u or update     Update the grpl application template
     *               Help menu
     
 Examples:    
 
     grpl a i    or    grpl app init    or    grpl application init
+    grpl a u    or    grpl app update  or    grpl application update
     grpl a *    or    grpl app *       or    grpl application *
 
 "
