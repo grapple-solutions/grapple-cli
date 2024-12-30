@@ -17,6 +17,7 @@ generate_cli_web_doc() {
     grpl_version_cli_help $WEB_DOC
     grpl_application_cli_help $WEB_DOC
     grpl_application_init_cli_help $WEB_DOC
+    grpl_application_update_cli_help $WEB_DOC
     grpl_cluster_create_cli_help $WEB_DOC
     grpl_cluster_install_cli_help $WEB_DOC
     grpl_cluster_patch_cli_help $WEB_DOC
@@ -53,6 +54,7 @@ $grpl_cli_installation_doc
 $grpl_cli_doc
 $grpl_application_doc
 $grpl_application_init_doc
+$grpl_application_update_doc
 $grpl_cluster_doc
 $grpl_cluster_create_doc
 $grpl_cluster_install_doc
@@ -315,6 +317,8 @@ Examples:
         echo "$grpl_application_doc"  >&2
     fi
 }
+
+
 
 
 grpl_cluster_cli_help() {
@@ -1035,6 +1039,61 @@ Parameters:
         return 0
     else
         echo "$grpl_application_init_doc"  >&2
+    fi
+}
+
+
+grpl_application_update_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl application update"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="=== grpl application update"
+        meta=""
+    fi
+
+    grpl_application_update_doc="
+$cli_name
+$meta
+
+Description: 
+
+    Updates a grapple application
+
+Usage: 
+
+    grpl application update [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to update a grpl application
+    
+Examples:    
+
+    grpl a u h    or    grpl app update help    or    grpl application update help
+    grpl a u *    or    grpl app update *       or    grpl application update *
+
+Parameters:
+
+    GRAPPLE_TEMPLATE= the grapple-template repository you cloned using grpl app init (default is 'grapple-solutions/grapple-template')
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_application_update_doc"  >&2
     fi
 }
 
