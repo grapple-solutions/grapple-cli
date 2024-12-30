@@ -1,0 +1,107 @@
+#!/bin/bash
+set -e
+
+. "$GRPL_WORKDIR/utils/help_menus"
+. "$GRPL_WORKDIR/utils/checks"
+
+cli_help() {
+  grpl_application_update_cli_help
+  exit 0
+}
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+install_prerequisite
+check_and_install_taskcli
+
+# -------------------- first check for input params -----------------------
+
+# valid arguments array
+valid_args=(
+    "GRAPPLE_TEMPLATE"
+  )
+  
+
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+extract_input_params_from_cli $valid_args "grpl a u h" "$@"
+
+
+cli_log "application update BEGIN"
+status_log $TYPE_INFO "application update is in progress"
+
+if [[ $GRAPPLE_TEMPLATE == "" ]]; then
+  GRAPPLE_TEMPLATE="grapple-solutions/grapple-template"
+fi
+
+#Check if inside a grapple-template directory
+if [[ -f "./chart/Chart.yaml" ]]; then
+    if grep -q "dependencies:" "./chart/Chart.yaml" && grep -q "name: gras-deploy" "./chart/Chart.yaml"; then
+        status_log $TYPE_INFO "Inside a grapple-template directory."
+    else
+        status_log $TYPE_ERROR "This is not a grapple template. Either move into an existing grapple-template dir or run 'grpl app init' to create a new grapple-template"
+        exit 1
+    fi
+else
+    status_log $TYPE_ERROR "This is not a grapple template. Either move into an existing grapple-template dir or run 'grpl app init' to create a new grapple-template."
+    exit 1
+fi
+
+
+sync_differences() {
+    # Get all differing files
+    differing_files=()
+    mapfile -t differing_files < <(git diff --name-status "template/main" | awk '{print $2}' | grep -E '^(devspace.yaml|devspace_start.sh|bitbucket-pipelines.yaml|Dockerfile|nginx.conf.template|[^/]+\.sh|Taskfile.yaml|grapi/README.md|grapi/.*/README.md|gruim/README.md|gruim/.*/README.md)$')
+    if [ ${#differing_files[@]} -eq 0 ]; then
+        status_log $TYPE_INFO "No differences found between the current branch and grapple-template."
+        exit 0
+    fi
+
+    # Use gum to let the user choose a file or action
+    status_log $TYPE_INFO "Following are the files with the differences, select a single file to view and apply the differences"
+    selected_file=$(gum choose "Exit" "Apply All" "${differing_files[@]}")
+    
+    if [[ "$selected_file" == "Apply All" ]]; then
+        for file in "${differing_files[@]}"; do
+            status_log $TYPE_INFO "Applying differences for $file..."
+            git checkout template/main -- "$file"
+        done
+        status_log $TYPE_SUCCESS "All differences applied."
+    elif [[ "$selected_file" == "Exit" ]]; then
+        status_log $TYPE_INFO "Exiting without applying further changes."
+    else
+        # Show the diff for the selected file
+        if git diff "template/main" -- "$selected_file"; then
+            status_log $TYPE_INFO "Do you want to apply changes to $selected_file? (y/n)"
+            read -r apply
+            if [[ "$apply" == "y" ]]; then
+                git checkout template/main -- "$selected_file"
+                status_log $TYPE_SUCCESS "$selected_file updated."
+            else
+                status_log $TYPE_INFO "$selected_file not updated."
+            fi
+        else
+            status_log $TYPE_INFO "No differences found for $selected_file."
+        fi
+    fi
+}
+
+# Ensure git and gum are installed
+check_and_install_git
+
+
+# Add the template repository if not already added
+if ! git remote | grep -q "template"; then
+    status_log $TYPE_INFO "Adding template repository..."
+    if ! eval "$(getGumSpinnerOrLogger "Adding template repository" ) git remote add template \"https://github.com/$GRAPPLE_TEMPLATE.git\""; then
+        status_log $TYPE_ERROR "Failed to add template repository."
+        exit 1
+    fi
+    if ! eval "$(getGumSpinnerOrLogger "Fetching template repository" ) git fetch template"; then
+        status_log $TYPE_ERROR "Failed to fetch template repository."
+        exit 1
+    fi
+fi
+
+# Call the sync_differences function to start the process
+sync_differences
