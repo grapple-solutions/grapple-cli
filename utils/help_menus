@@ -9,6 +9,7 @@ generate_cli_web_doc() {
     fi
 
     grpl_cli_installation_help $WEB_DOC
+    grpl_cli_inside_docker $WEB_DOC
     grpl_cli_help $WEB_DOC
     grpl_cluster_cli_help $WEB_DOC
     grpl_example_cli_help $WEB_DOC
@@ -50,6 +51,7 @@ https://grapple-solutions.com/[grapple solution^]
 
 
 $grpl_cli_installation_doc
+$grpl_cli_inside_docker_doc
 $grpl_cli_doc
 $grpl_application_doc
 $grpl_application_init_doc
@@ -1665,6 +1667,53 @@ $meta
         return 0
     else
         echo "$grpl_cli_installation_doc"  >&2
+    fi
+}
+
+grpl_cli_inside_docker() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grapple cli inside docker"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grapple cli inside docker"
+        meta=""
+    fi
+
+    grpl_cli_inside_docker_doc="
+$cli_name
+$meta
+
+Pulling the latest image:
+
+    Visit https://hub.docker.com/r/grpl/grapple-cli/tags and find the latest tag 
+    to pull e.g docker pull grpl/grapple-cli:0.2.159
+
+Running the cli inside a docker container
+
+    docker run -it --name <container-name> grpl/grapple-cli:<tag>
+    e.g docker run -it --name grapple-cli-container grpl/grapple-cli:0.2.159
+    OR
+    docker run --rm -it --name <container-name> grpl/grapple-cli:<tag>
+    e.g docker run --rm -it --name grapple-cli-container grpl/grapple-cli:0.2.159
+
+
+
+" 
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_cli_inside_docker_doc"  >&2
     fi
 }
 
