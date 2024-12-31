@@ -227,9 +227,7 @@ extract_input_params_from_cli() {
               done
 
               if  $valid; then
-                  local key=${key//-/_}
                   local uppercased_key=$(echo "$key" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
-                  export "$key=$value"
                   export "$uppercased_key=$value"
               else
                   status_log $TYPE_ERROR "Error: $key is not a valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
@@ -255,10 +253,8 @@ extract_input_params_from_cli() {
               done
 
               if $valid; then
-                  local config_param=${config_param//-/_}
-                  local uppercased_key=$(echo "$key" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
-                  export "$config_param=$arg2"
-                  export "$uppercased_key=$value"
+                  local uppercased_key=$(echo "$config_param" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+                  export "$uppercased_key=$arg2"
 
               else
                   status_log $TYPE_ERROR "Error: $config_param is not a valid argument, please run \'$help_menu_cmd\' to get more info on how to pass arguments from cli"
@@ -441,3 +437,15 @@ kubeblocks_installation() {
     echo "kubeblocks is already installed"
   fi
 }
+
+
+match_case_insensitive() {
+    local value1=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+    local value2=$(echo "$2" | tr '[:upper:]' '[:lower:]')
+    if [ "$value1" == "$value2" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+

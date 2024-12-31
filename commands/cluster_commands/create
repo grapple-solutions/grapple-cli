@@ -63,7 +63,7 @@ status_log $TYPE_INFO "Cluster creation is in progress"
 # if AUTO_CONFIRM is not explicity set to false then set it to true
 if [[ $AUTO_CONFIRM != "false" ]]; then
     AUTO_CONFIRM="true"
-    applications="traefik2-nodeport,civo-cluster-autoscaler,metrics-server"
+    APPLICATIONS="traefik2-nodeport,civo-cluster-autoscaler,metrics-server"
 fi
 
 if [[ $INSTALL_KUBEBLOCKS != "false" ]]; then
@@ -75,14 +75,13 @@ fi
 build_cluster_creation_command() {
     local base_command=$1
     local valid_args
-    if [[ $TARGET_PLATFORM = $CIVO ]]; then
+    if match_case_insensitive "$TARGET_PLATFORM" "$CIVO"; then
           valid_args=("${civo_valid_args[@]}")
     fi
 
     for arg in "${valid_args[@]}"; do
         # Check if a variable named after the argument exists and has a value
-        local var_name=${arg//-/_}
-
+        local var_name=$(echo "$arg" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
         if [[ -n "${!var_name}" ]]; then
             # If the argument has a short flag (single letter), prepend a dash
             if [[ ${#var_name} -eq 1 ]]; then
@@ -184,33 +183,33 @@ civo_cluster_create() {
 
   #------------ nodes Input-----------
 
-  nodes_value=${nodes:-${n}}
-  n=""
+  nodes_value=${NODES:-${N}}
+  N=""
   check_if_param_avaiable_in_non_interactive_mode "nodes" "${nodes_value}" "${help_menu_cmd}"
   nodes=$(if [ "${nodes_value}" != "" ]; then echo ${nodes_value}; else prompt_for_explicit_input_with_validation "Enter number of nodes: " "Provide the number of nodes to create (the master also acts as a node). (default 3):" ".*" "The input must be a numeric value that does not start with 0"; fi) || exit $?
-  if [ "${nodes}" == "" ]; then
-    nodes="3"
+  if [ "${NODES}" == "" ]; then
+    NODES="3"
   fi
 
     #------------ size Input-----------
 
-  size_value=${size:-${s}}
-  s=""
+  size_value=${SIZE:-${S}}
+  S=""
   check_if_param_avaiable_in_non_interactive_mode "size" "${size_value}" "${help_menu_cmd}"
-  size=$(if [ "${size_value}" != "" ]; then echo ${size_value}; else gum spin --title "fetching civo nodes sizes" --show-output -- civo k8s size -o custom -f name | gum choose --header "Select the size of nodes to create (default 'g4s.kube.medium')" --selected="g4c.kube.small" ; fi)
-  if [ "${size}" == "" ]; then
-    size="g4c.kube.small"
+  SIZE=$(if [ "${size_value}" != "" ]; then echo ${size_value}; else gum spin --title "fetching civo nodes sizes" --show-output -- civo k8s size -o custom -f name | gum choose --header "Select the size of nodes to create (default 'g4s.kube.medium')" --selected="g4c.kube.small" ; fi)
+  if [ "${SIZE}" == "" ]; then
+    SIZE="g4c.kube.small"
   fi
 
 
   #------------ applications Input-----------
 
-  applications_value=${applications:-${a}}
-  a=""
+  applications_value=${APPLICATIONS:-${A}}
+  A=""
   check_if_param_avaiable_in_non_interactive_mode "applications" "${applications_value}" "${help_menu_cmd}"
-  applications=$(if [ "${applications_value}" != "" ]; then echo ${applications_value}; else prompt_for_explicit_input_with_validation "Enter comma separated applications list: " "Provide the applications you want to install (default value is 'traefik2-nodeport,civo-cluster-autoscaler,metrics-server ') "  ".*" "Input can not be empty"; fi) || exit $?
-  if [ "${applications}" == "" ]; then
-    applications="traefik2-nodeport,civo-cluster-autoscaler,metrics-server"
+  APPLICATIONS=$(if [ "${applications_value}" != "" ]; then echo ${applications_value}; else prompt_for_explicit_input_with_validation "Enter comma separated applications list: " "Provide the applications you want to install (default value is 'traefik2-nodeport,civo-cluster-autoscaler,metrics-server ') "  ".*" "Input can not be empty"; fi) || exit $?
+  if [ "${APPLICATIONS}" == "" ]; then
+    APPLICATIONS="traefik2-nodeport,civo-cluster-autoscaler,metrics-server"
   fi
 
   base_command="civo k8s create $CLUSTER_NAME"
@@ -219,6 +218,7 @@ civo_cluster_create() {
 
   status_log $TYPE_INFO "Successfuly formed cluster create command"
   status_log $TYPE_INFO "${final_command}"
+
   if ! eval "$(getGumSpinnerOrLogger "Creating Civo cluster with name ${CLUSTER_NAME}") ${final_command}" ; then
     status_log $TYPE_ERROR "Failed to create Civo cluster with name ${CLUSTER_NAME} due to following error"
     eval ${final_command}
@@ -290,7 +290,7 @@ fi
 TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $Minikube $CIVO $Kubernetes $Kubefirst; fi)
 echo "selected target platform: ${TARGET_PLATFORM}"
 
-if [ "${TARGET_PLATFORM}" = $CIVO ]; then
+if match_case_insensitive "${TARGET_PLATFORM}" "$CIVO"; then
   civo_cluster_create
   exit 0
 fi
