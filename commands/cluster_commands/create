@@ -186,7 +186,7 @@ civo_cluster_create() {
   nodes_value=${NODES:-${N}}
   N=""
   check_if_param_avaiable_in_non_interactive_mode "nodes" "${nodes_value}" "${help_menu_cmd}"
-  nodes=$(if [ "${nodes_value}" != "" ]; then echo ${nodes_value}; else prompt_for_explicit_input_with_validation "Enter number of nodes: " "Provide the number of nodes to create (the master also acts as a node). (default 3):" ".*" "The input must be a numeric value that does not start with 0"; fi) || exit $?
+  NODES=$(if [ "${nodes_value}" != "" ]; then echo ${nodes_value}; else prompt_for_explicit_input_with_validation "Enter number of nodes: " "Provide the number of nodes to create (the master also acts as a node). (default 3):" ".*" "The input must be a numeric value that does not start with 0"; fi) || exit $?
   if [ "${NODES}" == "" ]; then
     NODES="3"
   fi
