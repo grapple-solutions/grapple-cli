@@ -14,7 +14,7 @@ command=$1
 shift
 case "$command" in
   install|i)
-    "$GRPL_WORKDIR/commands/aws_commands/install" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/aws_install.log"
+    "$GRPL_WORKDIR/commands/aws_commands/install" "$@" | tee -ia "$GRPL_WORKDIR/logs/aws_install.log"
     ;;
   *)
     cli_help

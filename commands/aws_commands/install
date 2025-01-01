@@ -9,6 +9,7 @@ set -e
 
 # Print help menu for grpl aws install and exit
 cli_help() {
+  status_log $TYPE_INFO "here"
   grpl_aws_install_cli_help
   exit 0
 }
@@ -17,6 +18,7 @@ cli_help() {
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
+  status_log $TYPE_INFO "here2"
 
 NS=grpl-system
 awsregistry="p7h7z5g3"
