@@ -26,15 +26,15 @@ dependencies_path="$GRPL_WORKDIR/commands/aws_commands/dependencies"
 cli_log "cluster install BEGIN"
 
 # valid arguments array
-valid_args=(
+valid_args=(            
     "CLUSTER_NAME"
+    "CLUSTER_IP"
     "GRAPPLE_VERSION"
     "AUTO_CONFIRM"
     "GRAPPLE_DNS"
     "ORGANIZATION"
     "EMAIL"
     "INSTALL_KUBEBLOCKS"
-    "STAGE"
     "SSL"
   )
 # check if values are already passed form terminal
@@ -67,50 +67,12 @@ kubeblocks_installation() {
 
 #-------------Variables-------------------
 
-DEBUG=true
-
-if ${DEBUG}; then
-    echo "filename: $1"
-    echo "input: $2"
-fi
-
-
-if [ "$STAGE" = "awstim" ]; then
-    AWSREGION="eu-central-2"
-else
-    AWSREGION="eu-central-1"
-fi
-
-PRD=grsf
-NS=grpl-system
 
 if [ "${GRAPPLE_DNS}" == "" ]; then 
     GRAPPLE_DNS=${CLUSTER_NAME}
-    GRAPPLE_DOMAIN=".grapple-demo.com"
+    GRAPPLE_DOMAIN=".grplaws.grapple-demo.com"
 fi
 
-TESTNS=grpl-test
-TESTNSJCS=jcs-test
-
-if [ "${awsregistry}" = "" ]; then
-  if [ "$STAGE" = "awstim" ]; then
-    awsregistry=s3w3z3s6
-  else
-    awsregistry=p7h7z5g3
-  fi
-fi
-
-if [ "$(uname -s)" = "Darwin" ]; then 
-    SED=gsed
-else
-    SED=sed
-fi
-
-SKIPTESTS=""
-AUTH_FOR="01_customers 13_jcs-cache"
-CUSTHEAD_FOR="01_customers 02_cm-basic"
-
-list="grsf-init grsf grsf-config grsf-integration grsf-monitoring"
 
 #----------- CLUSTER_NAME input --------
 
@@ -121,13 +83,6 @@ check_if_param_avaiable_in_non_interactive_mode "CLUSTER_NAME" "${CLUSTER_NAME}"
 # fi
 CLUSTER_NAME=$(if [ "${CLUSTER_NAME}" != "" ]; then echo "${CLUSTER_NAME}"; else (gum spin --title "fetching aws eks clusters" -- bash -c 'eksctl get cluster | awk "NR>1 {print \$1}" > /dev/null' && eksctl get cluster | awk "NR>1 {print \$1}" | gum choose) || echo ""; fi)
 echo "selected aws cluster: ${CLUSTER_NAME}"
-
-
-#----------- STAGE input --------
-STAGE=$(if [ "${STAGE}" != "" ]; then echo ${STAGE}; else prompt_for_explicit_input_with_validation "Enter STAGE: " "Provide the STAGE e.g dev, prd, demo etc (default dev):" ".*" ""; fi) || exit $?
-if [ "${STAGE}" == "" ]; then
-  STAGE="dev"
-fi
 
 
 #----------- creating complete domain --------
@@ -186,7 +141,6 @@ clusterdomain: ${complete_domain}
 
 # Configuration
 config:
-  STAGE: "${STAGE}"
   email: "${EMAIL}"
   organization: ${ORGANIZATION}
   clusterdomain: ${complete_domain}
@@ -195,13 +149,11 @@ config:
   dev: "false"
   ssl: "$SSL"
   sslissuer: "$SSL_ISSUER"
-  MONITORING: "$MONITORING"
-  GRPL_AWSID: ${GRPL_AWSID}
-  GRPL_AWSKEY: ${GRPL_AWSKEY}
   GRAPPLE_DNS: ${complete_domain}
   GRAPPLE_VERSION: ${GRAPPLE_VERSION}
   GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}
   CLUSTER_NAME: ${CLUSTER_NAME}
+  CLUSTER_IP: ${CLUSTER_IP}
   PROVIDER_CLUSTER_NAME: ${PROVIDER_CLUSTER_NAME}
 # Additional configurations omitted for brevity
 EOF
@@ -221,13 +173,9 @@ if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
   status_log $TYPE_DEFAULT "GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}"
   status_log $TYPE_DEFAULT "ORGANIZATION: ${ORGANIZATION}"
   status_log $TYPE_DEFAULT "EMAIL: ${EMAIL}"
-  status_log $TYPE_DEFAULT "STAGE: ${STAGE}"
   status_log $TYPE_DEFAULT "SSL: ${SSL}"
   status_log $TYPE_DEFAULT "SSL_ISSUER: ${SSL_ISSUER}"
   status_log $TYPE_DEFAULT "PROVIDER_CLUSTER_NAME: ${PROVIDER_CLUSTER_NAME}"
-  status_log $TYPE_DEFAULT "MONITORING: ${MONITORING}"
-  status_log $TYPE_DEFAULT "GRPL_AWSID: ${GRPL_AWSID}"
-  status_log $TYPE_DEFAULT "GRPL_AWSKEY: ${GRPL_AWSKEY}"
 
   gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
 fi
