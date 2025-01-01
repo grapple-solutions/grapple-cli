@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+. "$GRPL_WORKDIR/utils/help_menus"
+
+cli_help() {
+  grpl_ai_cli_help
+  exit 0
+}
+
+install_prerequisite
+
+command=$1
+shift
+
+case "$command" in
+  resource|r)
+    "$GRPL_WORKDIR/commands/ai_commands/resource" "$@" | tee -ia "$GRPL_WORKDIR/logs/ai_resource.log"
+    ;;
+  *)
+    cli_help
+    ;;
+esac

@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+
 . "$GRPL_WORKDIR/utils/common"
 . "$GRPL_WORKDIR/utils/checks"
 . "$GRPL_WORKDIR/utils/help_menus"
@@ -40,7 +41,7 @@ valid_args=(
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
 help_menu_cmd="grpl license install help"
-extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
 
 check_if_param_avaiable_in_non_interactive_mode "LICENSE_KEY" "$LICENSE_KEY" "${help_menu_cmd}"
 LICENSE_KEY=$(if [ "${LICENSE_KEY}" != "" ]; then echo ${LICENSE_KEY}; else prompt_for_input_with_validation "Enter LICENSE_KEY: " "Provide the LICENSE_KEY key" "$non_empty_regex" "Input cannot be empty."; fi) || exit $?

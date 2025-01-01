@@ -32,6 +32,8 @@ generate_cli_web_doc() {
     grpl_license_install_cli_help $WEB_DOC
     grpl_license_remove_cli_help $WEB_DOC
     grpl_license_status_cli_help $WEB_DOC
+    grpl_ai_cli_help $WEB_DOC
+    grpl_ai_resource_cli_help $WEB_DOC
      doc="
 = grpl cli Documentation - $(cat $GRPL_WORKDIR/VERSION)
 :toc: left
@@ -71,6 +73,8 @@ $grpl_license_doc
 $grpl_license_install_doc
 $grpl_license_remove_doc
 $grpl_license_status_doc
+$grpl_ai_doc
+$grpl_ai_resource_doc
 
 "
 echo "$doc" > "$GRPL_WORKDIR/grpl-cli-web-doc.adoc"
@@ -236,6 +240,7 @@ Commands:
     doc                         Documentation
     grapi                       Grapi commands
     gruim                       Gruim commands
+    ai                          Grapple AI
     *                           Help menu
     
 Examples:    
@@ -250,6 +255,7 @@ Examples:
     grpl grapi [commands]
     grpl gruim [commands]
     grpl doc   [commands]
+    grpl ai    [commands]
     grpl *
 
 "
@@ -607,7 +613,7 @@ Usage with params from cli:
   grpl cluster create --params --<variable-name>=<variable value>
   e.g grpl cluster create --params --TARGET_PLATFORM=CIVO
   OR
-  grpl cluster install --params --<variable-name> <variable value>
+  grpl cluster create --params --<variable-name> <variable value>
   e.g grpl cluster create --params --TARGET_PLATFORM=CIVO
 
 Usage with params from configfile: 
@@ -627,14 +633,18 @@ Examples:
     grpl c c *    or    grpl cluster create *
 
 
-Variables:
+Parameters:
 
     Common Parameters:
         TARGET_PLATFORM= CIVO / Kubernetes / minikube / Kubefirst
         CLUSTER_NAME= name of the cluster
         CIVO_API_KEY= civo api key (optional)
         CIVO_REGION=Available CIVO regions (e.g. FRA1)
-    
+        wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready (default is 'false')
+        AUTO_CONFIRM= 'true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'true')
+        INSTALL_KUBEBLOCKS= 'true' / 'false', set to 'true' if you want to install kubeblocks (default is 'true')
+
+
     CIVO Parameters:
 $civo_help_menu
 "
@@ -709,16 +719,16 @@ Examples:
     grpl c i *    or    grpl cluster install *
 
 
-Variables:
+Parameters:
 
   TARGET_PLATFORM=CIVO / Kubernetes / minikube / Kubefirst
   # general configurations
-  GRAPPLE_VERSION = version of the grapple deployment (e.g. '0.2.0' or '0.2.1')
-  AUTO_CONFIRM='false' / 'true'
+  GRAPPLE_VERSION = version of the grapple deployment e.g. '0.2.0', '0.2.1' (default is 'latest')
+  AUTO_CONFIRM='false' / 'true' (default is 'false')
   EMAIL = email
   ORGANIZATION = organization
   # kubernetes related configurations
-  KUBE_CONTEXT=kubernetes context, if its set to "currnet" then it will use current kubectl context
+  KUBE_CONTEXT=kubernetes context (default is 'current')
   # minikube related configurations
   # no additional configurations
   # CIVO related configurations
@@ -734,7 +744,8 @@ Variables:
   KUBEFIRST_CLUSTER_NAME = cluster name for kubefirst cluster
   GITHUB_USERNAME = github username
   GITLAB_USERNAME = gitlab username
-  INSTALL_KUBEBLOCKS = 'true' / 'false', set to 'true' if you want to install kubeblocks
+  INSTALL_KUBEBLOCKS = 'true' / 'false', set to 'true' if you want to install kubeblocks (default is 'false')
+  wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready (default is 'false')
 
 " 
 
@@ -900,11 +911,12 @@ Examples:
     grpl e d h    or    grpl example deploy help
     grpl e d *    or    grpl example deploy *
 
-Variables:
+Parameters:
 
     GRAS_TEMPLATE: gras template e.g db-file, etc
     DB_TYPE: db type it can either internal or external
-    KUBE_CONTEXT: kubectl context you want to use, if its set to "current" then it will use current kubectl context
+    KUBE_CONTEXT: kubectl context you want to use (default is 'current')
+    wait = 'true' / 'false', set to 'true' if you want to wait for grpl resources (grapi/gruim) to be ready (default is 'false')
 
 " 
 
@@ -1011,12 +1023,12 @@ Examples:
     grpl a i h    or    grpl app init help    or    grpl application init help
     grpl a i *    or    grpl app init *       or    grpl application init *
 
-Variables:
+Parameters:
 
     PROJECT_NAME= Name of the project
-    AUTO_CONFIRM= 'false' / 'true'
-    GITHUBTOKEN= Token to authenticate gh
-    GRAPPLE_TEMPLATE= the grapple-template repository to clone (default grapple-solutions/grapple-template)
+    AUTO_CONFIRM= 'false' / 'true' (default is 'false')
+    GITHUBTOKEN= Token to authenticate gh 
+    GRAPPLE_TEMPLATE= the grapple-template repository to clone (default is 'grapple-solutions/grapple-template')
 
 "
     if [ "$type" == $WEB_DOC ]; then
@@ -1134,22 +1146,22 @@ Examples:
     grpl r d h    or    grpl resource deploy help
     grpl r d *    or    grpl resource deploy *
 
-Variable:
+Parameters:
 
-    KUBE_CONTEXT: kubectl context you want to use, if its set to "current" then it will use current kubectl context
+    KUBE_CONTEXT: kubectl context you want to use (default is 'current')
     GRAS_NAME: name of the project
     GRAS_TEMPLATE: gras template e.g db-file, etc
     SOURCE_DATA: source of the data
-    DB_FILE_PATH: path where data is stored, default path is /data/db.json
+    DB_FILE_PATH: path where data is store, (default path is /data/db.json)
     DB_TYPE: db type it can either internal or external
     ENABLE_GRUIM: to enable gruim, it can either be "Yes" or "No"
     MODELS: input of models 
     RELATIONS: models relations
-    KUBE_NS: namespace to deploy gras, default ns is 'default'
+    KUBE_NS: namespace to deploy gras (default ns is 'default')
     DATASOURCES: data sources configs
     DISCOVERIES: discoveries configs
     DATABASE_SCHEMA: database schema you want to use
-    AUTO_DISCOVERY: to enable auto discovery
+    AUTO_DISCOVERY: to enable auto discovery it can either be 'true' or 'false' (default is 'false')
     
 "
 
@@ -1656,8 +1668,6 @@ $meta
     fi
 }
 
-
-
 generate_ui_web_doc() {
 
     status_log $TYPE_INFO "Generating UI web doc it might take a few minutes..."
@@ -1666,7 +1676,7 @@ generate_ui_web_doc() {
     gruim_output=$(kubectl get gruim -A)
     
     # Extract the first namespace and resource name for a synced and ready GRUIM resource
-    resource_info=$(echo "$gruim_output" | awk '/True\s+True/ {print $1, $2; exit}')
+    resource_info=$(echo "$gruim_output" | awk '/True[[:space:]]*True/ {print $1, $2; exit}')
     if [[ -z "$resource_info" ]]; then
         status_log $TYPE_ERROR "No synced and ready GRUIM resource found."
         exit 1
@@ -1675,7 +1685,7 @@ generate_ui_web_doc() {
     read namespace resource_name <<< "$resource_info"
     echo "Processing GRUIM resource: Namespace=$namespace, Name=$resource_name"
 
-    echo "Checking rollout status for $namespace/$resource_name..."
+    status_log $TYPE_INFO "Checking rollout status for $namespace/$resource_name..."
     rollout_status=$(kubectl rollout status -n "$namespace" deployment/"$namespace-$resource_name-gruim" 2>&1)
     if [[ $? -ne 0 ]]; then
         status_log $TYPE_ERROR "Rollout failed or incomplete for $namespace/$resource_name. Error: $rollout_status"
@@ -1691,17 +1701,140 @@ generate_ui_web_doc() {
     fi
 
     documentation_url="${muim_base_url}/documentation/"
-    output_file="${HOME}/grpl-${resource_name}-web-doc.html"
+    output_file="${GRPL_WORKDIR}/grpl-${resource_name}-web-doc.html"
     curl -o "$output_file" "$documentation_url" >/dev/null 2>&1
     if [[ $? -ne 0 ]]; then
         status_log $TYPE_ERROR "Failed to download documentation from $documentation_url."
         exit 1
     fi
-    echo "Documentation downloaded successfully to $output_file"
+
+    echo "Patching the title"
+    gruim_version=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.uiimagetag}" | base64 -d)
+    awk -v version="$gruim_version" '
+        /<title>/ {
+            gsub(/<title>.*<\/title>/, "<title>grpl ui components props - " version "</title>");
+        }
+        /<h1>/ {
+            gsub(/<h1>.*<\/h1>/, "<h1>grpl ui components props - " version "</h1>");
+        }
+        { print }
+    ' "$output_file" > "${output_file}.tmp" && mv "${output_file}.tmp" "$output_file"
 
     status_log $TYPE_INFO "Please visit file://$output_file to view the GRPL documentation."
 
     exit 0
+}
+
+
+grpl_ai_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl ai"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl ai"
+        meta=""
+    fi
+
+    grpl_ai_doc="
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
+$meta
+
+Description: 
+
+    Displays help menu of grpl ai
+
+Usage: 
+
+    grpl ai [command]
+
+Commands:
+
+    ai              ai commands
+    *               Help menu
+    
+Examples:    
+
+    grpl ai r    or    grpl ai resource
+    grpl ai *    or    grpl ai *
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_ai_doc"  >&2
+    fi
+}
+
+
+
+grpl_ai_resource_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl ai resource"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="=== grpl ai resource"
+        meta=""
+    fi
+
+    grpl_ai_resource_doc="
+$cli_name
+$meta
+
+Description: 
+
+    helps understand and create grpl resources
+
+Usage: 
+
+    grpl ai resource [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to understand and create grpl resources
+    
+Examples:    
+
+    grpl ai r h    or    grpl ai resource help
+    grpl ai r *    or    grpl ai resource *
+
+Parameters:
+
+    RESOURCE_ACTION = deploy (deploys the resource yaml onto the cluster), render (saves the resource into a yaml file), none (does nothing)
+    QUERY = your query to grapple ai, make sure to enclose the query in double quotes
+    KUBE_NS = kubernetes namespace where you want to deploy the resource
+    AUTO_CONFIRM= 'true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'false')
+    wait = 'true' / 'false', set to 'true' if you want to wait for the deployment to be ready (default is 'false')
+
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_ai_resource_doc"  >&2
+    fi
 }
 
 
@@ -1715,9 +1848,7 @@ grpl_aws_cli_help() {
     cli_name="grpl aws"
     meta="
 the grapple cli
-
 Version: $(cat $GRPL_WORKDIR/VERSION)
-
 https://grapple-solutions.com/
 "
     if [ "$type" == $WEB_DOC ]; then
@@ -1728,24 +1859,16 @@ https://grapple-solutions.com/
     grpl_aws_doc="
 $cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
-
 Description: 
-
     Displays help menu of grpl aws
-
 Usage: 
-
     grpl aws [command]
-
 Commands:
-
     i or install    installation of grpl on was cluster
     *               Help menu
     
 Examples:    
-
     grpl aws i    or    grpl aws install    
-
 "
     if [ "$type" == $WEB_DOC ]; then
         return 0
@@ -1765,9 +1888,7 @@ grpl_aws_install_cli_help() {
     cli_name="grpl aws install"
     meta="
 the grapple cli
-
 Version: $(cat $GRPL_WORKDIR/VERSION)
-
 https://grapple-solutions.com/
 "
     if [ "$type" == $WEB_DOC ]; then
@@ -1778,51 +1899,36 @@ https://grapple-solutions.com/
     grpl_aws_install_doc="
 $cli_name
 $meta
-
 Description: 
-
     Installs grapple in the aws cluster
-
 Usage: 
-
   grpl aws install [command]
-
 Usage with params from cli: 
-
   grpl aws install --params --<variable-name>=<variable value>
   e.g grpl aws install --params --GRAPPLE_VERSION=0.2.1
   OR
   grpl aws install --params --<variable-name> <variable value>
   e.g grpl aws install --params --GRAPPLE_VERSION 0.2.1
-
 Usage with params from configfile: 
-
   grpl aws install --configfile <file-name>.json
   e.g grpl aws install --configfile grpl-config.json
-
 Commands:
-
     h or help     Help menu
     *             to install grpl on aws cluster
     
 Examples:    
-
     grpl aws i h    or    grpl aws install help
     grpl aws i *    or    grpl aws install *
-
-
 Variables:
-
     CLUSTER_NAME = name of the cluster to install grapple in
+    CLUSTER_IP = ip of the cluster
     GRAPPLE_VERSION = version of grapple to install
     AUTO_CONFIRM = 'true' or 'false' to auto confirm installation of grapple
     GRAPPLE_DNS = domain name of the cluster to install grapple in
     ORGANIZATION = name of the organization
     EMAIL = email of the organization
     INSTALL_KUBEBLOCKS = 'true' or 'false' to install kubeblocks
-    STAGE = stage of the cluster
     SSL = 'true' or 'false' to set ssl
-
 " 
 
     if [ "$type" == $WEB_DOC ]; then
@@ -1831,4 +1937,3 @@ Variables:
         echo "$grpl_aws_install_doc"  >&2
     fi
 }
-

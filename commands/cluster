@@ -18,16 +18,16 @@ command=$1
 shift
 case "$command" in
   status|s)
-    "$GRPL_WORKDIR/commands/cluster_commands/status" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/cluster_status.log"
+    "$GRPL_WORKDIR/commands/cluster_commands/status" "$@" | tee -ia "$GRPL_WORKDIR/logs/cluster_status.log"
     ;;
   install|i)
-    "$GRPL_WORKDIR/commands/cluster_commands/install" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/cluster_install.log"
+    "$GRPL_WORKDIR/commands/cluster_commands/install" "$@" | tee -ia "$GRPL_WORKDIR/logs/cluster_install.log"
     ;;
   create|c)
-    "$GRPL_WORKDIR/commands/cluster_commands/create" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/cluster_create.log"
+    "$GRPL_WORKDIR/commands/cluster_commands/create" "$@" | tee -ia "$GRPL_WORKDIR/logs/cluster_create.log"
     ;;
   patch|p)
-    "$GRPL_WORKDIR/commands/cluster_commands/patch" $(echo $@) | tee -ia "$GRPL_WORKDIR/logs/cluster_patch.log"
+    "$GRPL_WORKDIR/commands/cluster_commands/patch" "$@" | tee -ia "$GRPL_WORKDIR/logs/cluster_patch.log"
     ;;
   *)
     cli_help

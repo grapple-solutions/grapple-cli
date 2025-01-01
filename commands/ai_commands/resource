@@ -1,0 +1,349 @@
+#!/bin/bash
+
+set -e
+
+. "$GRPL_WORKDIR/utils/help_menus"
+. "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/commands/ai_commands/utils"
+
+cli_help() {
+  grpl_ai_resource_cli_help
+  exit 0
+}
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+check_and_install_glow
+check_and_install_jq
+check_and_install_yq
+command=$1
+
+
+# -------------------- first check for input params -----------------------
+
+# valid arguments array
+valid_args=(
+    "RESOURCE_ACTION"
+    "QUERY"
+    "KUBE_NS"
+    "AUTO_CONFIRM"
+    "wait"
+)
+
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+help_menu_cmd="grpl ai resource help"
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
+
+# ----------- Resource Command Code -----------------
+
+get_grpl_resource_value() {
+    local key="$1"
+    for i in "${!grpl_resource_keys[@]}"; do
+        if [[ "${grpl_resource_keys[$i]}" == "$key" ]]; then
+            echo "${grpl_resource_values[$i]}"
+            return 0
+        fi
+    done
+    echo ""
+    return 1
+}
+
+
+# Array of GRPL resources
+grpl_resources=(
+    "compositegrappleapplicationsets.grsf.grpl.io"
+    "compositegrappleuimodules.grsf.grpl.io"
+    "compositemanageduimodules.grsf.grpl.io"
+    "grappleresources.grsf.grpl.io"
+    "compositegrappleapis.grsf.grpl.io"
+    "compositemanagedapis.grsf.grpl.io"
+    "compositemanageddatasources.grsf.grpl.io"
+    "grappleapplicationsets.grsf.grpl.io"
+    "compositegrappleresources.grsf.grpl.io"
+    "grappleuimodules.grsf.grpl.io"
+    "manageduimodules.grsf.grpl.io"
+    "grappleapis.grsf.grpl.io"
+    "managedapis.grsf.grpl.io"
+    "manageddatasources.grsf.grpl.io"
+)
+
+# Dictionary simulation for GRPL resources
+grpl_resource_keys=("gruim" "grapi" "gras")
+grpl_resource_values=("grappleuimodules.grsf.grpl.io" "grappleapis.grsf.grpl.io" "grappleapplicationsets.grsf.grpl.io")
+
+
+# Unecessary fields
+
+unnecessary_fields=(
+    "metadata.annotations*"
+    "metadata.labels*"
+    "metadata.creationTimestamp"
+    "metadata.finalizers*"
+    "metadata.generation*"
+    "metadata.resourceVersion"
+    "metadata.uid"
+    "spec.composite*"
+    "spec.composition*"
+    "spec.resourceRef*"
+    "status*"
+)
+
+get_deployed_resources() {
+    local gras_kind="$1" 
+    local deployed_resources=() 
+    # Check conditions case-insensitively
+    if [[ "$gras_kind" == *GrappleApplicationSet* ]]; then
+        deployed_resources+=("grapi" "gruim")
+    elif [[ "$gras_kind" == *GrappleApi* ]]; then
+        deployed_resources+=("grapi")
+    elif [[ "$gras_kind" == *GrappleUiModule* ]]; then
+        deployed_resources+=("gruim")
+    fi
+
+    # Return the list as a space-separated string
+    echo "${deployed_resources[@]}"
+}
+
+
+# Function to match resource names
+matched_resource() {
+    local resource_name="$1"
+    local resource_name=$(echo "$resource_name" | tr '[:upper:]' '[:lower:]') # Convert to lowercase
+
+    for resource in "${grpl_resources[@]}"; do
+        # Split resource into parts
+        local resource_part1=$(echo "$resource" | cut -d '.' -f 1 | tr '[:upper:]' '[:lower:]')
+        local resource_part2=$(echo "$resource" | cut -d '.' -f 2 | tr '[:upper:]' '[:lower:]')
+        local resource_part3=$(echo "$resource" | cut -d '.' -f 3 | tr '[:upper:]' '[:lower:]')
+    
+        # Match each part
+        if [[ "$resource" == "$resource_name" || "$resource_part1" == "$resource_name" || "$resource_part2" == "$resource_name" || "$resource_part3" == "$resource_name" ]]; then
+            echo "$resource"
+            return
+        fi
+    done
+
+
+    # Updated check in the script
+    if resource_value=$(get_grpl_resource_value "$resource_name"); then
+        if [[ -n "$resource_value" ]]; then
+            echo "$resource_value"
+        fi
+    fi
+}
+# Process the user query
+process_query() {
+    local user_query="$1"
+    local resource_list=()
+    for word in $user_query; do
+        local matched=$(matched_resource "$word")
+        if [[ -n "$matched" ]] && [[ ! " ${resource_list[*]} " =~ " $matched " ]]; then
+            resource_list+=("$matched")
+        fi
+    done
+    echo "${resource_list[@]}"
+}
+
+# Fetch schema for CRD
+fetch_crd_schema() {
+    local resource_type="$1"
+    resource_type=$(matched_resource "$resource_type")
+    
+    if [[ -z "$resource_type" ]]; then
+        echo "{}"
+        return
+    fi
+
+    # Fetch the schema using kubectl
+    schema=$(kubectl get crd "$resource_type" -o jsonpath='{.spec.versions[0].schema.openAPIV3Schema}')
+
+    # Check if schema is empty
+    if [[ -z "$schema" ]]; then
+        status_log $TYPE_ERROR "Error: Custom Resource Definition '$resource_type' not found or does not have a schema"
+        echo "{}"
+        return 1
+    fi
+
+    # Output the schema
+    echo "$schema"
+}
+
+# Validate YAML using external validation tool (simulated)
+validate_yaml() {
+    local yaml="$1"
+    local schema="$2"
+    echo "Validation not implemented in Bash. Use Python or other tools like kubeval."
+}
+
+# Generate YAML from free text
+generate_yaml() {
+    local free_text="$1"
+    local resources
+    resources=$(process_query "$free_text")
+
+    # Simulate map for schemas using two arrays
+    local grpl_crds_keys=()
+    local grpl_crds_values=()
+
+    # Populate the simulated map with schemas
+    for resource in $resources; do
+        grpl_crds_keys+=("$resource")
+        grpl_crds_values+=("$(fetch_crd_schema "$resource")")
+    done
+
+    # GPT prompt
+    local chatgpt_prompt="Just for context here are all GRPL resources available: ${grpl_resources[*]}.
+Description:
+$free_text"
+
+    # Check if schemas are empty
+    if [[ ${#grpl_crds_keys[@]} -eq 0 ]]; then
+        status_log $TYPE_INFO "No resource found in the query. Please mention one of the following resources:"
+        for resource in ${grpl_resources[@]}; do
+            echo "${resource}" >&2
+        done
+        exit 1
+    fi
+
+    # Append schemas to the GPT prompt if available
+    if [[ ${#grpl_crds_keys[@]} -gt 0 ]] && [[ ${#grpl_crds_keys[@]} -le 5 ]]; then
+        chatgpt_prompt+="\nSchemas of the resources:"
+        for i in "${!grpl_crds_keys[@]}"; do
+            key="${grpl_crds_keys[$i]}"
+            value="${grpl_crds_values[$i]}"
+            chatgpt_prompt+="\n$key : $value"
+        done
+
+        chatgpt_prompt+="\n if generated resource is model based or discovery based then values of 'datasources' and 'initContainers' :"
+        for i in "${!grpl_gras_resource_keys[@]}"; do
+            key="${grpl_gras_resource_keys[$i]}"
+            value="${grpl_gras_resource_values[$i]}"
+            chatgpt_prompt+="\n$key : $value"
+        done
+        chatgpt_prompt+="\n if generated resource is model based or discovery based then set extraSecrets' to this format => '{name-of-the-manifest}-conn-credential' "
+        chatgpt_prompt+="\nif yaml is generated then remove following fields from yaml ${unnecessary_fields[*]}"
+        chatgpt_prompt+="\nby default the metadata.name and namespace fields should have same value"
+
+    fi
+
+
+    # Make GPT API call
+    local openai_api_key=$OPENAI_API_KEY
+    local response
+    response=$(curl -s -X POST "https://api.openai.com/v1/chat/completions" \
+        -H "Authorization: Bearer $openai_api_key" \
+        -H "Content-Type: application/json" \
+        --data "$(jq -n --arg model "gpt-4o" --arg prompt "$chatgpt_prompt" --argjson max_tokens 16384 \
+            '{model: $model, messages: [{role: "user", content: $prompt}], max_tokens: $max_tokens}')")
+
+    # Check response
+    
+    if [[ $(echo "$response" | jq -r '.choices[0].message.content') != "null" ]]; then
+        CONTENT=$(echo "$response" | jq -r '.choices[0].message.content')
+        echo "$CONTENT" > $glowed_response
+        eval glow $glowed_response >&2
+    else
+        status_log $TYPE_ERROR "Failed to generate query response: $(echo "$response" | jq -r '.error.message')"
+    fi
+}
+
+QUERY=$(if [ "${QUERY}" != "" ]; then echo ${QUERY}; else prompt_for_input_with_validation "Enter your query: " "enter you text here" "$non_empty_regex" "Input can't be empty"; fi) || exit $?
+status_log $TYPE_INFO "your query: $QUERY"
+status_log $TYPE_INFO "addressing your query, it might take 10-15 seconds, please wait..."
+glowed_response="/tmp/response.md"
+generate_yaml "$QUERY"
+yaml_content=$(awk '/```yaml/{flag=1; next} /```/{flag=0} flag' "$glowed_response")
+if [[ "$yaml_content" != "" ]]; then
+
+    #------ RESOURCE_ACTION input ------
+    if [ "${RESOURCE_ACTION}" != "" ]; then 
+        is_correct_resource_action_provided $RESOURCE_ACTION 
+    else 
+        status_log $TYPE_INFO "Select the resource action to be performed"
+        status_log $TYPE_INFO "deploy: deploys the resource yaml onto the cluster"
+        status_log $TYPE_INFO "render: saves the resource into a yaml file"
+    fi
+    RESOURCE_ACTION=$(if [ "${RESOURCE_ACTION}" != "" ]; then echo ${RESOURCE_ACTION}; else gum choose $RESOURCE_DEPLOY $RESOURCE_RENDER $NO_ACTION; fi)
+    status_log $TYPE_INFO "selected resource action: ${RESOURCE_ACTION}"
+    extract_yaml_path="/tmp/extracted.yaml"
+    echo "$yaml_content" > $extract_yaml_path
+    if yq eval $extract_yaml_path > /dev/null; then
+        status_log $TYPE_INFO "YAML is valid"
+    else 
+        status_log $TYPE_ERROR "YAML is invalid"
+        exit 1
+    fi
+    
+    if [ "${RESOURCE_ACTION}" == $RESOURCE_RENDER ]; then
+        filename="resource_yaml_$(date +"%Y-%m-%d_%H-%M-%S").yaml"
+        status_log $TYPE_INFO "Saving resource yaml to $filename"
+        cat $extract_yaml_path > "$filename"
+        status_log $TYPE_SUCCESS "resource yaml saved to $filename"
+    elif [ "${RESOURCE_ACTION}" == $RESOURCE_DEPLOY ]; then
+
+
+        gras_ns=$(yq '.metadata.namespace' $extract_yaml_path)
+        gras_name=$(yq '.metadata.name' $extract_yaml_path)
+        gras_kind=$(yq '.kind' $extract_yaml_path)
+
+        
+        if [[ "$AUTO_CONFIRM" == "true" ]]; then
+            status_log $TYPE_INFO "creating namespace with same name in the resource"
+            gras_ns=$(yq '.metadata.namespace' $extract_yaml_path)
+            kubectl create namespace "$gras_ns"
+            KUBE_NS=$gras_ns
+        else
+            check_and_create_kubens
+        fi
+
+        # check if its model or discovery based then create a db
+        extra_secret=$(yq '.spec.grapis[0].spec.extraSecrets[0]' "$extract_yaml_path")
+        if [[ "$extra_secret" != "null" ]]; then
+            status_log $TYPE_INFO "creating db"
+            kubeblocks_installation
+
+            # check if kubeblocks is installed
+            kubeblocks_template_file_dest="/tmp/kube_db.yaml"
+            yq -i ".metadata.namespace=\"$KUBE_NS\"" $extract_yaml_path
+            cp "$GRPL_WORKDIR/files/db.yaml" $kubeblocks_template_file_dest
+            if ! kbcli cluster list -n ${KUBE_NS} ${gras_name} >/dev/null 2>&1; then
+                yq -i ".metadata.name=\"$gras_name\"" $kubeblocks_template_file_dest
+                kubectl apply -n ${KUBE_NS} -f $kubeblocks_template_file_dest
+                status_log $TYPE_INFO "created db"
+            fi
+        fi
+
+
+        status_log $TYPE_INFO "deploying the resource yaml onto the cluster"
+        kubectl apply -f $extract_yaml_path
+        status_log $TYPE_SUCCESS "resource yaml is deployed onto the cluster"
+
+        if [[ "$wait" == "true"  ]]; then
+            status_log $TYPE_INFO "waiting for the resources to be ready"
+            deployed_resources=$(get_deployed_resources $gras_kind)
+            sleep 5
+            extract_domain_from_grpl_config
+            for deploy_resource in $deployed_resources; do
+                if ! eval "$(getGumSpinnerOrLogger "waiting for $deploy_resource resource to be ready") kubectl rollout status -n ${gras_ns} deploy ${gras_ns}-${gras_name}-${deploy_resource}"; then
+                    status_log $TYPE_ERROR "Failed to wait for $deploy_resource resource"
+                    exit 1
+                else 
+                    status_log $TYPE_SUCCESS "$deploy_resource resource is ready, you can now open ${gras_ns}-${gras_name}-${deploy_resource}.${clusterdomain} in the browser"
+                fi
+            done      
+        fi
+
+    fi
+    
+    rm $extract_yaml_path
+    rm $glowed_response
+
+
+else
+    status_log $TYPE_INFO ""
+    status_log $TYPE_INFO "no yaml found in the response, so no further action (deploy or render) required"
+    status_log $TYPE_INFO ""
+fi
+
+

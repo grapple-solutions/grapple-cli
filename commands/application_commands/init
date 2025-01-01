@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+
 . "$GRPL_WORKDIR/utils/help_menus"
 . "$GRPL_WORKDIR/utils/checks"
 
@@ -26,7 +27,7 @@ valid_args=(
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
-extract_input_params_from_cli $valid_args "grpl a i h" $(echo "$@")
+extract_input_params_from_cli $valid_args "grpl a i h" "$@"
 
 cli_log "application init BEGIN"
 status_log $TYPE_INFO "application initialization is in progress"

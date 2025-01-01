@@ -1,0 +1,1115 @@
+#!/bin/bash
+
+
+
+gras_db_file_gras=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleApplicationSet
+metadata:
+  name: gras-db-file
+  namespace: gras-db-file
+spec:
+  grapis:
+  - name: gras-db-file
+    spec:
+      datasources:
+      - name: db
+        spec:
+          memory:
+            connector: memory
+            file: /tmp/data.json
+            localStorage: db
+            name: db
+      discoveredrepos: true
+      ingress: true
+      initContainers:
+      - name: test
+        spec:
+          command:
+          - sh
+          - -c
+          - if ! test -f /tmp/data.json; then wget -O /tmp/data.json https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/db.json;
+            chmod 777 /tmp/data.json; fi
+          image: busybox:1.28
+          name: init-db
+      models:
+      - name: customer
+        spec:
+          base: Entity
+          name: customer
+          properties:
+            customername:
+              type: string
+            datecreated:
+              required: false
+              type: date
+            datelastupdated:
+              required: false
+              type: date
+            emaildomain:
+              required: true
+              type: string
+            id:
+              generated: true
+              id: true
+              required: true
+              type: number
+      - name: email
+        spec:
+          base: Entity
+          name: email
+          properties:
+            email:
+              required: true
+              type: string
+            emaildomain:
+              required: true
+              type: string
+            id:
+              generated: true
+              id: true
+              required: true
+              type: number
+      - name: cluster
+        spec:
+          base: Entity
+          name: cluster
+          properties:
+            clusterdns:
+              type: string
+            clusteridentifier:
+              type: string
+            clustername:
+              type: string
+            customerId:
+              type: string
+            datecreated:
+              required: false
+              type: date
+            datelastupdated:
+              required: false
+              type: date
+            emailId:
+              required: true
+              type: string
+            id:
+              generated: true
+              id: true
+              required: true
+              type: number
+      restcruds:
+      - name: restcrud
+        spec:
+          datasource: db
+      volumeMounts:
+      - mountPath: /data
+        name: data
+      volumes:
+      - emptyDir: {}
+        name: data
+  gruims:
+  - name: gras-db-file
+    spec:
+      additionalpackages: ""
+      config: ""
+      style: '{"colors":{"primary":{"DEFAULT":"#34344A","fg":"#fff"},"accent":{"DEFAULT":"#CC5A71","fg":"#fff"}}}'
+  name: gras-db-file
+EOM
+)
+
+
+
+gras_db_file_grapi=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleApi
+metadata:
+  name: gras-db-file
+  namespace: gras-db-file
+spec:
+  asname: gras-db-file
+  autorestartgruim: false
+  datasources:
+  - name: db
+    spec:
+      memory:
+        connector: memory
+        file: /tmp/data.json
+        localStorage: db
+        name: db
+  discoveredrepos: true
+  ingress: true
+  initContainers:
+  - name: test
+    spec:
+      command:
+      - sh
+      - -c
+      - if ! test -f /tmp/data.json; then wget -O /tmp/data.json https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/db.json;
+        chmod 777 /tmp/data.json; fi
+      image: busybox:1.28
+      name: init-db
+  models:
+  - name: customer
+    spec:
+      base: Entity
+      name: customer
+      properties:
+        customername:
+          type: string
+        datecreated:
+          required: false
+          type: date
+        datelastupdated:
+          required: false
+          type: date
+        emaildomain:
+          required: true
+          type: string
+        id:
+          generated: true
+          id: true
+          required: true
+          type: number
+  - name: email
+    spec:
+      base: Entity
+      name: email
+      properties:
+        email:
+          required: true
+          type: string
+        emaildomain:
+          required: true
+          type: string
+        id:
+          generated: true
+          id: true
+          required: true
+          type: number
+  - name: cluster
+    spec:
+      base: Entity
+      name: cluster
+      properties:
+        clusterdns:
+          type: string
+        clusteridentifier:
+          type: string
+        clustername:
+          type: string
+        customerId:
+          type: string
+        datecreated:
+          required: false
+          type: date
+        datelastupdated:
+          required: false
+          type: date
+        emailId:
+          required: true
+          type: string
+        id:
+          generated: true
+          id: true
+          required: true
+          type: number
+  restcruds:
+  - name: restcrud
+    spec:
+      datasource: db
+  volumeMounts:
+  - mountPath: /data
+    name: data
+  volumes:
+  - emptyDir: {}
+    name: data
+EOM
+)
+
+gras_db_file_gruim=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleUiModule
+metadata:
+  name: gras-db-file
+  namespace: gras-db-file
+spec:
+  additionalpackages: ""
+  asname: gras-db-file
+  config: ""
+  mapi: gras-db-file-gras-db-file-grapi-mapi
+  style: '{"colors":{"primary":{"DEFAULT":"#34344A","fg":"#fff"},"accent":{"DEFAULT":"#CC5A71","fg":"#fff"}}}'
+EOM
+)
+
+grpl_mdl_int_mysql_gras=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleApplicationSet
+metadata:
+  name: gras-mysql
+  namespace: grpl-mdl-int
+spec:
+  grapis:
+  - name: gras-mysql
+    spec:
+      automigrate: true
+      datasources:
+      - name: classicmodelsid
+        spec:
+          mysql:
+            database: classicmodelsid
+            host: \$(host)
+            name: classicmodelsid
+            password: \$(password)
+            port: \$(port)
+            url: ""
+            user: \$(username)
+      extraSecrets:
+      - gras-mysql-conn-credential
+      ingress: true
+      initContainers:
+      - name: init-db
+        spec:
+          command:
+          - bash
+          - -c
+          - sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password)
+            -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql
+            -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e "USE classicmodelsid;
+            SET @tablename := (select table_name from information_schema.tables where
+            table_type = 'BASE TABLE' and table_schema = 'classicmodelsid' limit 1);
+            set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt
+            from @qry1 ; execute stmt ;" ; then echo "database already exists...";
+            else curl -o /tmp/classicmodelsid.sql https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql;
+            mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/classicmodelsid.sql;
+            fi;
+          image: mysql
+          name: init-db
+      models:
+      - name: customer
+        spec:
+          base: Entity
+          name: customer
+          properties:
+            customername:
+              type: string
+            datecreated:
+              required: false
+              type: date
+            datelastupdated:
+              required: false
+              type: date
+            emaildomain:
+              required: true
+              type: string
+            id:
+              generated: true
+              id: true
+              required: true
+              type: number
+      - name: email
+        spec:
+          base: Entity
+          name: email
+          properties:
+            email:
+              required: true
+              type: string
+            emaildomain:
+              required: true
+              type: string
+            id:
+              generated: true
+              id: true
+              required: true
+              type: number
+      - name: cluster
+        spec:
+          base: Entity
+          name: cluster
+          properties:
+            clusterdns:
+              type: string
+            clusteridentifier:
+              type: string
+            clustername:
+              type: string
+            customerId:
+              type: string
+            datecreated:
+              required: false
+              type: date
+            datelastupdated:
+              required: false
+              type: date
+            emailId:
+              required: true
+              type: string
+            id:
+              generated: true
+              id: true
+              required: true
+              type: number
+      restcruds:
+      - name: classicmodelsid
+        spec:
+          datasource: classicmodelsid
+  gruims:
+  - name: gras-mysql
+    spec:
+      additionalpackages: ""
+      config: ""
+      style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
+  name: gras-mysql
+EOM
+)
+
+
+grpl_mdl_int_mysql_grapi=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleApi
+metadata:
+  name: gras-mysql
+  namespace: grpl-mdl-int
+spec:
+  asname: gras-mysql
+  automigrate: true
+  autorestartgruim: false
+  datasources:
+  - name: classicmodelsid
+    spec:
+      mysql:
+        connector: mysql
+        database: classicmodelsid
+        host: \$(host)
+        name: classicmodelsid
+        password: \$(password)
+        port: \$(port)
+        url: ""
+        user: \$(username)
+  extraSecrets:
+  - gras-mysql-conn-credential
+  ingress: true
+  initContainers:
+  - name: init-db
+    spec:
+      command:
+      - bash
+      - -c
+      - sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password)
+        -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h
+        \$(host) -P \$(port) -u \$(username) -p\$(password) -e "USE classicmodelsid; SET
+        @tablename := (select table_name from information_schema.tables where table_type
+        = 'BASE TABLE' and table_schema = 'classicmodelsid' limit 1); set @qry1:=
+        concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ;
+        execute stmt ;" ; then echo "database already exists..."; else curl -o /tmp/classicmodelsid.sql
+        https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql;
+        mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/classicmodelsid.sql;
+        fi;
+      image: mysql
+      name: init-db
+  models:
+  - name: customer
+    spec:
+      base: Entity
+      name: customer
+      properties:
+        customername:
+          type: string
+        datecreated:
+          required: false
+          type: date
+        datelastupdated:
+          required: false
+          type: date
+        emaildomain:
+          required: true
+          type: string
+        id:
+          generated: true
+          id: true
+          required: true
+          type: number
+  - name: email
+    spec:
+      base: Entity
+      name: email
+      properties:
+        email:
+          required: true
+          type: string
+        emaildomain:
+          required: true
+          type: string
+        id:
+          generated: true
+          id: true
+          required: true
+          type: number
+  - name: cluster
+    spec:
+      base: Entity
+      name: cluster
+      properties:
+        clusterdns:
+          type: string
+        clusteridentifier:
+          type: string
+        clustername:
+          type: string
+        customerId:
+          type: string
+        datecreated:
+          required: false
+          type: date
+        datelastupdated:
+          required: false
+          type: date
+        emailId:
+          required: true
+          type: string
+        id:
+          generated: true
+          id: true
+          required: true
+          type: number
+  restcruds:
+  - name: classicmodelsid
+    spec:
+      datasource: classicmodelsid
+EOM
+)
+
+
+grpl_mdl_int_mysql_gruim=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleUiModule
+metadata:
+  name: gras-mysql
+  namespace: grpl-mdl-int
+spec:
+  additionalpackages: ""
+  asname: gras-mysql
+  config: ""
+  mapi: grpl-mdl-int-gras-mysql-grapi-mapi
+  style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
+EOM
+)
+
+grpl_mdl_ext_mysql_gras=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleApplicationSet
+metadata:
+  name: gras-mysql
+  namespace: grpl-mdl-ext
+spec:
+  grapis:
+  - name: gras-mysql
+    spec:
+      automigrate: true
+      datasources:
+      - name: classicmodelsid
+        spec:
+          mysql:
+            database: classicmodelsid
+            host: \$(host)
+            name: classicmodelsid
+            password: \$(password)
+            port: \$(port)
+            url: ""
+            user: \$(username)
+      extraSecrets:
+      - gras-mysql-conn-credential
+      ingress: true
+      initContainers:
+      - name: init-db
+        spec:
+          command:
+          - bash
+          - -c
+          - sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password)
+            -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql
+            -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e "USE classicmodelsid;
+            SET @tablename := (select table_name from information_schema.tables where
+            table_type = 'BASE TABLE' and table_schema = 'classicmodelsid' limit 1);
+            set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt
+            from @qry1 ; execute stmt ;" ; then echo "database already exists...";
+            else curl -o /tmp/classicmodelsid.sql https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql;
+            mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/classicmodelsid.sql;
+            fi;
+          image: mysql
+          name: init-db
+      models:
+      - name: customer
+        spec:
+          base: Entity
+          name: customer
+          properties:
+            customername:
+              type: string
+            datecreated:
+              required: false
+              type: date
+            datelastupdated:
+              required: false
+              type: date
+            emaildomain:
+              required: true
+              type: string
+            id:
+              generated: true
+              id: true
+              required: true
+              type: number
+      - name: email
+        spec:
+          base: Entity
+          name: email
+          properties:
+            email:
+              required: true
+              type: string
+            emaildomain:
+              required: true
+              type: string
+            id:
+              generated: true
+              id: true
+              required: true
+              type: number
+      - name: cluster
+        spec:
+          base: Entity
+          name: cluster
+          properties:
+            clusterdns:
+              type: string
+            clusteridentifier:
+              type: string
+            clustername:
+              type: string
+            customerId:
+              type: string
+            datecreated:
+              required: false
+              type: date
+            datelastupdated:
+              required: false
+              type: date
+            emailId:
+              required: true
+              type: string
+            id:
+              generated: true
+              id: true
+              required: true
+              type: number
+      restcruds:
+      - name: classicmodelsid
+        spec:
+          datasource: classicmodelsid
+  gruims:
+  - name: gras-mysql
+    spec:
+      additionalpackages: ""
+      config: ""
+      style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
+  name: gras-mysql
+EOM
+)
+
+grpl_mdl_ext_mysql_grapi=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleApi
+metadata:
+  name: gras-mysql
+  namespace: grpl-mdl-ext1
+spec:
+  asname: gras-mysql
+  automigrate: true
+  autorestartgruim: false
+  datasources:
+  - name: classicmodelsid
+    spec:
+      mysql:
+        connector: mysql
+        database: classicmodelsid
+        host: \$(host)
+        name: classicmodelsid
+        password: \$(password)
+        port: \$(port)
+        url: ""
+        user: \$(username)
+  extraSecrets:
+  - gras-mysql-conn-credential
+  ingress: true
+  initContainers:
+  - name: init-db
+    spec:
+      command:
+      - bash
+      - -c
+      - sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password)
+        -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h
+        \$(host) -P \$(port) -u \$(username) -p\$(password) -e "USE classicmodelsid; SET
+        @tablename := (select table_name from information_schema.tables where table_type
+        = 'BASE TABLE' and table_schema = 'classicmodelsid' limit 1); set @qry1:=
+        concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ;
+        execute stmt ;" ; then echo "database already exists..."; else curl -o /tmp/classicmodelsid.sql
+        https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql;
+        mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/classicmodelsid.sql;
+        fi;
+      image: mysql
+      name: init-db
+  models:
+  - name: customer
+    spec:
+      base: Entity
+      name: customer
+      properties:
+        customername:
+          type: string
+        datecreated:
+          required: false
+          type: date
+        datelastupdated:
+          required: false
+          type: date
+        emaildomain:
+          required: true
+          type: string
+        id:
+          generated: true
+          id: true
+          required: true
+          type: number
+  - name: email
+    spec:
+      base: Entity
+      name: email
+      properties:
+        email:
+          required: true
+          type: string
+        emaildomain:
+          required: true
+          type: string
+        id:
+          generated: true
+          id: true
+          required: true
+          type: number
+  - name: cluster
+    spec:
+      base: Entity
+      name: cluster
+      properties:
+        clusterdns:
+          type: string
+        clusteridentifier:
+          type: string
+        clustername:
+          type: string
+        customerId:
+          type: string
+        datecreated:
+          required: false
+          type: date
+        datelastupdated:
+          required: false
+          type: date
+        emailId:
+          required: true
+          type: string
+        id:
+          generated: true
+          id: true
+          required: true
+          type: number
+  restcruds:
+  - name: classicmodelsid
+    spec:
+      datasource: classicmodelsid
+
+EOM
+)
+
+grpl_mdl_ext_mysql_gruim=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleUiModule
+metadata:
+  name: gras-mysql
+  namespace: grpl-mdl-ext
+spec:
+  additionalpackages: ""
+  asname: gras-mysql
+  config: ""
+  mapi: grpl-mdl-ext-gras-mysql-grapi-mapi
+  style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
+EOM
+)
+
+grpl_disc_int_mysql_gras=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleApplicationSet
+metadata:
+  name: gras-mysql
+  namespace: grpl-disc-int
+spec:
+  grapis:
+  - name: gras-mysql
+    spec:
+      datasources:
+      - name: classicmodelsid
+        spec:
+          mysql:
+            database: classicmodelsid
+            host: \$(host)
+            name: classicmodelsid
+            password: \$(password)
+            port: \$(port)
+            url: ""
+            user: \$(username)
+      discoveredrepos: true
+      discoveries:
+      - name: classicmodelsid
+        spec:
+          all: true
+          dataSource: classicmodelsid
+          disableCamelCase: false
+          schema: classicmodelsid
+      extraSecrets:
+      - gras-mysql-conn-credential
+      ingress: true
+      initContainers:
+      - name: init-db
+        spec:
+          command:
+          - bash
+          - -c
+          - sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password)
+            -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql
+            -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e "USE classicmodelsid;
+            SET @tablename := (select table_name from information_schema.tables where
+            table_type = 'BASE TABLE' and table_schema = 'classicmodelsid' limit 1);
+            set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt
+            from @qry1 ; execute stmt ;" ; then echo "database already exists...";
+            else curl -o /tmp/classicmodelsid.sql https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql;
+            mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/classicmodelsid.sql;
+            fi;
+          image: mysql
+          name: init-db
+      relations:
+      - name: employees
+        spec:
+          destinationModel: Employees
+          foreignKeyName: employeesId
+          registerInclusionResolver: true
+          relationName: employees
+          relationType: belongsTo
+          sourceModel: Customers
+      restcruds:
+      - name: classicmodelsid
+        spec:
+          datasource: classicmodelsid
+  gruims:
+  - name: gras-mysql
+    spec:
+      additionalpackages: ""
+      config: ""
+      style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
+  name: gras-mysql
+EOM
+)
+
+grpl_disc_int_mysql_grapi=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleApi
+metadata:
+  name: gras-mysql
+  namespace: grpl-disc-int
+spec:
+  asname: gras-mysql
+  autorestartgruim: false
+  datasources:
+  - name: classicmodelsid
+    spec:
+      mysql:
+        connector: mysql
+        database: classicmodelsid
+        host: \$(host)
+        name: classicmodelsid
+        password: \$(password)
+        port: \$(port)
+        url: ""
+        user: \$(username)
+  discoveredrepos: true
+  discoveries:
+  - name: classicmodelsid
+    spec:
+      all: true
+      dataSource: classicmodelsid
+      disableCamelCase: false
+      schema: classicmodelsid
+  extraSecrets:
+  - gras-mysql-conn-credential
+  ingress: true
+  initContainers:
+  - name: init-db
+    spec:
+      command:
+      - bash
+      - -c
+      - sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password)
+        -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h
+        \$(host) -P \$(port) -u \$(username) -p\$(password) -e "USE classicmodelsid; SET
+        @tablename := (select table_name from information_schema.tables where table_type
+        = 'BASE TABLE' and table_schema = 'classicmodelsid' limit 1); set @qry1:=
+        concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ;
+        execute stmt ;" ; then echo "database already exists..."; else curl -o /tmp/classicmodelsid.sql
+        https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql;
+        mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/classicmodelsid.sql;
+        fi;
+      image: mysql
+      name: init-db
+  relations:
+  - name: employees
+    spec:
+      destinationModel: Employees
+      foreignKeyName: employeesId
+      registerInclusionResolver: true
+      relationName: employees
+      relationType: belongsTo
+      sourceModel: Customers
+  restcruds:
+  - name: classicmodelsid
+    spec:
+      datasource: classicmodelsid
+EOM
+)
+
+grpl_disc_int_mysql_gruim=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleUiModule
+metadata:
+  name: gras-mysql
+  namespace: grpl-disc-int
+spec:
+  additionalpackages: ""
+  asname: gras-mysql
+  config: ""
+  mapi: grpl-disc-int-gras-mysql-grapi-mapi
+  style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
+EOM
+)
+
+grpl_disc_ext_mysql_gras=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleApplicationSet
+metadata:
+  name: gras-mysql
+  namespace: grpl-disc-ext
+spec:
+  grapis:
+  - name: gras-mysql
+    spec:
+      datasources:
+      - name: classicmodelsid
+        spec:
+          mysql:
+            database: classicmodelsid
+            host: \$(host)
+            name: classicmodelsid
+            password: \$(password)
+            port: \$(port)
+            url: ""
+            user: \$(username)
+      discoveredrepos: true
+      discoveries:
+      - name: classicmodelsid
+        spec:
+          all: true
+          dataSource: classicmodelsid
+          disableCamelCase: false
+          schema: classicmodelsid
+      extraSecrets:
+      - gras-mysql-conn-credential
+      ingress: true
+      initContainers:
+      - name: init-db
+        spec:
+          command:
+          - bash
+          - -c
+          - sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password)
+            -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql
+            -h \$(host) -P \$(port) -u \$(username) -p\$(password) -e "USE classicmodelsid;
+            SET @tablename := (select table_name from information_schema.tables where
+            table_type = 'BASE TABLE' and table_schema = 'classicmodelsid' limit 1);
+            set @qry1:= concat('select * from ',@tablename,' limit 1'); prepare stmt
+            from @qry1 ; execute stmt ;" ; then echo "database already exists...";
+            else curl -o /tmp/classicmodelsid.sql https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql;
+            mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/classicmodelsid.sql;
+            fi;
+          image: mysql
+          name: init-db
+      relations:
+      - name: employees
+        spec:
+          destinationModel: Employees
+          foreignKeyName: employeesId
+          registerInclusionResolver: true
+          relationName: employees
+          relationType: belongsTo
+          sourceModel: Customers
+      restcruds:
+      - name: classicmodelsid
+        spec:
+          datasource: classicmodelsid
+  gruims:
+  - name: gras-mysql
+    spec:
+      additionalpackages: ""
+      config: ""
+      style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
+  name: gras-mysql
+EOM
+)
+
+grpl_disc_ext_mysql_grapi=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleApi
+metadata:
+  name: gras-mysql
+  namespace: grpl-disc-ext
+spec:
+  asname: gras-mysql
+  autorestartgruim: false
+  datasources:
+  - name: classicmodelsid
+    spec:
+      mysql:
+        connector: mysql
+        database: classicmodelsid
+        host: \$(host)
+        name: classicmodelsid
+        password: \$(password)
+        port: \$(port)
+        url: ""
+        user: \$(username)
+  discoveredrepos: true
+  discoveries:
+  - name: classicmodelsid
+    spec:
+      all: true
+      dataSource: classicmodelsid
+      disableCamelCase: false
+      schema: classicmodelsid
+  extraSecrets:
+  - gras-mysql-conn-credential
+  ingress: true
+  initContainers:
+  - name: init-db
+    spec:
+      command:
+      - bash
+      - -c
+      - sleep 5; while ! mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password)
+        -e "show databases;" 2>/dev/null; do echo -n .; sleep 2; done; if mysql -h
+        \$(host) -P \$(port) -u \$(username) -p\$(password) -e "USE classicmodelsid; SET
+        @tablename := (select table_name from information_schema.tables where table_type
+        = 'BASE TABLE' and table_schema = 'classicmodelsid' limit 1); set @qry1:=
+        concat('select * from ',@tablename,' limit 1'); prepare stmt from @qry1 ;
+        execute stmt ;" ; then echo "database already exists..."; else curl -o /tmp/classicmodelsid.sql
+        https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql;
+        mysql -h \$(host) -P \$(port) -u \$(username) -p\$(password) < /tmp/classicmodelsid.sql;
+        fi;
+      image: mysql
+      name: init-db
+  relations:
+  - name: employees
+    spec:
+      destinationModel: Employees
+      foreignKeyName: employeesId
+      registerInclusionResolver: true
+      relationName: employees
+      relationType: belongsTo
+      sourceModel: Customers
+  restcruds:
+  - name: classicmodelsid
+    spec:
+      datasource: classicmodelsid
+EOM
+)
+
+grpl_disc_ext_mysql_gruim=$(cat <<'EOM'
+apiVersion: grsf.grpl.io/v1alpha1
+kind: GrappleUiModule
+metadata:
+  name: gras-mysql
+  namespace: grpl-disc-ext
+spec:
+  additionalpackages: ""
+  asname: gras-mysql
+  config: ""
+  mapi: grpl-disc-ext-gras-mysql-grapi-mapi
+  style: '{"colors":{"primary":{"DEFAULT":"#004a99","fg":"#ffffff"},"accent":{"DEFAULT":"#fa7252","fg":"#ffffff"}}}'
+
+EOM
+)
+
+
+# Plain arrays for resources
+gras_resources=(
+    "------------ Following are the examples of gras resources ------------"
+    "------------ Following is the grappleapplicationsets.grsf.grpl.io database file resource example ------------"
+    "$gras_db_file_gras"
+    "------------ Following is the grappleapplicationsets.grsf.grpl.io model internal resource example ------------"
+    "$grpl_mdl_int_mysql_gras"
+    "------------ Following is the grappleapplicationsets.grsf.grpl.io model external resource example ------------"
+    "$grpl_mdl_ext_mysql_gras"
+    "------------ Following is the grappleapplicationsets.grsf.grpl.io discovery internal resource example ------------"
+    "$grpl_disc_int_mysql_gras"
+    "------------ Following is the grappleapplicationsets.grsf.grpl.io discovery external resource example ------------"
+    "$grpl_disc_ext_mysql_gras"
+)
+
+gruim_resources=(
+    "------------ Following are the examples of gruim resources ------------"
+    "------------ Following is the grappleuimodules.grsf.grpl.io database file resource example ------------"
+    "$gras_db_file_gruim"
+    "------------ Following is the grappleuimodules.grsf.grpl.io model internal resource example ------------"
+    "$grpl_mdl_int_mysql_gruim"
+    "------------ Following is the grappleuimodules.grsf.grpl.io model external resource example ------------"
+    "$grpl_mdl_ext_mysql_gruim"
+    "------------ Following is the grappleuimodules.grsf.grpl.io discovery internal resource example ------------"
+    "$grpl_disc_int_mysql_gruim"
+    "------------ Following is the grappleuimodules.grsf.grpl.io discovery external resource example ------------"
+    "$grpl_disc_ext_mysql_gruim"
+)
+
+grapi_resources=(
+    "------------ Following are the examples of grapi resources ------------"
+    "------------ Following is the grappleapis.grsf.grpl.io database file resource example ------------"
+    "$gras_db_file_grapi"
+    "------------ Following is the grappleapis.grsf.grpl.io model internal resource example ------------"
+    "$grpl_mdl_int_mysql_grapi"
+    "------------ Following is the grappleapis.grsf.grpl.io model external resource example ------------"
+    "$grpl_mdl_ext_mysql_grapi"
+    "------------ Following is the grappleapis.grsf.grpl.io discovery internal resource example ------------"
+    "$grpl_disc_int_mysql_grapi"
+    "------------ Following is the grappleapis.grsf.grpl.io discovery external resource example ------------"
+    "$grpl_disc_ext_mysql_grapi"
+)
+
+# Simulating dictionary with two arrays: keys and values
+grpl_gras_resource_keys=(
+    "grappleuimodules.grsf.grpl.io"
+    "grappleapis.grsf.grpl.io"
+    "grappleapplicationsets.grsf.grpl.io"
+)
+
+grpl_gras_resource_values=(
+    "${gruim_resources[*]}"
+    "${grapi_resources[*]}"
+    "${gras_resources[*]}"
+)

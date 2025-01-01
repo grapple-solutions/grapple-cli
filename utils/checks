@@ -19,7 +19,6 @@ is_correct_civo_region_provided() {
     local output=$( eval "$(getGumSpinnerOrLogger "fetching civo regions") civo region ls -o custom -f code") 
     local region=$1
 
-
     # Declare an empty array
     regions_array=()
     while IFS= read -r line; do
@@ -34,6 +33,7 @@ is_correct_civo_region_provided() {
         status_log $TYPE_ERROR "$errMsg"
         exit 1
     fi
+
 
 }
 
@@ -143,6 +143,22 @@ is_correct_kubectl_context_provided() {
         return 0
     else
         errMsg="Error: Invalid KUBECTL_CONTEXT provided : $context"
+        echo $errMsg
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}
+
+
+
+
+
+is_correct_resource_action_provided() {
+    
+    resource_action=$1
+    if [[ $resource_action != $RESOURCE_DEPLOY && $resource_action != $RESOURCE_RENDER && $resource_action != $NO_ACTION ]]; then
+        errMsg="Error: Invalid RESOURCE_DEPLOY provided : $resource_action. Please provide one of the following 1)$RESOURCE_DEPLOY 2)$RESOURCE_RENDER"
         echo $errMsg
         status_log $TYPE_ERROR "$errMsg"
         exit 1

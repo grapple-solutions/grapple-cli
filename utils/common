@@ -214,8 +214,8 @@ extract_input_params_from_cli() {
           if [[ "$arg1" = *=* ]]; then
               
               config_param=$(is_valid_arg_syntax "$arg1")
-              declare -a parts=($(echo "$config_param" | tr '=' ' '))
-              key="${parts[0]}"
+              key=${config_param%%=*}
+              value=${config_param#*=}
               # Check if the argument is valid
               valid=false
               for valid_arg in "${valid_args[@]}"; do
@@ -227,7 +227,6 @@ extract_input_params_from_cli() {
 
               if  $valid; then
                   local key=${key//-/_}
-                  local value=${parts[1]}
                   export "$key=$value"
               else
                   status_log $TYPE_ERROR "Error: $key is not a valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
@@ -236,7 +235,11 @@ extract_input_params_from_cli() {
 
           else
               arg2=$1
-              shift
+              if [[ $arg2 != "" ]] && [[ "$arg2" != --* ]]; then
+                shift
+              else
+                arg2="true"
+              fi
               config_param=$(is_valid_arg_syntax "$arg1")
               # Check if the argument is valid
               if [[ " ${valid_args[@]} " =~ " $config_param " ]]; then
@@ -345,21 +348,6 @@ getGumSpinnerOrLogger() {
 
 }
 
-remove_spaces() {
-  local input_string="$1"
-  local output_string="${input_string// /}"
-  echo "$output_string"
-}
-
-process_parameters() {
-  local updated_params=()
-  for param in "$@"; do
-    param_no_spaces=$(remove_spaces "$param")
-    updated_params+=("$param_no_spaces")
-  done
-  echo "${updated_params[@]}"
-}
-
 setTTYModeState() {
   if [ -t 0 ]; then
     TTY="enabled"
@@ -384,5 +372,57 @@ check_if_param_avaiable_in_non_interactive_mode() {
   if [ "$paramValue" == "" ] && [ "$TTY" == "disabled" ]; then
     status_log $TYPE_ERROR "Error: $paramName is a required argument in non-interactive mode, please run '$help_menu_cmd'  to get more info on how to pass agruments from cli"
     exit 1
+  fi
+}
+
+
+check_and_create_kubens() {
+
+    if [[ "$KUBE_NS" != "" ]] && ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
+        status_log $TYPE_INFO "namespace $KUBE_NS doesn't exist, now creating"
+        kubectl create namespace "$KUBE_NS"
+    elif [[ "$KUBE_NS" == "" ]]; then
+        status_log $TYPE_INFO "Do you want to select existing namespace or create new one?"
+        local another_rule=$(gum choose "Select from existing" "Create new") || exit $?
+        
+        if [ "$another_rule" == "Select from existing" ]; then
+            namespaces=$(kubectl get namespaces -o name | awk -F'/' '{print $2}')
+            current_ns="default"
+            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else gum choose  --header "Please select kubectl namespace you want to use" $namespaces --selected=$current_ns ; fi) || exit $?
+        else
+            KUBE_NS=$(if [ "${KUBE_NS}" != "" ]; then echo ${KUBE_NS}; else prompt_for_explicit_input_with_validation "Enter KUBE_NS: " "default value is '$GRAS_NAME'" ".*" "kube ns can't be empty"; fi) || exit $?
+            if [ "${KUBE_NS}" == "" ]; then KUBE_NS=$GRAS_NAME; fi
+            if ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then
+                    status_log $TYPE_INFO "namespace $KUBE_NS doesn't exist, now creating"
+                    kubectl create namespace "$KUBE_NS"
+            fi
+        fi    
+    fi
+}
+
+extract_domain_from_grpl_config() {
+  if kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.clusterdomain}" > /dev/null 2>&1; then
+    clusterdomain=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.clusterdomain}" | base64 --decode)
+  fi
+}
+
+
+
+kubeblocks_installation() {
+  if ! kbcli; then
+      echo "installing kbcli"
+      check_and_install_kbcli
+  fi
+
+  if ! kubectl get deployment kubeblocks -n kb-system 2>/dev/null; then
+    echo "checking kubeblocks"
+    check_and_install_kubeblocks
+
+    echo "waiting for configs to apply"
+    for i in $(kubectl get clusterversion -o name); do 
+      kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
+    done
+  else 
+    echo "kubeblocks is already installed"
   fi
 }

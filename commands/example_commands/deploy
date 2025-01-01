@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+
 . "$GRPL_WORKDIR/utils/common"
 . "$GRPL_WORKDIR/utils/checks"
 . "$GRPL_WORKDIR/utils/help_menus"
@@ -32,13 +33,6 @@ extract_creds_from_secrets() {
 
 }
 
-extract_domain_from_grpl_config() {
-  if kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.clusterdomain}" > /dev/null 2>&1; then
-    clusterdomain=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.clusterdomain}" | base64 --decode)
-  else
-    status_log $TYPE_ERROR "Failed to clusterdomain from grsf-config secret"
-  fi  
-}
 extract_domain_from_grpl_config
 
 
@@ -47,11 +41,32 @@ display_deployment_details(){
   resource_name=$2
   domain=$3
 
-  status_log $TYPE_INFO "Deployment Details"
-  status_log $TYPE_INFO "Following resources are deployed in ${namespace} namespace"
-  status_log $TYPE_INFO "Resource Name: ${resource_name}-grapi can be accessed at ${namespace}-${resource_name}-grapi.${clusterdomain}"
-  status_log $TYPE_INFO "Resource Name: ${resource_name}-gruim can be accessed at ${namespace}-${resource_name}-gruim.${clusterdomain}"
-  status_log $TYPE_INFO "It will take a few minutes for the deployment to be ready"
+  if [[ "$wait" == "true" ]]; then
+    status_log $TYPE_INFO "Waiting for deployment to be ready"
+    if ! eval "$(getGumSpinnerOrLogger "waiting for grapi resource to be ready") kubectl rollout status -n ${namespace} deploy ${namespace}-${resource_name}-grapi"; then
+      status_log $TYPE_ERROR "Failed to wait for grapi resource"
+      exit 1
+    fi
+    status_log $TYPE_SUCCESS "grapi resource is ready"
+    if ! eval "$(getGumSpinnerOrLogger "waiting for gruim resource to be ready") kubectl rollout status -n ${namespace} deploy ${namespace}-${resource_name}-gruim"; then
+      status_log $TYPE_ERROR "Failed to wait for gruim resource"
+      exit 1
+    fi
+    status_log $TYPE_SUCCESS "gruim resource is ready"
+
+    status_log $TYPE_SUCCESS "Deployment is ready"
+  fi
+
+  if [[ "$wait" != "true" ]]; then
+    status_log $TYPE_INFO "It will take a few minutes for the deployment to be ready"
+  fi 
+
+  if [ "$clusterdomain" != "" ]; then
+    status_log $TYPE_INFO "Deployment Details"
+    status_log $TYPE_INFO "Following resources are deployed in ${namespace} namespace"
+    status_log $TYPE_INFO "Resource Name: ${resource_name}-grapi can be accessed at ${namespace}-${resource_name}-grapi.${clusterdomain}"
+    status_log $TYPE_INFO "Resource Name: ${resource_name}-gruim can be accessed at ${namespace}-${resource_name}-gruim.${clusterdomain}"
+  fi
 
 }
 
@@ -61,12 +76,13 @@ valid_args=(
     "GRAS_TEMPLATE"
     "DB_TYPE"
     "KUBE_CONTEXT"
+    "wait"
   )
 
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
 help_menu_cmd="grpl resource deploy help"
-extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
 
 
 #check if input from params is valid or not
@@ -90,9 +106,12 @@ DATABASE_SCHEMA="classicmodelsid"
 
 # grpl r d db-file
 if [[ "${GRAS_TEMPLATE}" == $DB_FILE ]]; then
-  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-$DB_FILE --KUBE_NS=gras-$DB_FILE --GRAS_TEMPLATE=$DB_FILE --SOURCE_DATA="https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/db.json" --MODELS=$MODELS --DB_FILE_PATH=/tmp/data.json --ENABLE_GRUIM=false  --RELATIONS=""
-  display_deployment_details "gras-$DB_FILE" "gras-$DB_FILE" $clusterdomain
-  exit 0
+  if grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-$DB_FILE --KUBE_NS=gras-$DB_FILE --GRAS_TEMPLATE=$DB_FILE --SOURCE_DATA="https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/db.json" --MODELS=$MODELS --DB_FILE_PATH=/tmp/data.json --ENABLE_GRUIM=false  --RELATIONS=""; then
+    display_deployment_details "gras-$DB_FILE" "gras-$DB_FILE" $clusterdomain
+    exit 0
+  fi
+  status_log $TYPE_ERROR "Failed to deploy example"
+  exit 1
 fi
 
 
@@ -107,9 +126,12 @@ status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
 
 #grpl r d mysql model  internal
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" == $INTERNAL_DB ]]; then
-  grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-mysql --KUBE_NS=grpl-mdl-int --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$INTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --RELATIONS="" --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA
-  display_deployment_details "grpl-mdl-int" "gras-mysql" $clusterdomain
-  exit 0
+  if grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-mysql --KUBE_NS=grpl-mdl-int --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$INTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --RELATIONS="" --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA; then
+    display_deployment_details "grpl-mdl-int" "gras-mysql" $clusterdomain
+    exit 0
+  fi
+  status_log $TYPE_ERROR "Failed to deploy example"
+  exit 1
 fi
 
 
@@ -117,23 +139,33 @@ fi
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
   extract_creds_from_secrets
   DATASOURCES=$(printf "$DATASOURCES\n" "$username" "$password")
-  grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-mysql --KUBE_NS=grpl-mdl-ext --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$EXTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --DATASOURCES=$DATASOURCES --RELATIONS=""  --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA
-  display_deployment_details "grpl-mdl-ext" "gras-mysql" $clusterdomain
-  exit 0
+  if grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-mysql --KUBE_NS=grpl-mdl-ext --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$EXTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --DATASOURCES=$DATASOURCES --RELATIONS=""  --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA; then
+    display_deployment_details "grpl-mdl-ext" "gras-mysql" $clusterdomain
+    exit 0
+  fi
+  status_log $TYPE_ERROR "Failed to deploy example"
+  exit 1
 fi
 
 #grpl r d mysql discovery  internal
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $INTERNAL_DB ]]; then
-  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-int --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$INTERNAL_DB --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true  --DATABASE_SCHEMA=$DATABASE_SCHEMA
-  display_deployment_details "grpl-disc-int" "gras-mysql" $clusterdomain
-  exit 0
+  if grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-int --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$INTERNAL_DB --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true  --DATABASE_SCHEMA=$DATABASE_SCHEMA; then
+    display_deployment_details "grpl-disc-int" "gras-mysql" $clusterdomain
+    exit 0
+  fi
+  status_log $TYPE_ERROR "Failed to deploy example"
+  exit 1
 fi
 
 #grpl r d mysql discovery  external
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
   extract_creds_from_secrets
   DATASOURCES=$(printf "$DATASOURCES\n" "$username" "$password")
-  grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-ext --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB --DATASOURCES=$DATASOURCES --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true --DATABASE_SCHEMA=$DATABASE_SCHEMA
-  display_deployment_details "grpl-disc-ext" "gras-mysql" $clusterdomain
-  exit 0
+  if grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-ext --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB --DATASOURCES=$DATASOURCES --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true --DATABASE_SCHEMA=$DATABASE_SCHEMA; then
+    display_deployment_details "grpl-disc-ext" "gras-mysql" $clusterdomain
+    exit 0
+  fi
+  status_log $TYPE_ERROR "Failed to deploy example"
+  exit 1
 fi
+
