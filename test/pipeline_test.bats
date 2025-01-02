@@ -9,7 +9,7 @@
     [ "$status" -eq 0 ]
 }
 
-@test "show logs command works" {
-    run ../grpl
+@test "grpl installed" {
+    run ./grpl
     [ "$status" -eq 0 ]
 }
