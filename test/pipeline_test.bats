@@ -10,6 +10,7 @@
 }
 
 @test "grpl installed" {
-    run ./grpl
+    export PATH="/usr/local/bin/grpl-cli:$PATH"
+    run grpl
     [ "$status" -eq 0 ]
 }
