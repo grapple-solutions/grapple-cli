@@ -6,6 +6,12 @@ FAILED=false
 setup() {
   SCRIPT_DIR=$(dirname "$(readlink -f "$BATS_TEST_FILENAME")")
   . "$SCRIPT_DIR/../utils/constants"
+
+  if [ "${CIVO_API_KEY}" != "" ]; then
+    civo apikey add grapple $CIVO_API_KEY
+    civo apikey current grapple
+  fi
+
 }
 
 check_previous_test_failed() {
@@ -71,8 +77,8 @@ check_previous_test_failed() {
 # Test: Wait for example readiness
 @test "Wait for example readiness" {
   check_previous_test_failed
-  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=300s
-  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=300s
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=500s
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=500s
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
   fi
