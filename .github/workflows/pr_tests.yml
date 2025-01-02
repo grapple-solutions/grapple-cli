@@ -22,6 +22,7 @@ jobs:
           sudo cp -r $GITHUB_WORKSPACE /usr/local/bin/grpl-cli
           echo 'export PATH="/usr/local/bin/grpl-cli:$PATH"' >> ~/.bashrc
           source ~/.bashrc
+          grpl
 
       # Install bats
       - name: Install bats
