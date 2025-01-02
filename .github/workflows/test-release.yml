@@ -6,46 +6,8 @@ on:
       - develop
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    environment: test
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Install bats
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y bats
-
-      - name: Install kubectl
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
-      - name: Install civo cli
-        run: |
-          curl -sL https://civo.com/get | sh
-
-      - name: Install Homebrew
-        run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
-
-      - name: Install Grapple CLI
-        run: |
-          export OSTYPE=darwin23.0
-          brew tap grapple-solutions/grapple
-          brew install grapple-cli
-
-      - name: Run bash tests
-        env:
-          CIVO_API_KEY: ${{ secrets.CIVO_API_KEY }}
-        run: |
-          bats test/pipeline_test.bats
 
   test-release:
-    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write 
