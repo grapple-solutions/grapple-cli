@@ -10,6 +10,6 @@
 }
 
 @test "grpl installed" {
-    run grpl
+    run ./grpl
     [ "$status" -eq 0 ]
 }
