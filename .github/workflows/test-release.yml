@@ -31,7 +31,7 @@ jobs:
         env:
           CIVO_API_KEY: ${{ secrets.CIVO_API_KEY }}
         run: |
-          bats testcases/pipeline_test.bats
+          bats test/pipeline_test.bats
 
   test-release:
     needs: test
