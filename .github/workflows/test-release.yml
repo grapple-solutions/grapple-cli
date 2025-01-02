@@ -27,6 +27,17 @@ jobs:
         run: |
           curl -sL https://civo.com/get | sh
 
+      - name: Install Homebrew
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
+
+      - name: Install Grapple CLI
+        run: |
+          export OSTYPE=darwin23.0
+          brew tap grapple-solutions/grapple
+          brew install grapple-cli
+
       - name: Run bash tests
         env:
           CIVO_API_KEY: ${{ secrets.CIVO_API_KEY }}
