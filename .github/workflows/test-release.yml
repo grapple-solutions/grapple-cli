@@ -6,7 +6,30 @@ on:
       - develop
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+      - name: Install civo cli
+        run: |
+          curl -sL https://civo.com/get | sh
+
+      - name: Run bash tests
+        env:
+          CIVO_API_KEY: ${{ secrets.CIVO_API_KEY }}
+        run: |
+          test/bats/bin/bats testcases/pipeline_test.bats
+
   test-release:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write 
