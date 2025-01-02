@@ -20,10 +20,9 @@ jobs:
         run: |
           echo "Setting up code for CLI..."
           sudo cp -r $GITHUB_WORKSPACE /usr/local/bin/grpl-cli
-          echo "/usr/local/bin/grpl-cli" >> $GITHUB_PATH
+          export PATH="/usr/local/bin/grpl-cli:$PATH"
           echo "Testing grpl CLI..."
           grpl
-
 
       # Install bats
       - name: Install bats
