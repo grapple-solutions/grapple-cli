@@ -15,11 +15,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Move the current branch's code to an executable path
+      # Copy the current branch's code to an executable path
       - name: Setup Executable Path for CLI
         run: |
           echo "Setting up code for CLI..."
-          sudo mv $GITHUB_WORKSPACE /usr/local/bin/grpl-cli
+          sudo cp -r $GITHUB_WORKSPACE /usr/local/bin/grpl-cli
           echo 'export PATH="/usr/local/bin/grpl-cli:$PATH"' >> ~/.bashrc
           source ~/.bashrc
 
