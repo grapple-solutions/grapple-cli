@@ -13,6 +13,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Install bats
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
       - name: Install kubectl
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -26,7 +31,7 @@ jobs:
         env:
           CIVO_API_KEY: ${{ secrets.CIVO_API_KEY }}
         run: |
-          test/bats/bin/bats testcases/pipeline_test.bats
+          bats testcases/pipeline_test.bats
 
   test-release:
     needs: test
