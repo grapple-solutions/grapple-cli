@@ -366,6 +366,41 @@ check_and_install_glow() {
     
 }
 
+check_and_install_k3d() {
+
+    # checks for checking and installing k3d
+    if ! k3d version  >/dev/null 2>&1; then
+        echo "k3d cli is required"
+        echo "installing k3d cli..."
+        if [ "${OS}" == "mac" ]; then
+            eval "$(getGumSpinnerOrLogger "k3d cli is not installed, now installing k3d cli") brew install k3d"
+        elif [ "${OS}" == "gnu" ]; then
+            status_log $TYPE_INFO "going to refresh snap"
+            sudo snap refresh >/dev/null 2>&1
+            eval "$(getGumSpinnerOrLogger "k3d cli is not installed, now installing k3d cli") curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash"
+        else
+            errMsg="Failed to install k3d, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    extract_k3d_cli_version
+
+}
+
+extract_k3d_cli_version(){
+
+    if ! grep -q "k3d" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
+
+        # Get k3d version
+        k3d_version=$(k3d version | head -n1 | awk '{print $3}')
+
+        # Output the latest version
+        echo "      $k3d_version - k3d" >> "$GRPL_WORKDIR/dependency_versions"
+    fi
+}
 
 check_and_install_taskcli() {
 

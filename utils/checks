@@ -165,3 +165,15 @@ is_correct_resource_action_provided() {
     fi
 
 }
+
+
+check_k3d_cluster_doesnt_exists() {
+
+    output=$(k3d cluster list -o json | jq ".[] | select(.name == \"$1\")")
+    if [[ "$output" != "" ]]; then
+        errMsg="Error: k3d cluster already exists : $1"
+        status_log $TYPE_ERROR "$errMsg"
+        exit 1
+    fi
+
+}

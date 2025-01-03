@@ -1,0 +1,25 @@
+#!/bin/bash
+
+
+set -e
+. "$GRPL_WORKDIR/utils/help_menus"
+
+cli_help() {
+  grpl_k3d_cli_help
+  exit 0
+}
+
+install_prerequisite
+check_and_install_k3d
+
+command=$1
+shift
+
+case "$command" in
+  create|c)
+    "$GRPL_WORKDIR/commands/k3d_commands/create" "$@" | tee -ia "$GRPL_WORKDIR/logs/k3d_create.log"
+    ;;
+  *)
+    cli_help
+    ;;
+esac

@@ -10,6 +10,8 @@ generate_cli_web_doc() {
 
     grpl_cli_installation_help $WEB_DOC
     grpl_cli_help $WEB_DOC
+    grpl_k3d_cli_help $WEB_DOC
+    grpl_k3d_cluster_create_cli_help $WEB_DOC
     grpl_cluster_cli_help $WEB_DOC
     grpl_example_cli_help $WEB_DOC
     grpl_install_cli_help $WEB_DOC
@@ -51,6 +53,8 @@ https://grapple-solutions.com/[grapple solution^]
 
 $grpl_cli_installation_doc
 $grpl_cli_doc
+$grpl_k3d_cli_doc
+$grpl_k3d_cluster_create_doc
 $grpl_application_doc
 $grpl_application_init_doc
 $grpl_cluster_doc
@@ -263,6 +267,125 @@ Examples:
         return 0
     else
         echo "$grpl_cli_doc"  >&2
+    fi
+}
+
+grpl_k3d_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl k3d"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl k3d"
+        meta=""
+    fi
+
+    grpl_k3d_cli_doc="
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
+$meta
+
+Description: 
+
+    Displays help menu of grpl k3d
+
+Usage: 
+
+    grpl k3d [command]
+
+Commands:
+
+    c or create     Cluster creation
+    *               Help menu
+    
+Examples:    
+
+    grpl k3d c    or    grpl k3d create
+    grpl k3d *    or    grpl k3d *
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_k3d_cli_doc"  >&2
+    fi
+}
+
+grpl_k3d_cluster_create_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    k3d_help_menu=$(k3d cluster create -h | awk '
+/^Notes:/ {print "        Notes:"; in_notes=1; next}
+/^Flags:/ {print "        Flags:"; in_notes=0; in_flags=1; next}
+/^Global Flags:/ {print "        Global Flags:"; in_flags=0; in_global_flags=1; next}
+/^$/ {in_global_flags=0; next}
+in_notes || in_flags || in_global_flags {print "        " $0}')  # Add 8 spaces before each line
+
+
+    type=$1
+    cli_name="grpl k3d create"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="=== grpl k3d create"
+        meta=""
+    fi
+
+    grpl_k3d_cluster_create_doc="
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
+$meta
+
+Description: 
+
+    Displays help menu of grpl k3d create
+
+Usage: 
+
+    grpl k3d create [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to create k3d cluster
+    
+Examples:    
+
+    grpl k3d c h    or    grpl k3d create help
+    grpl k3d c *    or    grpl k3d create *
+
+Parameters:
+
+    grpl Specific Parameters:
+        CLUSTER_NAME = name of the cluster
+        AUTO_CONFIRM= 'true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'true')
+        INSTALL_KUBEBLOCKS = 'true' / 'false', set to 'true' if you want to install kubeblocks (default is 'false')
+        wait = 'true' / 'false', set to 'true' if you want to wait for the cluster to be ready (default is 'false')
+
+    k3d Specific Parameters:
+$k3d_help_menu
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_k3d_cluster_create_doc"  >&2
     fi
 }
 

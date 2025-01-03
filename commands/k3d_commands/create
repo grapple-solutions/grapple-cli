@@ -1,0 +1,125 @@
+#!/bin/bash
+set -e
+
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/utils/help_menus"
+
+cli_help() {
+  grpl_k3d_cluster_create_cli_help
+  exit 0
+}
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+
+#-------------Functions-------------------
+
+
+# Function to extract and process flags from k3d help output
+extract_k3d_flags() {
+    # Run the k3d help command and capture the output
+    help_output=$(k3d cluster create -h)
+
+    # Split the output into "Flags" and "Global Flags" sections
+    flags_section=$(echo "$help_output" | awk '/Flags:/,/Global Flags:/ {print}')
+    global_flags_section=$(echo "$help_output" | awk '/Global Flags:/,EOF {print}')
+
+    # Function to process a section and extract valid flags
+    process_section() {
+        local section="$1"
+        local flags=()
+        while IFS= read -r line; do
+            # Extract the first two words from each line
+            first_two_words=($(echo "$line" | awk '{print $1, $2}'))
+            # Validate if the words are flags starting with - or --
+            for word in "${first_two_words[@]}"; do
+                if [[ "$word" =~ ^-+ && ${#word} -gt 1 ]]; then
+                    # Remove leading - or -- and trailing commas using awk
+                    clean_flag=$(echo "$word" | awk '{gsub(/^--?|,$/, ""); print}')
+                    flags+=("$clean_flag")
+                fi
+            done
+        done <<< "$section"
+        echo "${flags[@]}"
+    }
+
+    # Extract and process flags from both sections
+    flags_array=($(process_section "$flags_section"))
+    global_flags_array=($(process_section "$global_flags_section"))
+
+    # Combine all flags
+    k3d_valid_args=("${flags_array[@]}" "${global_flags_array[@]}")
+
+}
+
+
+
+check_civo_cluster_exists() {
+  # Parse the JSON output to check if any cluster has the specified name
+  status_log $TYPE_INFO "Checking if cluster with name '${CLUSTER_NAME}' already exists..."
+  existing_cluster=$(civo k8s ls --output=json | jq -r --arg cluster_name "$CLUSTER_NAME" '.[] | select(.name == $cluster_name) | .name')
+  
+  if [[ -n "$existing_cluster" ]]; then
+    status_log $TYPE_ERROR "Error: Cluster with name '${CLUSTER_NAME}' already exists."
+    exit 1  # Cluster exists
+  else
+    status_log $TYPE_INFO "No cluster found with the name '${CLUSTER_NAME}'. Proceeding with creation."  # Cluster does not exist
+  fi
+}
+
+# ----------- end of functions ------------
+
+grpl_valid_args=(
+   "CLUSTER_NAME"
+   "AUTO_CONFIRM"
+   "INSTALL_KUBEBLOCKS"
+   "wait"
+)
+
+# Call the function
+extract_k3d_flags
+
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+help_menu_cmd="grpl k3d cluster create help"
+valid_args=("${grpl_valid_args[@]}" "${k3d_valid_args[@]}")
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
+
+
+cli_log "k3d cluster create BEGIN"
+status_log $TYPE_INFO "k3d cluster creation is in progress"
+
+# if AUTO_CONFIRM is not explicity set to false then set it to true
+if [[ $AUTO_CONFIRM != "false" ]]; then
+    AUTO_CONFIRM="true"
+fi
+
+if [[ $INSTALL_KUBEBLOCKS != "false" ]]; then
+    INSTALL_KUBEBLOCKS="true"
+fi
+
+#------------ CLUSTER_NAME Input-----------
+
+check_if_param_avaiable_in_non_interactive_mode "CLUSTER_NAME" "${CLUSTER_NAME}" "${help_menu_cmd}"
+if [ "${CLUSTER_NAME}" != "" ]; then 
+    check_k3d_cluster_doesnt_exists $CLUSTER_NAME
+fi
+CLUSTER_NAME=$(if [ "${CLUSTER_NAME}" != "" ]; then echo ${CLUSTER_NAME}; else prompt_for_input_with_validation "Enter cluster name: " "Provide a name for the cluster" "$non_empty_regex" "Input can not be empty"; fi) || exit $?
+echo "CLUSTER_NAME: ${CLUSTER_NAME}"  
+
+
+base_command="k3d cluster create $CLUSTER_NAME"
+
+final_command=$(build_cluster_creation_command "$base_command")
+
+status_log $TYPE_INFO "Successfuly formed cluster create command"
+status_log $TYPE_INFO "${final_command}"
+
+  if ! eval "$(getGumSpinnerOrLogger "Creating k3d cluster with name ${CLUSTER_NAME}") ${final_command}" ; then
+    status_log $TYPE_ERROR "Failed to create k3d cluster with name ${CLUSTER_NAME} due to following error"
+    eval ${final_command}
+    exit 1
+fi
+
+status_log $TYPE_SUCCESS "Successfully created k3d cluster"
