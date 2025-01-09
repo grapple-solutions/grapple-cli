@@ -12,6 +12,7 @@ generate_cli_web_doc() {
     grpl_cli_help $WEB_DOC
     grpl_k3d_cli_help $WEB_DOC
     grpl_k3d_cluster_create_cli_help $WEB_DOC
+    grpl_k3d_install_cli_help $WEB_DOC
     grpl_cluster_cli_help $WEB_DOC
     grpl_example_cli_help $WEB_DOC
     grpl_install_cli_help $WEB_DOC
@@ -55,6 +56,7 @@ $grpl_cli_installation_doc
 $grpl_cli_doc
 $grpl_k3d_cli_doc
 $grpl_k3d_cluster_create_doc
+$grpl_k3d_install_doc
 $grpl_application_doc
 $grpl_application_init_doc
 $grpl_cluster_doc
@@ -305,11 +307,13 @@ Usage:
 Commands:
 
     c or create     Cluster creation
+    i or install    grpl installation on the cluster
     *               Help menu
     
 Examples:    
 
     grpl k3d c    or    grpl k3d create
+    grpl k3d i    or    grpl k3d install
     grpl k3d *    or    grpl k3d *
 
 "
@@ -386,6 +390,68 @@ $k3d_help_menu
         return 0
     else
         echo "$grpl_k3d_cluster_create_doc"  >&2
+    fi
+}
+
+grpl_k3d_install_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl k3d install"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl k3d install"
+        meta=""
+    fi
+
+    grpl_k3d_install_doc="
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
+$meta
+
+Description: 
+
+    Displays help menu of grpl k3d install
+
+Usage: 
+
+    grpl k3d install [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to install k3d cluster
+    
+Examples:    
+
+    grpl k3d i h    or    grpl k3d install help
+    grpl k3d i *    or    grpl k3d install *
+
+Parameters:
+
+    CLUSTER_NAME = name of the cluster
+    EMAIL = email of the user
+    ORGANIZATION = organization of the user
+    GRAPPLE_VERSION = version of the grapple cli
+    GRAPPLE_DNS = dns of the grapple cluster
+    AUTO_CONFIRM= 'true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'true')
+    INSTALL_KUBEBLOCKS = 'true' / 'false', set to 'true' if you want to install kubeblocks (default is 'false')
+    wait = 'true' / 'false', set to 'true' if you want to wait for the cluster to be ready (default is 'false')
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_k3d_install_doc"  >&2
     fi
 }
 

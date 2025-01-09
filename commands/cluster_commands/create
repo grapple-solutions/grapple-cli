@@ -245,7 +245,6 @@ civo_cluster_create() {
     status_log $TYPE_INFO "grpl is already installed"
   fi
 
-  status_log $TYPE_SUCCESS "Successfully got status of cluster ${CLUSTER_NAME}"
   
 }
 

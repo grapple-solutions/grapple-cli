@@ -19,6 +19,9 @@ case "$command" in
   create|c)
     "$GRPL_WORKDIR/commands/k3d_commands/create" "$@" | tee -ia "$GRPL_WORKDIR/logs/k3d_create.log"
     ;;
+  install|i)
+    "$GRPL_WORKDIR/commands/k3d_commands/install" "$@" | tee -ia "$GRPL_WORKDIR/logs/k3d_install.log"
+    ;;
   *)
     cli_help
     ;;
