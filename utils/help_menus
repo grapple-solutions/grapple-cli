@@ -247,6 +247,7 @@ Commands:
     grapi                       Grapi commands
     gruim                       Gruim commands
     ai                          Grapple AI
+    k3d                         K3d commands
     *                           Help menu
     
 Examples:    
@@ -262,6 +263,7 @@ Examples:
     grpl gruim [commands]
     grpl doc   [commands]
     grpl ai    [commands]
+    grpl k3d   [commands]
     grpl *
 
 "
