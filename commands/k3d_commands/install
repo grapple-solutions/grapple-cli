@@ -239,14 +239,8 @@ check_k3d_cluster_exists "${CLUSTER_NAME}"
 
 #----------- GRAPPLE_DNS Input -----------
 
-if [[ $GRAPPLE_DNS != "" ]] && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null ;then
-    status_log $TYPE_INFO "DNS name ${GRAPPLE_DNS} is not a FQDN"
-    GRAPPLE_DOMAIN=".grapple-demo.com"
-fi
-
 if [ "${GRAPPLE_DNS}" == "" ]; then 
-    GRAPPLE_DNS=${CLUSTER_NAME}
-    GRAPPLE_DOMAIN=".grapple-demo.com"
+    GRAPPLE_DNS="k3d.dev"
 fi
 
 
@@ -283,12 +277,9 @@ else
 fi
 
 #----------- creating complete domain --------
+
 complete_domain="" 
-if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
-  complete_domain=$GRAPPLE_DNS
-else 
-  complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
-fi
+complete_domain=${GRAPPLE_DNS}
 
 #----------- GRAPPLE_VERSION Input --------
 
@@ -429,11 +420,11 @@ CLUSTER_IP=$EXTERNAL_IP
 
 patch_coredns
 
-if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
-  status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
-  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 || true
-  kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --env="CIVO_MASTER_IP=${CLUSTER_IP}" --restart=Never
-fi
+# if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+#   status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
+#   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 || true
+#   kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --env="CIVO_MASTER_IP=${CLUSTER_IP}" --restart=Never
+# fi
 
 status_log $TYPE_INFO "Checking if cert-manager is installed"
 if ! kubectl get namespace cert-manager >/dev/null 2>&1; then
@@ -470,9 +461,9 @@ if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; the
 fi
 
 # remove the DNS job again
-if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
-  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
-fi
+# if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+#   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
+# fi
 
 echo "wait for crossplane to be ready"
 if kubectl get deploy -n grpl-system crossplane >/dev/null 2>&1; then 

@@ -16,13 +16,13 @@ data:
         }
         log
     }
-    grapple-demo.com:53 {
+    k3d.dev:53 {
         template IN A {
-            match ^(?P<sub>.+)\.grapple-demo\.com\.$
+            match ^(?P<sub>.+)\.k3d\.dev\.$
             answer "{{.Name}} 60 IN A $DOCKER_API_GATEWAY"
         }
         template IN AAAA {
-            match ^(?P<sub>.+)\.grapple-demo\.com\.$
+            match ^(?P<sub>.+)\.k3d\.dev\.$
             answer "{{.Name}} 60 IN AAAA ::1"
         }
         log
