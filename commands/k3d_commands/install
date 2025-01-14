@@ -243,6 +243,42 @@ if [ "${GRAPPLE_DNS}" == "" ]; then
     GRAPPLE_DNS="k3d.dev"
 fi
 
+os_type="$(uname -s)"
+case "${os_type}" in
+  Linux*)
+
+    status_log $TYPE_INFO "testing domain, this may take upto 5mins"
+    echo "[Resolve]
+DNS=127.0.0.1
+Domains=~k3d.dev" > /tmp/k3d-dev
+
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
+      status_log $TYPE_INFO "please run the following commands before clicking on 'confirm':"
+    else
+      status_log $TYPE_INFO "going to run following command"
+    fi
+  
+    gum style \
+      --foreground 212 --border-foreground 212 --border double \
+      --align center --width 100 --margin "1 2" --padding "2 4" \
+      'sudo cp /tmp/k3d-dev /etc/systemd/resolved.conf.d/k3d.conf' >&2
+
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
+      gum confirm "Proceed with dns configuration?" || (echo "grapple cannot be installed without dns configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
+    else
+      sudo cp /tmp/k3d-dev /etc/systemd/resolved.conf.d/k3d.conf
+    fi
+    sudo systemctl restart systemd-resolved
+
+
+    ;;
+  Darwin*)
+    # Configure macOS to use dnsmasq for .k3d.dev domain
+    sudo mkdir -p /etc/resolver
+    echo "nameserver 127.0.0.1" | sudo tee /etc/resolver/k3d.dev
+    ;;
+esac
+
 
 #---------- KUBE_CONTEXT Input ------------
 
@@ -408,9 +444,10 @@ helm_deploy() {
 
 }
 
-if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
-    status_log $TYPE_INFO "Installing kubeblocks in background"
-    kubeblocks_installation >/dev/null 2>&1 &
+if [ "${INSTALL_KUBEBLOCKS}" == "true" ] || [ "${INSTALL_KUBEBLOCKS}" == "" ]; then
+  INSTALL_KUBEBLOCKS="true"
+  status_log $TYPE_INFO "Installing kubeblocks in background"
+  kubeblocks_installation >/dev/null 2>&1 &
 fi
 
 
@@ -420,24 +457,19 @@ CLUSTER_IP=$EXTERNAL_IP
 
 patch_coredns
 
-# if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
-#   status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
-#   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 || true
-#   kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --env="CIVO_MASTER_IP=${CLUSTER_IP}" --restart=Never
-# fi
 
 status_log $TYPE_INFO "Checking if cert-manager is installed"
 if ! kubectl get namespace cert-manager >/dev/null 2>&1; then
   status_log $TYPE_INFO "Downloading and installing cert-manager"
-  if ! eval "$(getGumSpinnerOrLogger "Downloading cert-manager helm chart") helm repo add jetstack https://charts.jetstack.io >/dev/null 2>&1"; then
+  if ! eval "$(getGumSpinnerOrLogger "Downloading cert-manager helm chart") helm repo add jetstack https://charts.jetstack.io" ; then
     status_log $TYPE_ERROR "Failed to add jetstack helm repo"
     exit 1
   fi
-  if ! eval "$(getGumSpinnerOrLogger "Updating helm repos") helm repo update >/dev/null 2>&1"; then 
+  if ! eval "$(getGumSpinnerOrLogger "Updating helm repos") helm repo update"; then 
     status_log $TYPE_ERROR "Failed to update helm repos"
     exit 1
-  fi
-  if ! eval "$(getGumSpinnerOrLogger "Installing cert-manager") helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true >/dev/null 2>&1"; then
+    fi
+    if ! eval "$(getGumSpinnerOrLogger "Installing cert-manager") helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true >/dev/null 2>&1"; then
     status_log $TYPE_ERROR "Failed to install cert-manager"
     exit 1
   fi
@@ -530,9 +562,9 @@ echo
 echo ----
 echo "enable ssl"
 kubectl apply -f $GRPL_WORKDIR/files/clusterissuer.yaml
-
+sleep 5
 echo "check all crossplane packages are ready"
-for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i; done
+for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i --timeout=300s; done
 
 status_log $TYPE_SUCCESS "grsf-integration is Installed"
 
@@ -563,3 +595,6 @@ fi
 
 kubectl apply -f $GRPL_WORKDIR/files/all-resource-clusterrole.yaml
 kubectl apply -f $GRPL_WORKDIR/files/all-resource-clusterrolebinding.yaml
+
+
+/home/zahid/projects/grapple-cli/grpl c p
