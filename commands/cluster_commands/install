@@ -662,10 +662,7 @@ fi
 
 CLUSTER_NAME=${CIVO_CLUSTER:-${KUBEFIRST_CLUSTER_NAME:-${KUBERNETES_CLUSTER_NAME}}}
 
-PROVIDER_CLUSTER_NAME=${TARGET_PLATFORM}
-if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
-  PROVIDER_CLUSTER_NAME=${KUBEFIRST_CLOUD_PROVIDER}
-fi
+PROVIDER_CLUSTER_TYPE=${TARGET_PLATFORM}
 
 
 cat <<EOF > /tmp/values-override.yaml
@@ -675,6 +672,7 @@ clusterdomain: ${complete_domain}
 
 # Configuration
 config:
+  # common fields
   email: "${EMAIL}"
   organization: ${ORGANIZATION}
   clusterdomain: ${complete_domain}
@@ -683,19 +681,21 @@ config:
   dev: "false"
   ssl: "$SSL_ENABLE"
   sslissuer: "$SSL_ISSUER"
-  CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}
-  CIVO_CLUSTER_NAME: ${CIVO_CLUSTER}
-  CIVO_REGION: ${CIVO_REGION}
-  CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}
-  CIVO_MASTER_IP: ${CLUSTER_IP}
+  CLUSTER_NAME: ${CLUSTER_NAME}
   GRAPPLE_DNS: ${complete_domain}
   GRAPPLE_VERSION: ${GRAPPLE_VERSION}
   GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}
-  CLOUD_PROVIDER: ${KUBEFIRST_CLOUD_PROVIDER}
-  CLOUD_REGION: ${KUBEFIRST_CLOUD_REGION}
-  CLUSTER_ID: ${KUBEFIRST_CLUSTER_ID}
-  CLUSTER_NAME: ${CLUSTER_NAME}
-  PROVIDER_CLUSTER_NAME: ${PROVIDER_CLUSTER_NAME}
+  PROVIDER_CLUSTER_TYPE: ${PROVIDER_CLUSTER_TYPE}
+
+  # civo specific fields
+  CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}
+  CIVO_REGION: ${CIVO_REGION}
+  CIVO_MASTER_IP: ${CLUSTER_IP}
+
+  # kubefirst specific fields
+  KUBEFIRST_CLOUD_PROVIDER: ${KUBEFIRST_CLOUD_PROVIDER}
+  KUBEFIRST_CLOUD_REGION: ${KUBEFIRST_CLOUD_REGION}
+  KUBEFIRST_CLUSTER_ID: ${KUBEFIRST_CLUSTER_ID}
 # Additional configurations omitted for brevity
 EOF
 
@@ -765,7 +765,7 @@ helm_deploy() {
         status_log $TYPE_INFO "We tried retrying 3 times and tried logging out of public.ecr.aws registry but it failed, please run 'helm registry logout public.ecr.aws/<repo>' and try again"
         echo "${i} Failed to Installed"
         status_log $TYPE_ERROR "${i} Failed to Installed due to following error"
-        eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
+        eval "$(getGumSpinnerOrLogger "Extracting Error") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $Kubefirst_values"  >&2  
         exit 1
     else 
       if helm registry logout public.ecr.aws >/dev/null 2>&1; then
