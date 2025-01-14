@@ -108,10 +108,7 @@ prompt_for_explicit_input_with_validation() {
 extract_value_from_json() {
     local json="$1"
     local key="$2"
-    local regex="\"$key\": ?\"([^\"]*)\""
-    if [[ "$json" =~ $regex ]]; then
-        echo "${BASH_REMATCH[1]}"
-    fi 
+    echo "$json" | jq -r --arg key "$key" '.[$key] // empty'
 }
 
 
@@ -159,7 +156,8 @@ extract_input_params_from_cli() {
     param_type=$1
 
     if [[ $param_type ==  $config_file_params ]]; then
-
+      check_and_install_jq
+      
       shift
       config_file_name=$1
       shift
@@ -171,8 +169,14 @@ extract_input_params_from_cli() {
 
 
       json=$(<${config_file_name})
-      for val in "${valid_args[@]}"; do
-          export "$val=$(extract_value_from_json "$json"  "$val")"
+      for arg in "${valid_args[@]}"; do
+          local value=$(extract_value_from_json "$json"  "$arg")
+          if [[ -z "${value}" ]]; then
+            lowercased=$(echo "$arg" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+            value=$(extract_value_from_json "$json"  "$lowercased")
+          fi
+          arg=$(echo "$arg" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+          export "$arg=$value"
       done
 
     elif [[ $param_type == $values_params ]]; then
@@ -219,15 +223,16 @@ extract_input_params_from_cli() {
               # Check if the argument is valid
               valid=false
               for valid_arg in "${valid_args[@]}"; do
-                  if [[ "$key" == "$valid_arg" ]]; then
+                  lowercased_valid_arg=$(echo "$valid_arg" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+                  if [[ "$key" == "$valid_arg" || "$key" == "$lowercased_valid_arg" ]]; then
                       valid=true
                       break
                   fi
               done
 
               if  $valid; then
-                  local key=${key//-/_}
-                  export "$key=$value"
+                  local uppercased_key=$(echo "$key" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+                  export "$uppercased_key=$value"
               else
                   status_log $TYPE_ERROR "Error: $key is not a valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
                   return 1
@@ -242,11 +247,21 @@ extract_input_params_from_cli() {
               fi
               config_param=$(is_valid_arg_syntax "$arg1")
               # Check if the argument is valid
-              if [[ " ${valid_args[@]} " =~ " $config_param " ]]; then
-                  local config_param=${config_param//-/_}
-                  export "$config_param=$arg2"
+              valid=false
+              for valid_arg in "${valid_args[@]}"; do
+                  lowercased_valid_arg=$(echo "$valid_arg" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+                  if [[ "$config_param" == "$valid_arg" || "$config_param" == "$lowercased_valid_arg" ]]; then
+                      valid=true
+                      break
+                  fi
+              done
+
+              if $valid; then
+                  local uppercased_key=$(echo "$config_param" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
+                  export "$uppercased_key=$arg2"
+
               else
-                  status_log $TYPE_ERROR "Error: $config_param is a not valid argument, please run \'$help_menu_cmd\'  to get more info on how to pass agruments from cli"
+                  status_log $TYPE_ERROR "Error: $config_param is not a valid argument, please run \'$help_menu_cmd\' to get more info on how to pass arguments from cli"
                   return 1
               fi
           fi
@@ -426,3 +441,15 @@ kubeblocks_installation() {
     echo "kubeblocks is already installed"
   fi
 }
+
+
+match_case_insensitive() {
+    local value1=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+    local value2=$(echo "$2" | tr '[:upper:]' '[:lower:]')
+    if [ "$value1" == "$value2" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
