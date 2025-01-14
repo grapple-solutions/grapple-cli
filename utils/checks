@@ -76,7 +76,7 @@ is_correct_grapple_version_provided() {
 
 is_correct_grapple_applicationsets_provided() {
 
-    templates=($DB_FILE $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED $DB_POSTGRES_MODEL_BASED $DB_POSTGRES_DISCOVERY_BASED)
+    templates=($DB_FILE $DB_CACHE_REDIS $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED $DB_POSTGRES_MODEL_BASED $DB_POSTGRES_DISCOVERY_BASED)
     selected_template=$1
 
     if [[ " ${templates[@]} " =~ " $selected_template " ]]; then
