@@ -66,6 +66,9 @@ case "$command" in
   ai)
     "$GRPL_WORKDIR/commands/ai" "$@" | tee -ia "$GRPL_WORKDIR/logs/ai.log" >/dev/null
     ;;
+  aws)
+    "$GRPL_WORKDIR/commands/aws" "$@" | tee -ia "$GRPL_WORKDIR/logs/aws.log" >/dev/null
+    ;;
   *)
     cli_help
     ;;

@@ -1,0 +1,168 @@
+
+
+mapiresources:
+- base:
+    apiVersion: kubernetes.crossplane.io/v1alpha1
+    kind: Object
+    spec:
+      forProvider:
+        manifest:
+          apiVersion: monitoring.coreos.com/v1
+          kind: ServiceMonitor
+          metadata:
+            name: my-sm
+          spec:
+            endpoints:
+            - interval: 30s
+              metricRelabelings:
+              - replacement: "http://grafana.dev.grpl.io/"
+                sourceLabels:
+                - instance
+                targetLabel: instance
+              - replacement: "grafana"
+                sourceLabels:
+                - target
+                targetLabel: target
+              params:
+                module:
+                - http_2xx
+                target:
+                - "http://grafana.dev.grpl.io/"
+              path: /probe
+              port: http
+              scheme: http
+              scrapeTimeout: 30s
+            jobLabel: grsf-monitoring
+            namespaceSelector:
+              matchNames:
+              - grsf-monitoring
+            selector:
+              matchLabels:
+                app.kubernetes.io/instance: grsf-monitoring
+                app.kubernetes.io/name: prometheus-blackbox-exporter
+
+        # writeConnectionSecretsToRef: 
+        #   namespace: grpl-system
+        #   name: mypod-secret
+        providerConfigRef: 
+          # name: providerconfigs.kubernetes.crossplane.io/kubernetes-provider
+          name: default
+  patches:
+    - fromFieldPath: spec.spec
+      type: FromCompositeFieldPath
+      toFieldPath: "spec.forProvider.manifest.spec.endpoints[0].metricRelabelings[0].replacement"
+    - fromFieldPath: "metadata.labels[crossplane.io/claim-name]" # patch the name
+      type: FromCompositeFieldPath
+      toFieldPath: "spec.forProvider.manifest.spec.endpoints[0].metricRelabelings[1].replacement"
+      transforms:
+      - type: string
+        string:
+          fmt: "%s-mapi"
+    - fromFieldPath: spec.spec
+      toFieldPath: "spec.forProvider.manifest.spec.endpoints[0].params.target[0]"
+    - fromFieldPath: "spec.claimRef.namespace" # patch the namespace to put the secret
+      # fromFieldPath: metadata.namespace
+      type: FromCompositeFieldPath
+      toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+    - fromFieldPath: "spec.claimRef.namespace" # patch the namespace 
+      # fromFieldPath: metadata.namespace
+      type: FromCompositeFieldPath
+      toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+    - fromFieldPath: "spec.claimRef.name" # patch the name
+      toFieldPath: "spec.forProvider.manifest.metadata.name"
+      transforms:
+      - type: string
+        string:
+          fmt: "%s-mapi"
+    - fromFieldPath: "spec.claimRef.name" # patch the name
+      toFieldPath: "spec.writeConnectionSecretToRef.name"
+      transforms:
+      - type: string
+        string:
+          fmt: "%s-mapi-object-secret"
+
+
+
+muimresources:
+- base:
+    apiVersion: kubernetes.crossplane.io/v1alpha1
+    kind: Object
+    spec:
+      forProvider:
+        manifest:
+          apiVersion: monitoring.coreos.com/v1
+          kind: ServiceMonitor
+          metadata:
+            name: my-sm
+          spec:
+            endpoints:
+            - interval: 30s
+              metricRelabelings:
+              - replacement: "http://grafana.dev.grpl.io/"
+                sourceLabels:
+                - instance
+                targetLabel: instance
+              - replacement: "grafana"
+                sourceLabels:
+                - target
+                targetLabel: target
+              params:
+                module:
+                - http_2xx
+                target:
+                - "http://grafana.dev.grpl.io/"
+              path: /probe
+              port: http
+              scheme: http
+              scrapeTimeout: 30s
+            jobLabel: grsf-monitoring
+            namespaceSelector:
+              matchNames:
+              - grsf-monitoring
+            selector:
+              matchLabels:
+                app.kubernetes.io/instance: grsf-monitoring
+                app.kubernetes.io/name: prometheus-blackbox-exporter
+
+        # writeConnectionSecretsToRef: 
+        #   namespace: grpl-system
+        #   name: mypod-secret
+        providerConfigRef: 
+          # name: providerconfigs.kubernetes.crossplane.io/kubernetes-provider
+          name: default
+  patches:
+    - fromFieldPath: spec.remoteentry
+      type: FromCompositeFieldPath
+      toFieldPath: "spec.forProvider.manifest.spec.endpoints[0].metricRelabelings[0].replacement"
+    - fromFieldPath: "metadata.labels[crossplane.io/claim-name]" # patch the name
+      type: FromCompositeFieldPath
+      toFieldPath: "spec.forProvider.manifest.spec.endpoints[0].metricRelabelings[1].replacement"
+      transforms:
+      - type: string
+        string:
+          fmt: "%s-muim"
+    - fromFieldPath: spec.remoteentry
+      toFieldPath: "spec.forProvider.manifest.spec.endpoints[0].params.target[0]"
+    - fromFieldPath: "spec.claimRef.namespace" # patch the namespace to put the secret
+      # fromFieldPath: metadata.namespace
+      type: FromCompositeFieldPath
+      toFieldPath: "spec.writeConnectionSecretToRef.namespace"
+    - fromFieldPath: "spec.claimRef.namespace" # patch the namespace 
+      # fromFieldPath: metadata.namespace
+      type: FromCompositeFieldPath
+      toFieldPath: "spec.forProvider.manifest.metadata.namespace"
+    - fromFieldPath: "spec.claimRef.name" # patch the name
+      toFieldPath: "spec.forProvider.manifest.metadata.name"
+      transforms:
+      - type: string
+        string:
+          fmt: "%s-uim"
+    - fromFieldPath: "spec.claimRef.name" # patch the name
+      toFieldPath: "spec.writeConnectionSecretToRef.name"
+      transforms:
+      - type: string
+        string:
+          fmt: "%s-uim-object-secret"
+
+
+# mdsresources:

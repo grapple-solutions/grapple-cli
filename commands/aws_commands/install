@@ -1,0 +1,347 @@
+#!/bin/bash
+set -e
+
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/utils/help_menus"
+
+# --------------------------------- Functions ------------------------------------------
+
+# Print help menu for grpl aws install and exit
+cli_help() {
+  grpl_aws_install_cli_help
+  exit 0
+}
+
+# --------------------------------- CODE ------------------------------------------
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+  status_log $TYPE_INFO "here2"
+
+NS=grpl-system
+awsregistry="p7h7z5g3"
+SSL="false"
+SSL_ISSUER="letsencrypt-grapple-demo"
+dependencies_path="$GRPL_WORKDIR/commands/aws_commands/dependencies"
+cli_log "cluster install BEGIN"
+
+# valid arguments array
+valid_args=(            
+    "CLUSTER_NAME"
+    "CLUSTER_IP"
+    "GRAPPLE_VERSION"
+    "AUTO_CONFIRM"
+    "GRAPPLE_DNS"
+    "ORGANIZATION"
+    "EMAIL"
+    "INSTALL_KUBEBLOCKS"
+    "SSL"
+  )
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+help_menu_cmd="grpl aws install help"
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" $(echo "$@")
+
+status_log $TYPE_INFO "Installation of grpl is in progress"
+
+#-------------Functions-------------------
+
+kubeblocks_installation() {
+  if ! kbcli; then
+      echo "installing kbcli"
+      check_and_install_kbcli
+  fi
+
+  if ! kubectl get deployment kubeblocks -n kb-system; then
+    echo "checking kubeblocks"
+    check_and_install_kubeblocks
+
+    echo "waiting for configs to apply"
+    for i in $(kubectl get clusterversion -o name); do 
+      kubectl get $i -o yaml | sed "s,infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com,docker.io,g" | kubectl apply -f - >/dev/null 2>&1; 
+    done
+  else 
+    echo "kubeblocks is already installed"
+  fi
+}
+
+#-------------Variables-------------------
+
+
+if [ "${GRAPPLE_DNS}" == "" ]; then 
+    GRAPPLE_DNS=${CLUSTER_NAME}
+    GRAPPLE_DOMAIN=".grplaws.grapple-demo.com"
+fi
+
+
+#----------- CLUSTER_NAME input --------
+
+check_if_param_avaiable_in_non_interactive_mode "CLUSTER_NAME" "${CLUSTER_NAME}" "${help_menu_cmd}"
+# if [ "${CLUSTER_NAME}" != "" ] && [ $TTY == "enabled" ]; then 
+#   # TODO add validation
+#   #is_correct_CLUSTER_NAME_provided $CLUSTER_NAME 
+# fi
+CLUSTER_NAME=$(if [ "${CLUSTER_NAME}" != "" ]; then echo "${CLUSTER_NAME}"; else (gum spin --title "fetching aws eks clusters" -- bash -c 'eksctl get cluster | awk "NR>1 {print \$1}" > /dev/null' && eksctl get cluster | awk "NR>1 {print \$1}" | gum choose) || echo ""; fi)
+echo "selected aws cluster: ${CLUSTER_NAME}"
+
+
+#----------- creating complete domain --------
+complete_domain="" 
+if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
+  complete_domain=$GRAPPLE_DNS
+else 
+  complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
+fi
+
+
+#----------- GRAPPLE_VERSION Input --------
+
+if [ "${GRAPPLE_VERSION}" == "latest" ] || [ "${GRAPPLE_VERSION}" == "" ]; then
+  GRAPPLE_VERSION=$(head -n 1 "$GRPL_WORKDIR/grapple-versions")
+  status_log $TYPE_INFO "Installing grapple version: ${GRAPPLE_VERSION}"
+fi
+
+if [ "${GRAPPLE_VERSION}" != "" ]; then 
+  is_correct_grapple_version_provided $GRAPPLE_VERSION 
+fi
+
+
+#----------- ORGANIZATION default value --------
+if [ "${ORGANIZATION}" == "" ]; then 
+  ORGANIZATION="grapple solutions AG"
+fi
+
+
+#----------- Email validation and default value --------
+if [ "${EMAIL}" != "" ]; then 
+  is_value_correct_wrt_regex $EMAIL $email_regex "Invalid email address format. Please try again"
+else 
+  EMAIL="info@grapple-solutions.com"
+fi
+
+
+license=$(kubectl get secret -n grpl-system grsf-config -o jsonpath="{.data.LIC}" 2>/dev/null | base64 --decode 2>/dev/null)
+
+if [[ $? -ne 0 ]]; then
+    GRAPPLE_LICENSE="free"
+elif [[ -z $license ]]; then
+    GRAPPLE_LICENSE="free"
+else
+    GRAPPLE_LICENSE=$license
+fi
+
+
+PROVIDER_CLUSTER_NAME=${AWS}
+export CLUSTERDOMAIN=${complete_domain}
+
+cat <<EOF > /tmp/values-override.yaml
+# Default values for grsf-init.
+
+clusterdomain: ${complete_domain}
+
+# Configuration
+config:
+  email: "${EMAIL}"
+  organization: ${ORGANIZATION}
+  clusterdomain: ${complete_domain}
+  grapiversion: "0.0.1"
+  gruimversion: "0.0.1"
+  dev: "false"
+  ssl: "$SSL"
+  sslissuer: "$SSL_ISSUER"
+  GRAPPLE_DNS: ${complete_domain}
+  GRAPPLE_VERSION: ${GRAPPLE_VERSION}
+  GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}
+  CLUSTER_NAME: ${CLUSTER_NAME}
+  CLUSTER_IP: ${CLUSTER_IP}
+  PROVIDER_CLUSTER_NAME: ${PROVIDER_CLUSTER_NAME}
+# Additional configurations omitted for brevity
+EOF
+
+cat /tmp/values-override.yaml
+
+
+# Use gum to confirm before proceeding
+if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
+
+  status_log $TYPE_DEFAULT "Going to deploy grpl on ${TARGET_PLATFORM} with following configurations"  
+
+
+  status_log $TYPE_DEFAULT "CLUSTER_NAME: ${CLUSTER_NAME}"
+  status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
+  status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
+  status_log $TYPE_DEFAULT "GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}"
+  status_log $TYPE_DEFAULT "ORGANIZATION: ${ORGANIZATION}"
+  status_log $TYPE_DEFAULT "EMAIL: ${EMAIL}"
+  status_log $TYPE_DEFAULT "SSL: ${SSL}"
+  status_log $TYPE_DEFAULT "SSL_ISSUER: ${SSL_ISSUER}"
+  status_log $TYPE_DEFAULT "PROVIDER_CLUSTER_NAME: ${PROVIDER_CLUSTER_NAME}"
+
+  gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
+fi
+
+# Define helm_deploy function 
+if [ "$values_yaml_file_names" != "" ]; then
+  values_yaml_file_names=$(echo "$values_yaml_file_names" | awk -v grpl_workdir="$GRPL_WORKDIR" '{gsub("values-templates", "\"" grpl_workdir "/values-templates\"")}1')
+  values_yaml_file_names=$(echo "$values_yaml_file_names" | sed 's/"//g')
+fi
+
+echo 
+echo ----
+
+helm_deploy() {
+
+  i=$1
+  v=${2:-$GRAPPLE_VERSION}
+  if [ "$v" != "" ]; then 
+    version="--version ${v}"
+  else
+    version=""
+  fi
+    
+
+  echo "Deploying $i with version $version"
+
+  aws_values=" -f $dependencies_path/values-integration-aws.yaml "
+
+
+  if ! eval "$(getGumSpinnerOrLogger "Installing ${i} component") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $aws_values" >/dev/null; then
+    ((retries+=1))
+    status_log $TYPE_INFO "Retry ${retries} - ${i} Failed to Install"
+    if [[ $retries == 3 ]]; then
+        status_log $TYPE_INFO "We tried retrying 3 times and tried logging out of public.ecr.aws registry but it failed, please run 'helm registry logout public.ecr.aws/<repo>' and try again"
+        echo "${i} Failed to Installed"
+        status_log $TYPE_ERROR "${i} Failed to Installed due to following error"
+        eval "$(getGumSpinnerOrLogger "Extracting Error") helm upgrade --install $i oci://public.ecr.aws/${awsregistry}/$i -n ${NS} ${version} --create-namespace -f /tmp/values-override.yaml $values_yaml_file_names $aws_values"  >&2  
+        exit 1
+    else 
+      if helm registry logout public.ecr.aws >/dev/null 2>&1; then
+        status_log $TYPE_INFO "logged out of public.ecr.aws registry"
+        status_log $TYPE_INFO "trying again"
+      fi
+      helm_deploy $i
+    fi
+
+  fi
+
+}
+
+if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
+    status_log $TYPE_INFO "Installing kubeblocks in background"
+    kubeblocks_installation >/dev/null 2>&1 &
+fi
+
+if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+  status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
+  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
+  kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --env="CIVO_MASTER_IP=${CLUSTER_IP}" --restart=Never
+fi
+
+echo 
+echo ----
+
+helm_deploy grsf-init 
+status_log $TYPE_INFO "waiting for grsf-init to be ready"
+
+echo "wait for cert-manager to be ready"
+if helm get -n kube-system notes traefik >/dev/null 2>&1; then 
+    CRD=Middleware && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi
+if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; then 
+    kubectl wait deployment -n ${NS} grsf-init-cert-manager --for condition=Available=True --timeout=300s
+    CRD=ClusterIssuer && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi
+
+# remove the DNS job again
+if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
+fi
+
+echo "wait for crossplane to be ready"
+if kubectl get deploy -n grpl-system crossplane >/dev/null 2>&1; then 
+    CRD=Provider && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi
+
+echo "wait for external-secrets to be ready"
+if kubectl get deploy -n grpl-system grsf-init-external-secrets-webhook >/dev/null 2>&1; then 
+    CRD=ExternalSecrets && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+    echo "wait for external-secrets to be ready"
+    kubectl wait deployment -n ${NS} grsf-init-external-secrets-webhook --for condition=Available=True --timeout=300s
+fi 
+
+
+status_log $TYPE_SUCCESS "grsf-init is Installed"
+
+echo 
+echo ----
+echo "Ready for grsf deployment"
+
+helm_deploy grsf
+status_log $TYPE_INFO "waiting for grsf to be ready"
+
+echo "wait for providerconfigs to be ready"
+sleep 10
+if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-civo) >/dev/null 2>&1; then 
+    kubectl wait -n ${NS} provider.pkg.crossplane.io/provider-civo --for condition=Healthy=True --timeout=300s
+    echo "wait for provider-civo to be ready"
+    CRD=providerconfigs.civo.crossplane.io  && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi 
+
+for i in $(kubectl get pkg -n ${NS} -o name); do 
+    kubectl wait -n ${NS} $i --for condition=Healthy=True --timeout=300s;
+done
+if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-helm) >/dev/null 2>&1; then 
+    CRD=providerconfigs.helm.crossplane.io  && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi 
+if kubectl get -n ${NS} $(kubectl get deploy -n ${NS} -o name | grep provider-kubernetes) >/dev/null 2>&1; then 
+    CRD=providerconfigs.kubernetes.crossplane.io  && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+fi 
+
+
+status_log $TYPE_SUCCESS "grsf is Installed"
+
+echo 
+echo ----
+
+helm_deploy grsf-config 
+status_log $TYPE_INFO "waiting for grsf-config to be applied"
+
+CRD=compositemanagedapis.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+CRD=compositemanageduimodules.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+CRD=compositemanageddatasources.grsf.grpl.io && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
+for i in $(kubectl get xrd -o name); do 
+  kubectl wait --for=condition=Offered $i;
+done
+
+status_log $TYPE_SUCCESS "grsf-config is Installed"
+
+helm_deploy grsf-integration
+status_log $TYPE_INFO "waiting for grsf-config to be ready"
+
+echo 
+echo ----
+echo "enable ssl"
+kubectl apply -f $GRPL_WORKDIR/files/clusterissuer.yaml
+
+echo "check all crossplane packages are ready"
+for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i; done
+
+status_log $TYPE_SUCCESS "grsf-integration is Installed"
+
+cli_log "cluster install END"
+
+
+rm /tmp/values-override.yaml
+
+status_log $TYPE_SUCCESS "Successfuly Installed grpl"
+
+
+if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
+  status_log $TYPE_INFO "Waiting for kubeblocks to be installed"
+  wait
+  status_log $TYPE_SUCCESS "kubeblocks is installed"
+fi
+
+
+
