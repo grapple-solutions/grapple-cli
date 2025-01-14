@@ -1,0 +1,234 @@
+#!/bin/bash
+set -e
+
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/utils/help_menus"
+
+# --------------------------------- Functions ------------------------------------------
+
+# Print help menu for grpl cluster install and exit
+cli_help() {
+  grpl_cluster_connect_cli_help
+  exit 0
+}
+
+connect_to_civo_cluster() {
+
+  # first check if civo is installed or not, if not? then install it
+  check_and_install_civo
+  
+  
+  #------------ CIVO_API_KEY Input-----------
+
+  if [ "${CIVO_API_KEY}" == "" ] && grep '"apikeys":{}' ~/.civo.json >/dev/null 2>&1 && [[ $TTY == "enabled" ]]; then
+    CIVO_API_KEY=$(prompt_for_input_with_validation "Enter CIVO API KEY: " "Provide the civo api key to be used - valide api key is required" "$non_empty_regex" "Invalid api key format. Please try again." || exit $?)
+  fi
+
+  if [ "${CIVO_API_KEY}" != "" ]; then
+    civo apikey add grapple $CIVO_API_KEY
+    civo apikey current grapple
+  fi
+
+
+
+  #------------ CIVO_REGION Input-----------
+  CIVO_REGION=${CIVO_REGION:-${KUBEFIRST_CLOUD_REGION}}
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_REGION" "${CIVO_REGION}" "${help_menu_cmd}"
+  if [ "${CIVO_REGION}" != "" ] && [ $TTY == "enabled" ]; then 
+    is_correct_civo_region_provided $CIVO_REGION 
+  fi
+  CIVO_REGION=$(if [ "${CIVO_REGION}" != "" ]; then echo ${CIVO_REGION}; else gum spin --title "fetching civo regions" --show-output -- civo region ls -o custom -f code | gum choose; fi)
+  civo region use ${CIVO_REGION} | true
+
+  #------------ CIVO_CLUSTER Input-----------
+
+  CIVO_CLUSTER=${CIVO_CLUSTER:-${KUBEFIRST_CLUSTER_NAME}}
+  check_if_param_avaiable_in_non_interactive_mode "CIVO_CLUSTER" "${CIVO_CLUSTER}" "${help_menu_cmd}"
+  if [ "${CIVO_CLUSTER}" != "" ] && [ $TTY == "enabled" ]; then 
+    is_correct_civo_cluster_provided $CIVO_CLUSTER 
+  fi
+  CIVO_CLUSTER=$(if [ "${CIVO_CLUSTER}" != "" ]; then echo ${CIVO_CLUSTER}; else if gum spin --title "fetching civo clusters" -- civo k8s ls -o custom -f name > /dev/null; then civo k8s ls -o custom -f name | gum choose; else echo ""; fi; fi)
+  echo "selected civo cluster: ${CIVO_CLUSTER}"
+
+  if ! eval "$(getGumSpinnerOrLogger "switching to ${CIVO_CLUSTER}") civo k8s config ${CIVO_CLUSTER} --save --switch"; then
+    if ! eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl get ns"; then
+      status_log $TYPE_ERROR "Failed to switch to ${CIVO_CLUSTER} due to following reason"
+      # following is to show the reason for failure
+      reason=$(civo k8s config ${CIVO_CLUSTER} --save --switch)
+      status_log $TYPE_ERROR "${reason}"
+      exit 1
+    fi
+  fi
+
+  status_log $TYPE_SUCCESS "connected to civo cluster: ${CIVO_CLUSTER}"
+
+  extract_kubectl_cli_version
+}
+
+connect_to_aws_cluster() {
+
+  # ------------ AWS_ACCESS_KEY_ID Input-----------
+  if [ "${AWS_ACCESS_KEY_ID}" == "" ] && [ $TTY == "enabled" ]; then
+    AWS_ACCESS_KEY_ID=$(prompt_for_input_with_validation "Enter AWS_ACCESS_KEY_ID: " "Provide the aws access key id, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid access key id format. Please try again." || exit $?)
+  fi
+
+  # ------------ AWS_SECRET_ACCESS_KEY Input-----------
+  if [ "${AWS_SECRET_ACCESS_KEY}" == "" ] && [ $TTY == "enabled" ]; then
+    AWS_SECRET_ACCESS_KEY=$(prompt_for_input_with_validation "Enter AWS_SECRET_ACCESS_KEY: " "Provide the aws secret access key, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid secret access key format. Please try again." || exit $?)
+  fi
+
+  # ------------ AWS_SESSION_TOKEN Input-----------
+  if [ "${AWS_SESSION_TOKEN}" == "" ] && [ $TTY == "enabled" ]; then
+    AWS_SESSION_TOKEN=$(prompt_for_input_with_validation "Enter AWS_SESSION_TOKEN: " "Provide the aws session token, generated from 'aws sts assume-role --role-arn \"arn:aws:iam::<account_id>:role/KubernetesAdmin\" --role-session-name \"any_name\" --duration-seconds <duration>'" "$non_empty_regex" "Invalid session token format. Please try again." || exit $?)
+  fi
+
+  check_and_install_aws_cli
+
+  # Configure AWS credentials
+  if ! aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"; then
+    status_log $TYPE_ERROR "Failed to configure AWS access key ID"
+    exit 1
+  fi
+
+  if ! aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"; then
+    status_log $TYPE_ERROR "Failed to configure AWS secret access key" 
+    exit 1
+  fi
+
+  if ! aws configure set aws_session_token "$AWS_SESSION_TOKEN"; then
+    status_log $TYPE_ERROR "Failed to configure AWS session token"
+    exit 1
+  fi
+  
+  #------------ AWS_CLUSTER_NAME Input-----------
+  AWS_CLUSTER_NAME=${KUBEFIRST_CLUSTER_NAME}
+  check_if_param_avaiable_in_non_interactive_mode "AWS_CLUSTER_NAME" "${AWS_CLUSTER_NAME}" "${help_menu_cmd}"
+  AWS_CLUSTER_NAME=$(if [ "${AWS_CLUSTER_NAME}" != "" ]; then echo ${AWS_CLUSTER_NAME}; else prompt_for_input_with_validation "Enter AWS_CLUSTER_NAME: " "Provide the aws cluster name to be used - valide cluster name is required" "$non_empty_regex" "Invalid cluster name format. Please try again." || exit $?; fi)
+
+  #------------ AWS_REGION Input-----------
+  AWS_REGION=${KUBEFIRST_CLOUD_REGION}
+  check_if_param_avaiable_in_non_interactive_mode "AWS_REGION" "${AWS_REGION}" "${help_menu_cmd}"
+  AWS_REGION=$(if [ "${AWS_REGION}" != "" ]; then echo ${AWS_REGION}; else prompt_for_input_with_validation "Enter AWS_REGION: " "Provide the aws region to be used - valide region is required" "$non_empty_regex" "Invalid region format. Please try again." || exit $?; fi)
+
+  if ! eval "$(getGumSpinnerOrLogger "connecting to the cluster") aws eks update-kubeconfig --name ${AWS_CLUSTER_NAME} --region ${AWS_REGION}"; then
+    status_log $TYPE_ERROR "Failed to connect to the cluster due to following reason"
+    reason=$(aws eks update-kubeconfig --name ${AWS_CLUSTER_NAME} --region ${AWS_REGION})
+    status_log $TYPE_ERROR "${reason}"
+    exit 1
+  fi
+
+  status_log $TYPE_SUCCESS "connected to the cluster: ${AWS_CLUSTER_NAME}"
+
+}
+
+connect_to_google_cloud_cluster() {
+
+  check_and_install_gcloud
+
+  # Check if already authenticated
+  gcloud auth login >&2
+
+  # for adding line breaks
+  status_log $TYPE_INFO ""
+  status_log $TYPE_INFO ""
+
+  # ------------ GOOGLE_PROJECT_ID Input-----------
+  check_if_param_avaiable_in_non_interactive_mode "GOOGLE_PROJECT_ID" "${GOOGLE_PROJECT_ID}" "${help_menu_cmd}"
+  GOOGLE_PROJECT_ID=$(if [ "${GOOGLE_PROJECT_ID}" != "" ]; then echo ${GOOGLE_PROJECT_ID}; else prompt_for_input_with_validation "Enter GOOGLE_PROJECT_ID: " "Provide the google project id to be used - valide project id is required" "$non_empty_regex" "Invalid project id format. Please try again." || exit $?; fi)
+  status_log $TYPE_INFO "project id: ${GOOGLE_PROJECT_ID}"
+
+  status_log $TYPE_INFO "setting project id"
+  gcloud config set project ${GOOGLE_PROJECT_ID}
+
+  # ------------ KUBEFIRST_CLUSTER_NAME Input-----------
+  check_if_param_avaiable_in_non_interactive_mode "KUBEFIRST_CLUSTER_NAME" "${KUBEFIRST_CLUSTER_NAME}" "${help_menu_cmd}"
+  KUBEFIRST_CLUSTER_NAME=$(if [ "${KUBEFIRST_CLUSTER_NAME}" != "" ]; then echo ${KUBEFIRST_CLUSTER_NAME}; else prompt_for_input_with_validation "Enter KUBEFIRST_CLUSTER_NAME: " "Provide the kubefirst cluster name to be used - valide cluster name is required" "$non_empty_regex" "Invalid cluster name format. Please try again." || exit $?; fi)
+  status_log $TYPE_INFO "cluster name: ${KUBEFIRST_CLUSTER_NAME}"
+
+  # ------------ KUBEFIRST_CLOUD_REGION Input-----------
+  check_if_param_avaiable_in_non_interactive_mode "KUBEFIRST_CLOUD_REGION" "${KUBEFIRST_CLOUD_REGION}" "${help_menu_cmd}"
+  KUBEFIRST_CLOUD_REGION=$(if [ "${KUBEFIRST_CLOUD_REGION}" != "" ]; then echo ${KUBEFIRST_CLOUD_REGION}; else prompt_for_input_with_validation "Enter KUBEFIRST_CLOUD_REGION: " "Provide the kubefirst cloud region to be used - valide cloud region is required" "$non_empty_regex" "Invalid cloud region format. Please try again." || exit $?; fi)
+  status_log $TYPE_INFO "cloud region: ${KUBEFIRST_CLOUD_REGION}"
+
+  status_log $TYPE_INFO "connecting to the cluster"
+  gcloud container clusters get-credentials ${KUBEFIRST_CLUSTER_NAME} --region ${KUBEFIRST_CLOUD_REGION}
+
+  status_log $TYPE_SUCCESS "connected to the cluster: ${KUBEFIRST_CLUSTER_NAME}"
+
+
+}
+
+
+
+
+
+
+# --------------------------------- CODE ------------------------------------------
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+
+cli_log "cluster connect BEGIN"
+
+# valid arguments array
+valid_args=(
+    "TARGET_PLATFORM"
+    "CIVO_REGION"
+    "CIVO_CLUSTER"
+    "CIVO_API_KEY"
+    "GRAPPLE_DNS"
+    "KUBEFIRST_CLOUD_PROVIDER"
+    "KUBEFIRST_CLOUD_REGION"
+    "KUBEFIRST_CLUSTER_NAME"
+    "AWS_ACCESS_KEY_ID"
+    "AWS_SECRET_ACCESS_KEY"
+    "AWS_SESSION_TOKEN"
+    "GOOGLE_PROJECT_ID"
+  )
+# check if values are already passed form terminal
+# if yes? then store then in the respective vars
+help_menu_cmd="grpl cluster connect help"
+extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
+
+
+#------------ TARGET_PLATFORM Input-----------
+
+# if TARGET_PLATFORM is provided using CLI then we need to check if valid TARGET_PLATFORM was provided or not
+check_if_param_avaiable_in_non_interactive_mode "TARGET_PLATFORM" "${TARGET_PLATFORM}" "${help_menu_cmd}"
+if [ "${TARGET_PLATFORM}" != "" ]; then 
+  is_correct_target_platform_provided $TARGET_PLATFORM 
+fi
+TARGET_PLATFORM=$(if [ "${TARGET_PLATFORM}" != "" ]; then echo ${TARGET_PLATFORM}; else gum choose $CIVO $Kubefirst; fi)
+echo "selected target platform: ${TARGET_PLATFORM}"
+
+
+# if CIVO, then pre-set the configuration params
+if [ "${TARGET_PLATFORM}" = $CIVO ]; then
+
+  connect_to_civo_cluster
+  
+elif [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
+  
+  check_if_param_avaiable_in_non_interactive_mode "KUBEFIRST_CLOUD_PROVIDER" "${KUBEFIRST_CLOUD_PROVIDER}" "${help_menu_cmd}"
+  KUBEFIRST_CLOUD_PROVIDER=$(if [ "${KUBEFIRST_CLOUD_PROVIDER}" != "" ]; then echo ${KUBEFIRST_CLOUD_PROVIDER}; else gum choose $AWS $Civo $GoogleCloud; fi)
+  echo "selected kubefirst cloud provider: ${KUBEFIRST_CLOUD_PROVIDER}"
+
+  if [[ "$(echo "${KUBEFIRST_CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${Civo}" | tr '[:upper:]' '[:lower:]')" ]]; then
+    connect_to_civo_cluster
+  elif [[ "$(echo "${KUBEFIRST_CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${AWS}" | tr '[:upper:]' '[:lower:]')" ]]; then
+    connect_to_aws_cluster
+  elif [[ "$(echo "${KUBEFIRST_CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${GoogleCloud}" | tr '[:upper:]' '[:lower:]')" ]]; then
+    connect_to_google_cloud_cluster
+  else
+    echo "kubefirst cloud provider: ${KUBEFIRST_CLOUD_PROVIDER} is not supported at the moment"
+    exit 1
+  fi
+
+else
+  echo "target platform: ${TARGET_PLATFORM} is not supported at the moment"
+  exit 1
+fi
+
+exit 0
+

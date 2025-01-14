@@ -391,6 +391,34 @@ check_if_param_avaiable_in_non_interactive_mode() {
 }
 
 
+check_if_cluster_is_accessible(){
+  # Check if kubectl can access any cluster
+  if eval "$(getGumSpinnerOrLogger "checking if cluster is accessible") kubectl cluster-info"; then
+    return 0
+  fi
+
+  # No cluster access, call grpl cluster connect
+  status_log $TYPE_INFO "cluster is not accessible, calling grpl cluster connect"
+  grpl cluster connect "$@"
+
+}
+
+
+check_if_grpl_is_installed(){
+
+  status_log $TYPE_INFO "checking if grapple is installed"
+  while ! kubectl get -n grpl-system configuration.pkg.crossplane.io grpl 2>/dev/null; do echo -n "."; sleep 2; done && \
+    sleep 5 && \
+    kubectl wait -n grpl-system configuration.pkg.crossplane.io grpl --for condition=Healthy=True --timeout=60s
+
+  if ! kubectl get -n grpl-system configuration.pkg.crossplane.io grpl 2>/dev/null; then
+    status_log $TYPE_ERROR "Error: grapple is not installed, please run 'grpl cluster install' to install grapple"
+    exit 1
+  fi
+
+  status_log $TYPE_SUCCESS "grapple is installed"
+
+}
 check_and_create_kubens() {
 
     if [[ "$KUBE_NS" != "" ]] && ! kubectl get namespace "$KUBE_NS" >/dev/null 2>&1; then

@@ -14,6 +14,9 @@ cli_help() {
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 status_log $TYPE_INFO "Please visit https://github.com/grapple-solution/grpl-gras-examples view the available examples before deploying"
 
+check_if_cluster_is_accessible
+check_if_grpl_is_installed
+
 
 extract_creds_from_secrets() {
 

@@ -71,7 +71,7 @@ GITLAB="gitlab"
 AWS="AWS"
 Civo="Civo"
 DigitalOcean="DigitalOcean"
-GoogleCloud="Google Cloud"
+GoogleCloud="GoogleCloud"
 Vultr="Vultr"
 K3D="k3d"
 
