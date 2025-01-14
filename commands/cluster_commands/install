@@ -876,8 +876,10 @@ echo ----
 echo "enable ssl"
 kubectl apply -f $GRPL_WORKDIR/files/clusterissuer.yaml
 
+status_log $TYPE_INFO "created clusterissuer"
+
 echo "check all crossplane packages are ready"
-for i in $(kubectl get pkg -o name); do kubectl wait --for=condition=Healthy $i; done
+for i in $(kubectl get pkg -o name); do status_log $TYPE_INFO "waiting for crossplane package : $i to be ready"; kubectl wait --for=condition=Healthy $i; done
 
 status_log $TYPE_SUCCESS "grsf-integration is Installed"
 
