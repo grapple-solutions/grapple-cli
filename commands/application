@@ -14,6 +14,9 @@ case "$command" in
   init|i)
     "$GRPL_WORKDIR/commands/application_commands/init" "$@" | tee -ia "$GRPL_WORKDIR/logs/app_init.log"
     ;;
+  update|u)
+    "$GRPL_WORKDIR/commands/application_commands/update" "$@" | tee -ia "$GRPL_WORKDIR/logs/app_update.log"
+    ;;
   *)
     cli_help
     ;;

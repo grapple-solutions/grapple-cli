@@ -42,6 +42,7 @@ WEB_DOC="web-doc"
 
 # gras templates
 DB_FILE="db-file"
+DB_CACHE_REDIS="db-cache-redis"
 DB_MYSQL_MODEL_BASED="db-mysql-model-based"
 DB_MYSQL_DISCOVERY_BASED="db-mysql-discovery-based"
 DB_POSTGRES_MODEL_BASED="db-postgres-model-based"
@@ -70,7 +71,7 @@ GITLAB="gitlab"
 AWS="AWS"
 Civo="Civo"
 DigitalOcean="DigitalOcean"
-GoogleCloud="Google Cloud"
+GoogleCloud="GoogleCloud"
 Vultr="Vultr"
 K3D="k3d"
 

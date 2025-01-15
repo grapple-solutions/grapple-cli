@@ -13,6 +13,8 @@ cli_help() {
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
+check_if_cluster_is_accessible
+check_if_grpl_is_installed
 check_and_install_glow
 check_and_install_jq
 check_and_install_yq
@@ -281,7 +283,6 @@ if [[ "$yaml_content" != "" ]]; then
         cat $extract_yaml_path > "$filename"
         status_log $TYPE_SUCCESS "resource yaml saved to $filename"
     elif [ "${RESOURCE_ACTION}" == $RESOURCE_DEPLOY ]; then
-
 
         gras_ns=$(yq '.metadata.namespace' $extract_yaml_path)
         gras_name=$(yq '.metadata.name' $extract_yaml_path)

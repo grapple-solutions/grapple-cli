@@ -12,6 +12,10 @@ cli_help() {
 }
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+status_log $TYPE_INFO "Please visit https://github.com/grapple-solution/grpl-gras-examples view the available examples before deploying"
+
+check_if_cluster_is_accessible
+check_if_grpl_is_installed
 
 
 extract_creds_from_secrets() {
@@ -42,6 +46,7 @@ display_deployment_details(){
   domain=$3
 
   if [[ "$wait" == "true" ]]; then
+    sleep 5
     status_log $TYPE_INFO "Waiting for deployment to be ready"
     if ! eval "$(getGumSpinnerOrLogger "waiting for grapi resource to be ready") kubectl rollout status -n ${namespace} deploy ${namespace}-${resource_name}-grapi"; then
       status_log $TYPE_ERROR "Failed to wait for grapi resource"
@@ -70,6 +75,133 @@ display_deployment_details(){
 
 }
 
+clone_github_repo_and_validate_yaml(){ 
+
+  if [ -d "/tmp/grpl-gras-examples" ]; then
+    if ! rm -rf /tmp/grpl-gras-examples; then
+      status_log $TYPE_ERROR "Failed to remove existing grpl-gras-examples directory"
+      exit 1
+    fi
+  fi
+
+  # Clone the repository
+  if ! eval "$(getGumSpinnerOrLogger "cloning grpl-gras-examples repository") git clone https://github.com/grapple-solution/grpl-gras-examples.git /tmp/grpl-gras-examples"; then
+    status_log $TYPE_ERROR "Failed to clone grpl-gras-examples repository"
+    exit 1
+  fi
+
+
+  # Change to repo directory
+  GITHUB_PATH="/tmp/grpl-gras-examples/${GITHUB_PATH}"   
+
+  # Check if GITHUB_PATH exists and is a valid YAML file
+  if [ ! -f "${GITHUB_PATH}" ]; then
+    status_log $TYPE_ERROR "File ${GITHUB_PATH} does not exist in the repository"
+    exit 1
+  fi
+
+  if [[ "${GITHUB_PATH}" != *.yaml && "${GITHUB_PATH}" != *.yml ]]; then
+    status_log $TYPE_ERROR "File ${GITHUB_PATH} is not a YAML file"
+    exit 1
+  fi
+
+  # Extract namespace from manifest
+  KUBE_NS=$(yq eval 'select(.kind == "GrappleApplicationSet") | .metadata.namespace' "${GITHUB_PATH}")
+  if [ -z "${KUBE_NS}" ]; then
+    status_log $TYPE_ERROR "Could not find namespace in ${GITHUB_PATH}"
+    exit 1
+  fi
+
+  # Extract gras name  from manifest
+  GRAS_NAME=$(yq eval 'select(.kind == "GrappleApplicationSet") | .metadata.name' "${GITHUB_PATH}")
+  
+  if [ -z "${GRAS_NAME}" ]; then
+    status_log $TYPE_ERROR "Could not find resource name in ${GITHUB_PATH}"
+    exit 1
+  fi
+
+  # Check if namespace exists, create if it doesn't
+  if ! kubectl get namespace "${KUBE_NS}" >/dev/null 2>&1; then
+    status_log $TYPE_INFO "Creating namespace ${KUBE_NS}"
+    if ! eval "$(getGumSpinnerOrLogger "creating namespace ${KUBE_NS}") kubectl create namespace ${KUBE_NS}"; then
+      status_log $TYPE_ERROR "Failed to create namespace ${KUBE_NS}"
+      exit 1
+    fi
+  fi
+
+}
+
+deploy_from_github(){
+
+  # Check if GITHUB_PATH exists and is a valid YAML file
+  if [ ! -f "${GITHUB_PATH}" ]; then
+    status_log $TYPE_ERROR "File ${GITHUB_PATH} does not exist in the repository"
+    exit 1
+  fi
+
+  if [[ "${GITHUB_PATH}" != *.yaml && "${GITHUB_PATH}" != *.yml ]]; then
+    status_log $TYPE_ERROR "File ${GITHUB_PATH} is not a YAML file"
+    exit 1
+  fi
+
+  # Deploy the manifest
+  DISPLAY_PATH=${GITHUB_PATH#/tmp/grpl-gras-examples}
+  status_log $TYPE_INFO "Deploying manifest from ${DISPLAY_PATH}"
+  if ! eval "$(getGumSpinnerOrLogger "deploying manifest") kubectl apply -f ${GITHUB_PATH}"; then
+    status_log $TYPE_ERROR "Failed to deploy manifest from ${DISPLAY_PATH}"
+    exit 1
+  fi
+
+  status_log $TYPE_SUCCESS "Successfully deployed manifest from ${DISPLAY_PATH}"
+  display_deployment_details $KUBE_NS $GRAS_NAME $clusterdomain
+  exit 0
+
+}
+
+
+create_external_db_secret(){
+    # now create secret to store the creds
+    GRAS_NAME=$1
+    KUBE_NS=$2
+
+    extract_creds_from_secrets
+    host="aurora-mysql-test.cpfyybdyajmx.eu-central-1.rds.amazonaws.com"
+    port="3306"
+
+    SECRET_NAME="${GRAS_NAME}-conn-credential"
+
+    # Check if the secret exists
+    if kubectl get secret "${SECRET_NAME}" -n "${KUBE_NS}" >/dev/null 2>&1; then
+        echo "Secret ${SECRET_NAME} exists. Deleting it..."
+        kubectl delete secret "${SECRET_NAME}" -n "${KUBE_NS}"
+        if [ $? -eq 0 ]; then
+            echo "Secret ${SECRET_NAME} deleted successfully."
+        else
+            status_log $TYPE_ERROR "Failed to delete secret ${SECRET_NAME}."
+            status_log $TYPE_ERROR "Failed to deploy resource"
+            exit 1
+        fi
+    else
+        echo "Secret ${SECRET_NAME} does not exist. Proceeding to create it..."
+    fi
+
+    # Create the secret
+    echo "Creating secret ${SECRET_NAME}..."
+    kubectl create secret generic "${SECRET_NAME}" \
+    --from-literal=host="${host}" \
+    --from-literal=password="${password}" \
+    --from-literal=port="${port}" \
+    --from-literal=username="${username}" \
+    -n "${KUBE_NS}"
+
+    if [ $? -eq 0 ]; then
+        echo "Secret ${SECRET_NAME} created successfully in namespace ${KUBE_NS}."
+    else
+        status_log $TYPE_ERROR "Failed to create secret ${SECRET_NAME}."
+        status_log $TYPE_ERROR "Failed to deploy resource"
+        exit 1
+    fi
+}
 
 # valid arguments array
 valid_args=(
@@ -79,39 +211,31 @@ valid_args=(
     "wait"
   )
 
+
+
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
 help_menu_cmd="grpl resource deploy help"
 extract_input_params_from_cli $valid_args "${help_menu_cmd}" "$@"
-
 
 #check if input from params is valid or not
 check_if_param_avaiable_in_non_interactive_mode "GRAS_TEMPLATE" "$GRAS_TEMPLATE" "${help_menu_cmd}"
 if [ "${GRAS_TEMPLATE}" != "" ]; then 
   is_correct_grapple_applicationsets_provided $GRAS_TEMPLATE 
 fi
-GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED; fi) || exit $?
+GRAS_TEMPLATE=$(if [ "${GRAS_TEMPLATE}" != "" ]; then echo ${GRAS_TEMPLATE}; else gum choose  --header "Please select template you want create" $DB_FILE $DB_CACHE_REDIS $DB_MYSQL_MODEL_BASED $DB_MYSQL_DISCOVERY_BASED; fi) || exit $?
 status_log $TYPE_DEFAULT "GRAS_TEMPLATE: ${GRAS_TEMPLATE}"
 
 
-MODELS='customer:{"base":"Entity","name":"customer","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"customername":{"type":"string"},"emaildomain":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}|email:{"base":"Entity","name":"email","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"emaildomain":{"type":"string","required":true},"email":{"type":"string","required":true}}}|cluster:{"base":"Entity","name":"cluster","properties":{"id":{"type":"number","id":true,"required":true,"generated":true},"clustername":{"type":"string"},"clusteridentifier":{"type":"string"},"clusterdns":{"type":"string"},"customerId":{"type":"string"},"emailId":{"type":"string","required":true},"datecreated":{"type":"date","required":false},"datelastupdated":{"type":"date","required":false}}}'
-
-DATASOURCES='classicmodelsid:{"name":"classicmodelsid","connector":"mysql","url":"","host":"aurora-mysql-test.cpfyybdyajmx.eu-central-1.rds.amazonaws.com","port":"3306","user":"%s","password":"%s","database":"classicmodelsid"}'
-
-RELATIONS='employees:{"destinationModel":"Employees","foreignKeyName":"employeesId","registerInclusionResolver":true,"relationName":"employees","relationType":"belongsTo","sourceModel":"Customers"}'
-
-SOURCE_DATA=https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql
-
-DATABASE_SCHEMA="classicmodelsid"
-
 # grpl r d db-file
 if [[ "${GRAS_TEMPLATE}" == $DB_FILE ]]; then
-  if grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-$DB_FILE --KUBE_NS=gras-$DB_FILE --GRAS_TEMPLATE=$DB_FILE --SOURCE_DATA="https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/db.json" --MODELS=$MODELS --DB_FILE_PATH=/tmp/data.json --ENABLE_GRUIM=false  --RELATIONS=""; then
-    display_deployment_details "gras-$DB_FILE" "gras-$DB_FILE" $clusterdomain
-    exit 0
-  fi
-  status_log $TYPE_ERROR "Failed to deploy example"
-  exit 1
+  GITHUB_PATH="db-file/resource.yaml"
+  clone_github_repo_and_validate_yaml
+  deploy_from_github
+elif [[ "${GRAS_TEMPLATE}" == $DB_CACHE_REDIS ]]; then
+  GITHUB_PATH="db-cache-redis/resource.yaml"
+  clone_github_repo_and_validate_yaml
+  deploy_from_github
 fi
 
 
@@ -126,46 +250,28 @@ status_log $TYPE_DEFAULT "DB_TYPE: ${DB_TYPE}"
 
 #grpl r d mysql model  internal
 if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" == $INTERNAL_DB ]]; then
-  if grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-mysql --KUBE_NS=grpl-mdl-int --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$INTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --RELATIONS="" --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA; then
-    display_deployment_details "grpl-mdl-int" "gras-mysql" $clusterdomain
-    exit 0
-  fi
-  status_log $TYPE_ERROR "Failed to deploy example"
-  exit 1
-fi
-
+  GITHUB_PATH="db-mysql-model-based/internal_resource.yaml"
+  clone_github_repo_and_validate_yaml
+  kubeblocks_installation
 
 #grpl r d mysql model  external
-if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
-  extract_creds_from_secrets
-  DATASOURCES=$(printf "$DATASOURCES\n" "$username" "$password")
-  if grpl r d --params --KUBE_CONTEXT=${KUBE_CONTEXT} --GRAS_NAME=gras-mysql --KUBE_NS=grpl-mdl-ext --GRAS_TEMPLATE=$DB_MYSQL_MODEL_BASED --DB_TYPE=$EXTERNAL_DB --DATABASE_SCHEMA=classicmodelsid --MODELS=$MODELS --DATASOURCES=$DATASOURCES --RELATIONS=""  --ENABLE_GRUIM=true --SOURCE_DATA=$SOURCE_DATA; then
-    display_deployment_details "grpl-mdl-ext" "gras-mysql" $clusterdomain
-    exit 0
-  fi
-  status_log $TYPE_ERROR "Failed to deploy example"
-  exit 1
-fi
+elif [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_MODEL_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
+  GITHUB_PATH="db-mysql-model-based/external_resource.yaml"
+  clone_github_repo_and_validate_yaml
+  create_external_db_secret $GRAS_NAME $KUBE_NS "aurora-mysql-test.cpfyybdyajmx.eu-central-1.rds.amazonaws.com"
 
 #grpl r d mysql discovery  internal
-if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $INTERNAL_DB ]]; then
-  if grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-int --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$INTERNAL_DB --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true  --DATABASE_SCHEMA=$DATABASE_SCHEMA; then
-    display_deployment_details "grpl-disc-int" "gras-mysql" $clusterdomain
-    exit 0
-  fi
-  status_log $TYPE_ERROR "Failed to deploy example"
-  exit 1
-fi
+elif [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $INTERNAL_DB ]]; then
+  GITHUB_PATH="db-mysql-discovery-based/internal_resource.yaml"
+  clone_github_repo_and_validate_yaml
+  kubeblocks_installation  
 
 #grpl r d mysql discovery  external
-if [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
-  extract_creds_from_secrets
-  DATASOURCES=$(printf "$DATASOURCES\n" "$username" "$password")
-  if grpl r d --params --KUBE_CONTEXT=$KUBE_CONTEXT --GRAS_NAME=gras-mysql --KUBE_NS=grpl-disc-ext --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB --DATASOURCES=$DATASOURCES --SOURCE_DATA=$SOURCE_DATA --AUTO_DISCOVERY=true --RELATIONS=$RELATIONS --ENABLE_GRUIM=true --DATABASE_SCHEMA=$DATABASE_SCHEMA; then
-    display_deployment_details "grpl-disc-ext" "gras-mysql" $clusterdomain
-    exit 0
-  fi
-  status_log $TYPE_ERROR "Failed to deploy example"
-  exit 1
+elif [[ "${GRAS_TEMPLATE}" == $DB_MYSQL_DISCOVERY_BASED ]] && [[ "${DB_TYPE}" == $EXTERNAL_DB ]]; then
+  GITHUB_PATH="db-mysql-discovery-based/external_resource.yaml"
+  clone_github_repo_and_validate_yaml
+  create_external_db_secret $GRAS_NAME $KUBE_NS "aurora-mysql-test.cpfyybdyajmx.eu-central-1.rds.amazonaws.com"
 fi
 
+
+deploy_from_github
