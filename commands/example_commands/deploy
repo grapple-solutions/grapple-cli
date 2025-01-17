@@ -212,7 +212,6 @@ valid_args=(
   )
 
 
-
 # check if values are already passed form terminal
 # if yes? then store then in the respective vars
 help_menu_cmd="grpl resource deploy help"

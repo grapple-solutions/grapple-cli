@@ -1,0 +1,96 @@
+#!/bin/bash
+set -e
+
+. "$GRPL_WORKDIR/utils/common"
+. "$GRPL_WORKDIR/utils/checks"
+. "$GRPL_WORKDIR/utils/help_menus"
+
+cli_help() {
+  grpl_k3d_dns_patch_cli_help
+  exit 0
+}
+
+[ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
+
+
+status_log $TYPE_INFO "Checking if CLUSTER_IP is set : $CLUSTER_IP"
+if [[ $CLUSTER_IP == "" ]]; then
+  get_k3d_cluster_ip
+  CLUSTER_IP=$EXTERNAL_IP
+fi
+
+AUTO_CONFIRM="true"
+
+#----------- dns configuration -----------
+
+check_and_install_dnsmasq
+os_type="$(uname -s)"
+case "${os_type}" in
+  Linux*)
+    echo "nameserver 127.0.0.1
+    nameserver 8.8.8.8" > /tmp/resolv.conf
+
+    echo "listen-address=127.0.0.1
+server=8.8.8.8
+server=8.8.4.4
+address=/grpl-k3d.dev/$CLUSTER_IP
+" > /tmp/dnsmasq.conf
+
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
+      status_log $TYPE_INFO "please run the following commands before clicking on 'confirm': Please remember to remove existing file and then run these commands"
+    else
+      status_log $TYPE_INFO "going to run following command"
+    fi
+  
+    gum style \
+      --foreground 212 --border-foreground 212 --border double \
+      --align center --width 100 --margin "1 2" --padding "2 4" \
+      'sudo cp /tmp/resolv.conf /etc/resolv.conf && sudo cp /tmp/dnsmasq.conf /etc/dnsmasq.conf' >&2
+
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
+      gum confirm "Proceed with dns configuration?" || (echo "grapple cannot be installed without dns configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
+    else
+      sudo rm /etc/resolv.conf
+      sudo cp /tmp/resolv.conf /etc/resolv.conf
+      sudo cp /tmp/dnsmasq.conf /etc/dnsmasq.conf
+    fi
+
+    sudo systemctl stop systemd-resolved
+    sudo systemctl restart dnsmasq
+    sudo systemctl enable dnsmasq
+    ;;
+    
+  Darwin*)
+    # Configure dnsmasq for macOS
+    echo "listen-address=127.0.0.1
+server=8.8.8.8
+server=8.8.4.4
+address=/grpl-k3d.dev/$CLUSTER_IP
+" > /tmp/dnsmasq.conf
+
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
+      status_log $TYPE_INFO "please run the following commands before clicking on 'confirm'"
+    else
+      status_log $TYPE_INFO "going to run following commands"
+    fi
+
+    gum style \
+      --foreground 212 --border-foreground 212 --border double \
+      --align center --width 100 --margin "1 2" --padding "2 4" \
+      'sudo brew install dnsmasq && sudo cp /tmp/dnsmasq.conf /usr/local/etc/dnsmasq.conf && sudo brew services restart dnsmasq && sudo mkdir -p /etc/resolver && echo "nameserver 127.0.0.1" | sudo tee /etc/resolver/grpl-k3d.dev' >&2
+
+    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
+      gum confirm "Proceed with dns configuration?" || (echo "grapple cannot be installed without dns configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
+    else
+      sudo brew install dnsmasq
+      sudo cp /tmp/dnsmasq.conf /usr/local/etc/dnsmasq.conf
+      sudo brew services restart dnsmasq
+      sudo mkdir -p /etc/resolver
+      echo "nameserver 127.0.0.1" | sudo tee /etc/resolver/grpl-k3d.dev
+    fi
+    ;;
+esac
+
+
+
+

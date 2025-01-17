@@ -22,6 +22,9 @@ case "$command" in
   install|i)
     "$GRPL_WORKDIR/commands/k3d_commands/install" "$@" | tee -ia "$GRPL_WORKDIR/logs/k3d_install.log"
     ;;
+  patch_dns|pd)
+    "$GRPL_WORKDIR/commands/k3d_commands/patch_dns" "$@" | tee -ia "$GRPL_WORKDIR/logs/k3d_patch_dns.log"
+    ;;
   *)
     cli_help
     ;;

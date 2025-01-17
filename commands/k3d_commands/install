@@ -45,43 +45,6 @@ status_log $TYPE_INFO "Installation of grpl is in progress"
 #-------------Functions-------------------
 
 
-get_cluster_ip() {
-
-
-  # Namespace where the LoadBalancer is located
-  NAMESPACE="kube-system"
-
-  # Service name to look for
-  SERVICE_NAME="traefik"
-
-  # Maximum wait time in seconds
-  MAX_WAIT=300
-  INTERVAL=5
-  WAITED=0
-
-  status_log $TYPE_INFO "Waiting for the external IP of LoadBalancer '$SERVICE_NAME' in namespace '$NAMESPACE'"
-
-  while [ $WAITED -lt $MAX_WAIT ]; do
-    EXTERNAL_IP=$(kubectl get svc -n $NAMESPACE | awk -v svc="$SERVICE_NAME" '$1 == svc && $2 == "LoadBalancer" {print $4}')
-    
-    # Check if EXTERNAL_IP is assigned
-    if [[ "$EXTERNAL_IP" != "<none>" && "$EXTERNAL_IP" != "<pending>" && -n "$EXTERNAL_IP" ]]; then
-      status_log $TYPE_INFO "\nExternal IP for LoadBalancer '$SERVICE_NAME': $EXTERNAL_IP"
-      CLUSTER_IP=$EXTERNAL_IP
-      return 0
-    fi
-    
-    # Add a dot to indicate waiting
-    echo -n "." >&2
-    sleep $INTERVAL
-    WAITED=$((WAITED + INTERVAL))
-  done
-
-  status_log $TYPE_ERROR "Error: External IP not assigned for service '$SERVICE_NAME' in namespace '$NAMESPACE' within $MAX_WAIT seconds."
-  exit 1
-
-
-}
 
 patch_coredns() {
 
@@ -240,44 +203,9 @@ check_k3d_cluster_exists "${CLUSTER_NAME}"
 #----------- GRAPPLE_DNS Input -----------
 
 if [ "${GRAPPLE_DNS}" == "" ]; then 
-    GRAPPLE_DNS="k3d.dev"
+    GRAPPLE_DNS="grpl-k3d.dev"
 fi
 
-os_type="$(uname -s)"
-case "${os_type}" in
-  Linux*)
-
-    status_log $TYPE_INFO "testing domain, this may take upto 5mins"
-    echo "[Resolve]
-DNS=127.0.0.1
-Domains=~k3d.dev" > /tmp/k3d-dev
-
-    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
-      status_log $TYPE_INFO "please run the following commands before clicking on 'confirm':"
-    else
-      status_log $TYPE_INFO "going to run following command"
-    fi
-  
-    gum style \
-      --foreground 212 --border-foreground 212 --border double \
-      --align center --width 100 --margin "1 2" --padding "2 4" \
-      'sudo cp /tmp/k3d-dev /etc/systemd/resolved.conf.d/k3d.conf' >&2
-
-    if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
-      gum confirm "Proceed with dns configuration?" || (echo "grapple cannot be installed without dns configuration"  &&  status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
-    else
-      sudo cp /tmp/k3d-dev /etc/systemd/resolved.conf.d/k3d.conf
-    fi
-    sudo systemctl restart systemd-resolved
-
-
-    ;;
-  Darwin*)
-    # Configure macOS to use dnsmasq for .k3d.dev domain
-    sudo mkdir -p /etc/resolver
-    echo "nameserver 127.0.0.1" | sudo tee /etc/resolver/k3d.dev
-    ;;
-esac
 
 
 #---------- KUBE_CONTEXT Input ------------
@@ -377,7 +305,7 @@ config:
   GRAPPLE_LICENSE: ${GRAPPLE_LICENSE}
   CLUSTER_NAME: ${CLUSTER_NAME}
   CLUSTER_IP: ${CLUSTER_IP}
-  PROVIDER_CLUSTER_NAME: "k3d"
+  PROVIDER_CLUSTER_TYPE: "k3d"
 # Additional configurations omitted for brevity
 EOF
 
@@ -452,8 +380,10 @@ fi
 
 
 #----------- CLUSTER_IP Input -----------
-get_cluster_ip
+get_k3d_cluster_ip
 CLUSTER_IP=$EXTERNAL_IP
+export CLUSTER_IP=$CLUSTER_IP
+/home/zahid/projects/grapple-cli/grpl k3d patch_dns
 
 patch_coredns
 
@@ -468,10 +398,10 @@ if ! kubectl get namespace cert-manager >/dev/null 2>&1; then
   if ! eval "$(getGumSpinnerOrLogger "Updating helm repos") helm repo update"; then 
     status_log $TYPE_ERROR "Failed to update helm repos"
     exit 1
-    fi
-    if ! eval "$(getGumSpinnerOrLogger "Installing cert-manager") helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true >/dev/null 2>&1"; then
-    status_log $TYPE_ERROR "Failed to install cert-manager"
-    exit 1
+  fi
+  if ! eval "$(getGumSpinnerOrLogger "Installing cert-manager") helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --set installCRDs=true >/dev/null 2>&1"; then
+  status_log $TYPE_ERROR "Failed to install cert-manager"
+  exit 1
   fi
 else
   status_log $TYPE_INFO "cert-manager is already installed"

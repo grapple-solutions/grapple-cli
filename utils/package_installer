@@ -390,6 +390,41 @@ check_and_install_k3d() {
 
 }
 
+check_and_install_dnsmasq() {
+
+    if ! dnsmasq --version  >/dev/null 2>&1; then
+        echo "dnsmasq cli is required"
+        echo "installing dnsmasq cli..."
+        if [ "${OS}" == "mac" ]; then
+            eval "$(getGumSpinnerOrLogger "dnsmasq is not installed, now installing dnsmasq") brew install dnsmasq"
+        elif [ "${OS}" == "gnu" ]; then
+            status_log $TYPE_INFO "going to refresh snap"
+            sudo snap refresh >/dev/null 2>&1
+            eval "$(getGumSpinnerOrLogger "dnsmasq is not installed, now installing dnsmasq") sudo apt-get install dnsmasq"
+        else
+            errMsg="Failed to install dnsmasq, OS ${OS} not supported at the moment"
+            echo $errMsg
+            status_log $TYPE_ERROR $errMsg
+            exit 1
+        fi
+    fi
+
+    extract_dnsmasq_cli_version
+
+}
+
+extract_dnsmasq_cli_version(){
+
+    if ! grep -q "dnsmasq" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
+
+        # Get dnsmasq version
+        dnsmasq_version=$(dnsmasq --version | head -n1 | awk '{print $3}')
+
+        # Output the latest version
+        echo "      $dnsmasq_version - dnsmasq" >> "$GRPL_WORKDIR/dependency_versions"
+    fi
+}
+
 extract_k3d_cli_version(){
 
     if ! grep -q "k3d" "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then 
