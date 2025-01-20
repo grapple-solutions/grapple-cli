@@ -27,6 +27,7 @@ check_previous_test_failed() {
 
 @test "Check if cluster exists" {
   rm -f /tmp/failed_flag
+  civo region use fra1
   run civo k8s show "$CLUSTERNAME"
   if [ "$status" -eq 0 ]; then
     run civo k8s delete "$CLUSTERNAME" -y
@@ -67,6 +68,7 @@ check_previous_test_failed() {
     echo "true" > /tmp/failed_flag
     skip "DB_MYSQL_DISCOVERY_BASED or EXTERNAL_DB is not set"
   fi
+  export PATH="/usr/local/bin/grpl-cli:$PATH"
   run grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
