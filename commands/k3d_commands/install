@@ -383,7 +383,7 @@ fi
 get_k3d_cluster_ip
 CLUSTER_IP=$EXTERNAL_IP
 export CLUSTER_IP=$CLUSTER_IP
-/home/zahid/projects/grapple-cli/grpl k3d patch_dns
+grpl k3d patch_dns
 
 patch_coredns
 
