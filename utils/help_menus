@@ -14,6 +14,7 @@ generate_cli_web_doc() {
     grpl_k3d_cli_help $WEB_DOC
     grpl_k3d_cluster_create_cli_help $WEB_DOC
     grpl_k3d_install_cli_help $WEB_DOC
+    grpl_k3d_dns_patch_cli_help $WEB_DOC
     grpl_cluster_cli_help $WEB_DOC
     grpl_example_cli_help $WEB_DOC
     grpl_install_cli_help $WEB_DOC
@@ -63,6 +64,7 @@ $grpl_cli_doc
 $grpl_k3d_cli_doc
 $grpl_k3d_cluster_create_doc
 $grpl_k3d_install_doc
+$grpl_k3d_dns_patch_doc
 $grpl_application_doc
 $grpl_application_init_doc
 $grpl_application_update_doc
@@ -320,12 +322,14 @@ Commands:
 
     c or create     Cluster creation
     i or install    grpl installation on the cluster
+    pd or patch_dns Patch dns
     *               Help menu
     
 Examples:    
 
     grpl k3d c    or    grpl k3d create
     grpl k3d i    or    grpl k3d install
+    grpl k3d pd   or    grpl k3d patch_dns
     grpl k3d *    or    grpl k3d *
 
 "
@@ -464,6 +468,57 @@ Parameters:
         return 0
     else
         echo "$grpl_k3d_install_doc"  >&2
+    fi
+}
+
+grpl_k3d_dns_patch_cli_help() {
+
+    if ! grep -q "." "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then 
+      extract_grapple_cli_version
+    fi
+
+    type=$1
+    cli_name="grpl k3d patch_dns"
+    meta="
+the grapple cli
+
+Version: $(cat $GRPL_WORKDIR/VERSION)
+
+https://grapple-solutions.com/
+"
+
+    if [ "$type" == $WEB_DOC ]; then
+        cli_name="== grpl k3d patch_dns"
+        meta=""
+    fi
+
+    grpl_k3d_dns_patch_doc="
+$cli_name  - $(cat $GRPL_WORKDIR/VERSION)
+$meta
+
+Description: 
+
+    Displays help menu of grpl k3d patch_dns
+
+Usage: 
+
+    grpl k3d patch_dns [command]
+
+Commands:
+
+    h or help     Help menu
+    *             to patch dns, this command is used to patch the dns of the grapple cluster on the local machine restart or when dns is not working
+    
+Examples:    
+
+    grpl k3d patch_dns h    or    grpl k3d patch_dns help
+    grpl k3d patch_dns *    or    grpl k3d patch_dns *
+
+"
+    if [ "$type" == $WEB_DOC ]; then
+        return 0
+    else
+        echo "$grpl_k3d_dns_patch_doc"  >&2
     fi
 }
 

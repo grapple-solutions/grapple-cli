@@ -93,4 +93,6 @@ esac
 
 
 
+status_log $TYPE_SUCCESS "DNS patched successfully"
+
 

@@ -6,8 +6,10 @@ subjects:
   - kind: ServiceAccount
     name: provider-helm-239d2e74884b
     namespace: grpl-system
+  - kind: ServiceAccount
+    name: grpl-grsf-lic-35e3d1c77b6e
+    namespace: grpl-system
 roleRef:
   kind: ClusterRole
   name: provider-helm-namespace-manager
   apiGroup: rbac.authorization.k8s.io
-
