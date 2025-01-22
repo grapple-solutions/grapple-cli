@@ -79,8 +79,9 @@ check_previous_test_failed() {
 # Test: Wait for example readiness
 @test "Wait for example readiness" {
   check_previous_test_failed
-  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=500s
-  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=500s
+  civo k8s config "$CLUSTERNAME" --save --switch
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
   fi

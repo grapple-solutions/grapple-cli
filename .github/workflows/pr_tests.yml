@@ -41,9 +41,21 @@ jobs:
         run: |
           curl -sL https://civo.com/get | sh
 
+      # Install Homebrew
+      - name: Install Homebrew
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
       # Run bash tests
       - name: Run Bash Tests
         env:
           CIVO_API_KEY: ${{ secrets.CIVO_API_KEY }}
+          OSTYPE: darwin23.0
         run: |
+          echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+          echo 'export PATH="/usr/local/bin/grpl-cli:$PATH"' >> ~/.bashrc
+          export PATH="/usr/local/bin/grpl-cli:$PATH"
+          source ~/.bashrc
           bats test
