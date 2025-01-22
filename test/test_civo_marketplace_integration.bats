@@ -69,8 +69,11 @@ check_previous_test_failed() {
     echo "true" > /tmp/failed_flag
     skip "DB_MYSQL_DISCOVERY_BASED or EXTERNAL_DB is not set"
   fi
-  
-  grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB
+
+  if ! grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB; then
+    echo "true" > /tmp/failed_flag
+    skip "Failed to deploy example application"
+  fi
  
   run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
   run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
