@@ -71,8 +71,7 @@ check_previous_test_failed() {
   fi
 
   if ! grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB; then
-    echo "true" > /tmp/failed_flag
-    skip "Failed to deploy example application"
+    echo "grpl e d returned non-zero status but continuing to check readiness"
   fi
  
   run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
