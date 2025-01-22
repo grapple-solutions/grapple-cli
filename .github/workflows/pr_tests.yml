@@ -43,11 +43,15 @@ jobs:
           echo "Setting up code for CLI..."
           sudo cp -r $GITHUB_WORKSPACE /tmp/grpl-cli
           sudo chmod -R u+w /tmp/grpl-cli
-          ln -sf /tmp/grpl-cli/grpl /usr/local/bin/grpl
-          export GRPL_WORKDIR="/tmp/grpl-cli"
-          export PATH="/usr/local/bin:$PATH"
+
+          # Create a wrapper script for grpl
+          echo '#!/bin/bash' > /usr/local/bin/grpl
+          echo 'export GRPL_WORKDIR="/tmp/grpl-cli"' >> /usr/local/bin/grpl
+          echo '/tmp/grpl-cli/grpl "$@"' >> /usr/local/bin/grpl
+          sudo chmod +x /usr/local/bin/grpl
+
           echo "Testing grpl CLI..."
-          (cd $GRPL_WORKDIR && grpl)
+          grpl
 
       # Run bash tests
       - name: Run Bash Tests
@@ -59,8 +63,7 @@ jobs:
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
           echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc
-          echo 'export GRPL_WORKDIR="/tmp/grpl-cli"' >> ~/.bashrc
           export PATH="/usr/local/bin:$PATH"
-          export GRPL_WORKDIR="/tmp/grpl-cli"
           source ~/.bashrc
           bats test
+
