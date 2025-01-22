@@ -154,7 +154,6 @@ deploy_from_github(){
 
   status_log $TYPE_SUCCESS "Successfully deployed manifest from ${DISPLAY_PATH}"
   display_deployment_details $KUBE_NS $GRAS_NAME $clusterdomain
-  exit 0
 
 }
 
