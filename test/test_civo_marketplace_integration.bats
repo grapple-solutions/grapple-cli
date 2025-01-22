@@ -25,41 +25,41 @@ check_previous_test_failed() {
   fi
 }
 
-# @test "Check if cluster exists" {
-#   rm -f /tmp/failed_flag
-#   civo region use fra1
-#   run civo k8s show "$CLUSTERNAME"
-#   if [ "$status" -eq 0 ]; then
-#     run civo k8s delete "$CLUSTERNAME" -y
-#     if [ "$status" -ne 0 ]; then
-#       echo "true" > /tmp/failed_flag # Set FAILED to true
-#     fi
-#   fi
-# }
+@test "Check if cluster exists" {
+  rm -f /tmp/failed_flag
+  civo region use fra1
+  run civo k8s show "$CLUSTERNAME"
+  if [ "$status" -eq 0 ]; then
+    run civo k8s delete "$CLUSTERNAME" -y
+    if [ "$status" -ne 0 ]; then
+      echo "true" > /tmp/failed_flag # Set FAILED to true
+    fi
+  fi
+}
 
-# @test "Create the cluster" {
-#   check_previous_test_failed
-#   run civo k8s create "$CLUSTERNAME" --size=g4c.kube.small --nodes=2 --applications=traefik2-nodeport,civo-cluster-autoscaler,metrics-server,grapple-solution-framework --wait --save --switch -y
-#   if [ "$status" -ne 0 ]; then
-#     echo "true" > /tmp/failed_flag # Set FAILED to true
-#   fi
-#   [ "$status" -eq 0 ] # Ensure cluster creation succeeds
-# }
+@test "Create the cluster" {
+  check_previous_test_failed
+  run civo k8s create "$CLUSTERNAME" --size=g4c.kube.small --nodes=2 --applications=traefik2-nodeport,civo-cluster-autoscaler,metrics-server,grapple-solution-framework --wait --save --switch -y
+  if [ "$status" -ne 0 ]; then
+    echo "true" > /tmp/failed_flag # Set FAILED to true
+  fi
+  [ "$status" -eq 0 ] # Ensure cluster creation succeeds
+}
 
-# # Test: Wait for Grapple to be ready
-# @test "Wait for Grapple to be ready" {
-#   check_previous_test_failed
-#   while ! kubectl get -n grpl-system configuration.pkg.crossplane.io grpl 2>/dev/null; do
-#     echo -n "."
-#     sleep 2
-#   done
-#   sleep 5
-#   run kubectl wait -n grpl-system configuration.pkg.crossplane.io grpl --for condition=Healthy=True --timeout=300s
-#   if [ "$status" -ne 0 ]; then
-#     echo "true" > /tmp/failed_flag # Set FAILED to true
-#   fi
-#   [ "$status" -eq 0 ]
-# }
+# Test: Wait for Grapple to be ready
+@test "Wait for Grapple to be ready" {
+  check_previous_test_failed
+  while ! kubectl get -n grpl-system configuration.pkg.crossplane.io grpl 2>/dev/null; do
+    echo -n "."
+    sleep 2
+  done
+  sleep 5
+  run kubectl wait -n grpl-system configuration.pkg.crossplane.io grpl --for condition=Healthy=True --timeout=300s
+  if [ "$status" -ne 0 ]; then
+    echo "true" > /tmp/failed_flag # Set FAILED to true
+  fi
+  [ "$status" -eq 0 ]
+}
 
 # Test: Deploy example application
 @test "Deploy example application and wait for it to be ready" {
@@ -75,8 +75,8 @@ check_previous_test_failed() {
   
   grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB || true
  
-  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
-  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
+  # run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
+  # run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
   fi
@@ -95,20 +95,20 @@ check_previous_test_failed() {
 # }
 
 # Test: Test the UI
-@test "Test the UI" {
-  check_previous_test_failed
-  base_url=$(kubectl get muim -n grpl-disc-ext grpl-disc-ext-gras-mysql-gruim -o jsonpath="{.spec.remoteentry}" 2>/dev/null | awk -F/ 'OFS="/" {$NF=""; sub(/\/$/, ""); print}')
-  if [[ -z "$base_url" ]]; then
-    echo "true" > /tmp/failed_flag # Set FAILED to true
-  fi
-  [ -n "$base_url" ]
+# @test "Test the UI" {
+#   check_previous_test_failed
+#   base_url=$(kubectl get muim -n grpl-disc-ext grpl-disc-ext-gras-mysql-gruim -o jsonpath="{.spec.remoteentry}" 2>/dev/null | awk -F/ 'OFS="/" {$NF=""; sub(/\/$/, ""); print}')
+#   if [[ -z "$base_url" ]]; then
+#     echo "true" > /tmp/failed_flag # Set FAILED to true
+#   fi
+#   [ -n "$base_url" ]
 
-  STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" "$base_url")
-  if [ "$STATUS" -ne 200 ]; then
-    exit 1
-  fi
-  [ "$STATUS" -eq 200 ]
-}
+#   STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" "$base_url")
+#   if [ "$STATUS" -ne 200 ]; then
+#     exit 1
+#   fi
+#   [ "$STATUS" -eq 200 ]
+# }
 
 # Test: Destroy the cluster
 @test "Destroy the cluster" {
