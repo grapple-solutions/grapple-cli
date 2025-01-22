@@ -74,40 +74,38 @@ check_previous_test_failed() {
   grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB || true
   echo "Waiting for example application to be ready"
   run sleep 10
-  # run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
-  # run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
   fi
   [ "$status" -eq 0 ]
 }
 
-# # Test: Wait for example readiness
-# @test "Wait for example readiness" {
-#   check_previous_test_failed
-#   run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
-#   run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
-#   if [ "$status" -ne 0 ]; then
-#     echo "true" > /tmp/failed_flag # Set FAILED to true
-#   fi
-#   [ "$status" -eq 0 ]
-# }
+# Test: Wait for example readiness
+@test "Wait for example readiness" {
+  check_previous_test_failed
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
+  if [ "$status" -ne 0 ]; then
+    echo "true" > /tmp/failed_flag # Set FAILED to true
+  fi
+  [ "$status" -eq 0 ]
+}
 
-# Test: Test the UI
-# @test "Test the UI" {
-#   check_previous_test_failed
-#   base_url=$(kubectl get muim -n grpl-disc-ext grpl-disc-ext-gras-mysql-gruim -o jsonpath="{.spec.remoteentry}" 2>/dev/null | awk -F/ 'OFS="/" {$NF=""; sub(/\/$/, ""); print}')
-#   if [[ -z "$base_url" ]]; then
-#     echo "true" > /tmp/failed_flag # Set FAILED to true
-#   fi
-#   [ -n "$base_url" ]
+Test: Test the UI
+@test "Test the UI" {
+  check_previous_test_failed
+  base_url=$(kubectl get muim -n grpl-disc-ext grpl-disc-ext-gras-mysql-gruim -o jsonpath="{.spec.remoteentry}" 2>/dev/null | awk -F/ 'OFS="/" {$NF=""; sub(/\/$/, ""); print}')
+  if [[ -z "$base_url" ]]; then
+    echo "true" > /tmp/failed_flag # Set FAILED to true
+  fi
+  [ -n "$base_url" ]
 
-#   STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" "$base_url")
-#   if [ "$STATUS" -ne 200 ]; then
-#     exit 1
-#   fi
-#   [ "$STATUS" -eq 200 ]
-# }
+  STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" "$base_url")
+  if [ "$STATUS" -ne 200 ]; then
+    exit 1
+  fi
+  [ "$STATUS" -eq 200 ]
+}
 
 # Test: Destroy the cluster
 @test "Destroy the cluster" {
