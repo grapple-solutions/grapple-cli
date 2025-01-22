@@ -58,4 +58,5 @@ jobs:
           echo 'export PATH="/usr/local/bin/grpl-cli:$PATH"' >> ~/.bashrc
           export PATH="/usr/local/bin/grpl-cli:$PATH"
           source ~/.bashrc
+          chmod -R u+w /usr/local/bin/grpl-cli
           bats test
