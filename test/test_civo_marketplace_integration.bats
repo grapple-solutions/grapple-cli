@@ -71,7 +71,7 @@ check_previous_test_failed() {
   fi                                                                                                                                                                                                                        
 
   civo region use fra1
-  civo k8s use "$CLUSTERNAME" --save --switch
+  civo k8s config "$CLUSTERNAME" --save --switch
 
   grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB || true
  
