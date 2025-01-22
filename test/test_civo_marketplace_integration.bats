@@ -73,6 +73,7 @@ check_previous_test_failed() {
   echo "OSTYPE: ${OSTYPE}"
   civo region use fra1
   civo k8s config "$CLUSTERNAME" --save --switch
+  run grpl e d h
   run grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
