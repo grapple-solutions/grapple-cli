@@ -91,7 +91,7 @@ check_previous_test_failed() {
   [ "$status" -eq 0 ]
 }
 
-Test: Test the UI
+#Test: Test the UI
 @test "Test the UI" {
   check_previous_test_failed
   base_url=$(kubectl get muim -n grpl-disc-ext grpl-disc-ext-gras-mysql-gruim -o jsonpath="{.spec.remoteentry}" 2>/dev/null | awk -F/ 'OFS="/" {$NF=""; sub(/\/$/, ""); print}')
