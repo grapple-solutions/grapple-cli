@@ -70,20 +70,9 @@ check_previous_test_failed() {
     skip "DB_MYSQL_DISCOVERY_BASED or EXTERNAL_DB is not set"
   fi
 
-  echo "OSTYPE: ${OSTYPE}"
   civo region use fra1
   civo k8s config "$CLUSTERNAME" --save --switch
-  export PATH="/usr/local/bin/grpl-cli:$PATH"
-  run grpl
-  echo "in grpl"
-  run grpl h
-  echo "in grpl h"
-  run grpl e h
-  echo "in grpl e h"
-  run grpl e d h
-  echo "in grpl e d h"
-  grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB
-  echo "in grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB"
+  sudo grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
   fi
