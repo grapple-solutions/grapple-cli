@@ -62,7 +62,7 @@ check_previous_test_failed() {
 # }
 
 # Test: Deploy example application
-@test "Deploy example application" {
+@test "Deploy example application and wait for it to be ready" {
 
   check_previous_test_failed
   if [ "$DB_MYSQL_DISCOVERY_BASED" = "" ] || [ "$EXTERNAL_DB" = "" ]; then
@@ -72,19 +72,26 @@ check_previous_test_failed() {
 
   civo region use fra1
   civo k8s config "$CLUSTERNAME" --save --switch
-  run grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB
+  grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB
 
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
   fi
   [ "$status" -eq 0 ]
 }
 
-# Test: Wait for example readiness
-@test "Wait for example readiness" {
-  check_previous_test_failed
-
-}
+# # Test: Wait for example readiness
+# @test "Wait for example readiness" {
+#   check_previous_test_failed
+#   run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
+#   run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
+#   if [ "$status" -ne 0 ]; then
+#     echo "true" > /tmp/failed_flag # Set FAILED to true
+#   fi
+#   [ "$status" -eq 0 ]
+# }
 
 # Test: Test the UI
 @test "Test the UI" {
