@@ -73,7 +73,8 @@ check_previous_test_failed() {
   civo region use fra1
   civo k8s config "$CLUSTERNAME" --save --switch
   grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB
-
+  status=0
+  echo "status: $status"
   run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
   run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
   if [ "$status" -ne 0 ]; then
