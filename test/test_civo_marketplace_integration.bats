@@ -69,9 +69,6 @@ check_previous_test_failed() {
     echo "true" > /tmp/failed_flag
     skip "DB_MYSQL_DISCOVERY_BASED or EXTERNAL_DB is not set"
   fi
-
-  civo region use fra1
-  civo k8s config "$CLUSTERNAME" --save --switch
   
   grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB || true
  
