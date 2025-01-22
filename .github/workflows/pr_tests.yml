@@ -42,7 +42,7 @@ jobs:
         run: |
           echo "Setting up code for CLI..."
           sudo cp -r $GITHUB_WORKSPACE /tmp/grpl-cli
-          sudo chmod -R u+w /tmp/grpl-cli
+          sudo chmod -R u+w /tmp/grpl-cli  # Ensure all files are writable
 
           # Create a wrapper script for grpl
           echo '#!/bin/bash' > /usr/local/bin/grpl
@@ -65,5 +65,9 @@ jobs:
           echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc
           export PATH="/usr/local/bin:$PATH"
           source ~/.bashrc
+
+          # Ensure GRPL_WORKDIR is writable during the tests
+          sudo chmod -R u+w /tmp/grpl-cli
+
           bats test
 
