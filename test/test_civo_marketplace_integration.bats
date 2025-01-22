@@ -73,6 +73,7 @@ check_previous_test_failed() {
   echo "OSTYPE: ${OSTYPE}"
   civo region use fra1
   civo k8s config "$CLUSTERNAME" --save --switch
+  export PATH="/usr/local/bin/grpl-cli:$PATH"
   run grpl
   run grpl h
   run grpl e h
