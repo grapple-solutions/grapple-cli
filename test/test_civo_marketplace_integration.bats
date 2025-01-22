@@ -73,7 +73,7 @@ check_previous_test_failed() {
   echo "Deploying example application"
   grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB || true
   echo "Waiting for example application to be ready"
- 
+  run sleep 10
   # run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
   # run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
   if [ "$status" -ne 0 ]; then
