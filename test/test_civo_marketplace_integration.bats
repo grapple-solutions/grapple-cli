@@ -54,7 +54,7 @@ check_previous_test_failed() {
     sleep 2
   done
   sleep 5
-  run kubectl wait -n grpl-system configuration.pkg.crossplane.io grpl --for condition=Healthy=True --timeout=300s
+  run kubectl wait -n grpl-system configuration.pkg.crossplane.io grpl --for condition=Healthy=True --timeout=500s
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
   fi
