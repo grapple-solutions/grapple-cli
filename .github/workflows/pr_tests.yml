@@ -15,6 +15,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      # Copy the current branch's code to an executable path
+      - name: Setup Executable Path for CLI
+        run: |
+          echo "Setting up code for CLI..."
+          sudo cp -r $GITHUB_WORKSPACE /usr/local/bin/grpl-cli
+          export PATH="/usr/local/bin/grpl-cli:$PATH"
+          echo "Testing grpl CLI..."
+          grpl
+
       # Install bats
       - name: Install bats
         run: |
@@ -37,22 +46,6 @@ jobs:
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-      # Copy the current branch's code to a writable path
-      - name: Setup Executable Path for CLI
-        run: |
-          echo "Setting up code for CLI..."
-          sudo cp -r $GITHUB_WORKSPACE /tmp/grpl-cli
-          sudo chmod -R u+w /tmp/grpl-cli  # Ensure all files are writable
-
-          # Create a wrapper script for grpl
-          echo '#!/bin/bash' > /usr/local/bin/grpl
-          echo 'export GRPL_WORKDIR="/tmp/grpl-cli"' >> /usr/local/bin/grpl
-          echo '/tmp/grpl-cli/grpl "$@"' >> /usr/local/bin/grpl
-          sudo chmod +x /usr/local/bin/grpl
-
-          echo "Testing grpl CLI..."
-          grpl
-
       # Run bash tests
       - name: Run Bash Tests
         env:
@@ -62,12 +55,7 @@ jobs:
           echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
-          echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc
-          export PATH="/usr/local/bin:$PATH"
+          echo 'export PATH="/usr/local/bin/grpl-cli:$PATH"' >> ~/.bashrc
+          export PATH="/usr/local/bin/grpl-cli:$PATH"
           source ~/.bashrc
-
-          # Ensure GRPL_WORKDIR is writable during the tests
-          sudo chmod -R u+w /tmp/grpl-cli
-
           bats test
-
