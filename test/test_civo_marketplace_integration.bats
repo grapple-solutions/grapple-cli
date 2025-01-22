@@ -63,11 +63,23 @@ check_previous_test_failed() {
 
 # Test: Deploy example application
 @test "Deploy example application" {
+
+  kubectl config view
+  kubectl get nodes
+  kubectl get pods -A
+
+  echo "CIVO_API_KEY: ${CIVO_API_KEY}"
+  echo "DB_MYSQL_DISCOVERY_BASED: ${DB_MYSQL_DISCOVERY_BASED}"
+  echo "EXTERNAL_DB: ${EXTERNAL_DB}"
+
+
   check_previous_test_failed
   if [ "$DB_MYSQL_DISCOVERY_BASED" = "" ] || [ "$EXTERNAL_DB" = "" ]; then
     echo "true" > /tmp/failed_flag
     skip "DB_MYSQL_DISCOVERY_BASED or EXTERNAL_DB is not set"
   fi
+
+  
   export PATH="/usr/local/bin/grpl-cli:$PATH"
   run grpl e d --GRAS_TEMPLATE=$DB_MYSQL_DISCOVERY_BASED --DB_TYPE=$EXTERNAL_DB
   if [ "$status" -ne 0 ]; then
