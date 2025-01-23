@@ -633,11 +633,22 @@ Usage with params from cli:
   grpl cluster create --params --<variable-name> <variable value>
   e.g grpl cluster create --params --TARGET_PLATFORM=CIVO
 
+  grpl cluster create --<variable-name>=<variable value>
+  e.g grpl cluster create --TARGET_PLATFORM=CIVO
+  OR
+  grpl cluster create --<variable-name> <variable value>
+  e.g grpl cluster create --TARGET_PLATFORM=CIVO
+
 Usage with params from configfile: 
 
   grpl cluster create --configfile <file-name>.json
   e.g grpl cluster create --configfile grpl-create-config.json
 
+Quick Start:
+
+  # please use correct values for the variables
+  grpl cluster create --TARGET_PLATFORM=CIVO --CIVO_CLUSTER=grapple-cluster --CIVO_REGION=fra1 --CIVO_EMAIL_ADDRESS=test@test.com --CIVO_API_KEY=1234567890 --WAIT=true
+  
 
 Available Commands:
 
@@ -724,6 +735,15 @@ Usage with values yaml:
 
   grpl cluster install --values <file1>.yaml <file2>.yaml
   e.g grpl cluster install --values config-values.yaml config-values2.yaml
+
+Quick Start:
+
+  # please use correct values for the variables
+  grpl cluster install --TARGET_PLATFORM=CIVO --CIVO_CLUSTER=grapple-cluster --CIVO_REGION=fra1 --CIVO_EMAIL_ADDRESS=test@test.com --CIVO_API_KEY=1234567890 --WAIT=true
+  grpl cluster install --TARGET_PLATFORM=Kubernetes --KUBE_CONTEXT=current --WAIT=true
+  grpl cluster install --TARGET_PLATFORM=minikube --WAIT=true
+  grpl cluster install --TARGET_PLATFORM=Kubefirst --KUBEFIRST_CLOUD_PROVIDER=AWS --KUBEFIRST_CLOUD_REGION=us-east-1 --KUBEFIRST_CLUSTER_ID=1234567890 --KUBEFIRST_CLUSTER_NAME=grapple-cluster --WAIT=true --GRAPPLE_DNS=grapple.com
+  
 
 Available Commands:
 
@@ -913,6 +933,16 @@ Usage with params from configfile:
     grpl example deploy --configfile <file-name>.json
     e.g grpl example deploy --configfile grpl-config.json
 
+Quick Start:
+
+  grpl example deploy --GRAS_TEMPLATE=db-file
+  grpl example deploy --GRAS_TEMPLATE=db-cache-redis
+  grpl example deploy --GRAS_TEMPLATE=db-mysql-model-based --DB_TYPE=internal
+  grpl example deploy --GRAS_TEMPLATE=db-mysql-model-based --DB_TYPE=external
+  grpl example deploy --GRAS_TEMPLATE=db-mysql-discovery-based --DB_TYPE=internal
+  grpl example deploy --GRAS_TEMPLATE=db-mysql-discovery-based --DB_TYPE=external
+
+
 Available Commands:
 
     h or help     Help menu
@@ -929,9 +959,6 @@ Parameters:
     --db-type,              --DB_TYPE string                db type it can either internal or external
     --kube-context,         --KUBE_CONTEXT string           kubectl context you want to use (default is 'current')
     --wait,                 --WAIT string                   'true' / 'false', set to 'true' if you want to wait for grpl resources (grapi/gruim) to be ready (default is 'false')
-    --deploy-from-github,   --DEPLOY_FROM_GITHUB string     'true' / 'false', set to 'true' if you want to deploy from github (default is 'false')
-    --github-path,          --GITHUB_PATH string            path to the resource manifest in grpl-gras-examples repository
-
 " 
 
     if [ "$type" == $WEB_DOC ]; then
@@ -1026,6 +1053,11 @@ Description:
 Usage: 
 
     grpl application init [command]
+
+Quick Start:
+
+  # please use correct values for the variables
+  grpl application init --PROJECT_NAME=grapple-app --GITHUBTOKEN=1234567890
 
 Available Commands:
 
@@ -1205,6 +1237,11 @@ Usage with params from configfile:
   grpl resource deploy --configfile <file-name>.json
   e.g grpl resource deploy --configfile grpl-config.json
 
+Quick Start:
+
+  grpl resource deploy --KUBE_CONTEXT=current --GRAS_NAME=mysqldisci --KUBE_NS=mysqldisci --GRAS_TEMPLATE=db-mysql-discovery-based --DB_TYPE=internal --SOURCE_DATA=https://raw.githubusercontent.com/grapple-solutions/grapple-test-data/main/classicmodelsid/classicmodelsid.sql --DISCOVERIES='classicmodelsid:{"dataSource":"classicmodelsid","schema":"classicmodelsid","all":true,"disableCamelCase":false}' --RELATIONS="" --ENABLE_GRUIM=true
+
+
 Available Commands:
 
     h or help     Help menu
@@ -1274,6 +1311,11 @@ Usage:
 
     grpl dev [command]
 
+Quick Start:
+
+    grpl dev --ns grapple-namespace
+    grpl dev
+    
 Available Commands:
 
     h or help                           Help menu
@@ -1920,11 +1962,18 @@ $meta
 
 Description: 
 
-    helps understand and create grpl resources
+    Helps understand and create grpl resources. 
+    To make grpl ai resource deploy work, please export your openai api key in your environment variable OPENAI_API_KEY.
 
 Usage: 
 
     grpl ai resource [command]
+
+Quick Start:
+
+    grpl ai r deploy --query=\"list all grpl crds\"
+    grpl ai r deploy --query=\"show the schema of gras resource\"
+    grpl ai r deploy --query=\"create a new gras resource\"
 
 Available Commands:
 
@@ -2044,6 +2093,11 @@ Usage with params from configfile:
   grpl aws install --configfile <file-name>.json
   e.g grpl aws install --configfile grpl-config.json
 
+Quick Start:
+
+    # please use correct values for the variables
+    grpl aws install --CLUSTER_NAME=grpl-aws-cli --CLUSTER_IP=192.168.1.1 --AUTO_CONFIRM=true --GRAPPLE_DNS=grpl.com --ORGANIZATION=grapple --EMAIL=zahid@grapple.com --INSTALL_KUBEBLOCKS=true --SSL=true
+
 Available Commands:
 
     h or help     Help menu
@@ -2107,7 +2161,15 @@ Available Commands:
 
     h or help     Help menu
     *             to connect to a grapple cluster
-    
+
+Quick Start:
+
+    # please use correct values for the variables
+    grpl cluster connect --TARGET_PLATFORM=Civo --CIVO_REGION=gra1 --CIVO_CLUSTER=grpl-civo --CIVO_API_KEY=1234567890
+    grpl cluster connect --TARGET_PLATFORM=Kubefirst --KUBEFIRST_CLOUD_PROVIDER=Civo --KUBEFIRST_CLUSTER_ID=dc3e39b9-0d44-4fb3-8931-7b1e8ccb841d --KUBEFIRST_CLUSTER_NAME=grpl-kubefirst --GITHUB_USERNAME=zahid-iqbal-alpha
+    grpl cluster connect --TARGET_PLATFORM=Kubefirst --KUBEFIRST_CLOUD_PROVIDER=AWS --KUBEFIRST_CLUSTER_ID=dc3e39b9-0d44-4fb3-8931-7b1e8ccb841d --KUBEFIRST_CLUSTER_NAME=grpl-kubefirst --GITHUB_USERNAME=zahid-iqbal-alpha --AWS_ACCESS_KEY_ID=1234567890 --AWS_SECRET_ACCESS_KEY=1234567890 --AWS_SESSION_TOKEN=1234567890
+    grpl cluster connect --TARGET_PLATFORM=Kubefirst --KUBEFIRST_CLOUD_PROVIDER=GoogleCloud --KUBEFIRST_CLUSTER_ID=dc3e39b9-0d44-4fb3-8931-7b1e8ccb841d --KUBEFIRST_CLUSTER_NAME=grpl-kubefirst --GITHUB_USERNAME=zahid-iqbal-alpha --GOOGLE_PROJECT_ID=1234567890
+
 Examples:  
 
     grpl c conn h    or    grpl cluster connect help
@@ -2119,7 +2181,6 @@ Parameters:
     --civo-region,              --CIVO_REGION string                CIVO region where cluster is located
     --civo-cluster,             --CIVO_CLUSTER string               CIVO cluster name
     --civo-api-key,             --CIVO_API_KEY string               api key of the CIVO account
-    --grapple-dns,              --GRAPPLE_DNS string                grapple dns
     --kubefirst-cloud-provider, --KUBEFIRST_CLOUD_PROVIDER string   kubefirst cloud provider (e.g. Civo, AWS, GoogleCloud)
     --kubefirst-cloud-region,   --KUBEFIRST_CLOUD_REGION string     kubefirst cloud region (e.g. fra1, us-east1, eu-central1)
     --kubefirst-cluster-name,   --KUBEFIRST_CLUSTER_NAME string     kubefirst cluster name
