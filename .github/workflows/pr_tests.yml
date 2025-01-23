@@ -1,0 +1,49 @@
+name: PR Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the current branch's code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Copy the current branch's code to an executable path
+      - name: Setup Executable Path for CLI
+        run: |
+          echo "Setting up code for CLI..."
+          sudo cp -r $GITHUB_WORKSPACE /usr/local/bin/grpl-cli
+          export PATH="/usr/local/bin/grpl-cli:$PATH"
+          echo "Testing grpl CLI..."
+          grpl
+
+      # Install bats
+      - name: Install bats
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
+      # Install kubectl
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+      # Install civo cli
+      - name: Install civo cli
+        run: |
+          curl -sL https://civo.com/get | sh
+
+      # Run bash tests
+      - name: Run Bash Tests
+        env:
+          CIVO_API_KEY: ${{ secrets.CIVO_API_KEY }}
+        run: |
+          bats test/pipeline_test.bats

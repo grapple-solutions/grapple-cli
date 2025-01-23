@@ -94,7 +94,7 @@ NAMESPACE="grpl-system"
 SECRET_NAME="grsf-config"
 
 # Try to get the secret and check if it exists
-SECRET_DATA=$(kubectl get secret $SECRET_NAME -n $NAMESPACE -o jsonpath="{.data.CLOUD_PROVIDER}" 2>/dev/null)
+SECRET_DATA=$(kubectl get secret $SECRET_NAME -n $NAMESPACE -o jsonpath="{.data.KUBEFIRST_CLOUD_PROVIDER}" 2>/dev/null)
 
 # Check if the secret or namespace doesn't exist
 if [[ $? -ne 0 ]]; then
@@ -102,25 +102,25 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-# Check if the CLOUD_PROVIDER key exists in the secret
+# Check if the KUBEFIRST_CLOUD_PROVIDER key exists in the secret
 if [[ -z "$SECRET_DATA" ]]; then
-    status_log $TYPE_ERROR "Error: CLOUD_PROVIDER key not found in the '$SECRET_NAME' secret."
+    status_log $TYPE_ERROR "Error: KUBEFIRST_CLOUD_PROVIDER key not found in the '$SECRET_NAME' secret."
     exit 1
 fi
 
-# Decode the CLOUD_PROVIDER value
-CLOUD_PROVIDER=$(echo "$SECRET_DATA" | base64 --decode 2>/dev/null)
+# Decode the KUBEFIRST_CLOUD_PROVIDER value
+KUBEFIRST_CLOUD_PROVIDER=$(echo "$SECRET_DATA" | base64 --decode 2>/dev/null)
 
 # Check if decoding was successful
 if [[ $? -ne 0 ]]; then
-    status_log $TYPE_ERROR "Error: Failed to decode the CLOUD_PROVIDER value."
+    status_log $TYPE_ERROR "Error: Failed to decode the KUBEFIRST_CLOUD_PROVIDER value."
     exit 1
 fi
 
 # Perform a case-insensitive comparison with "k3d"
-if [[ "$(echo "${CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${K3D}" | tr '[:upper:]' '[:lower:]')" ]]; then
+if [[ "$(echo "${KUBEFIRST_CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${K3D}" | tr '[:upper:]' '[:lower:]')" ]]; then
 
-    echo "CLOUD_PROVIDER is k3d"
+    echo "KUBEFIRST_CLOUD_PROVIDER is k3d"
 
     create_and_load_ca_into_secret
     # Base64 encode the new values
@@ -140,7 +140,7 @@ if [[ "$(echo "${CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${K
         exit 1
     fi
 else
-    status_log $TYPE_INFO "CLOUD_PROVIDER is not k3d, cluster patch isn't required."
+    status_log $TYPE_INFO "KUBEFIRST_CLOUD_PROVIDER is not k3d, cluster patch isn't required."
     exit 0
 fi
 
