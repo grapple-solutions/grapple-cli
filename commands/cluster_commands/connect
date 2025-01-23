@@ -204,11 +204,11 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 
 
 # if CIVO, then pre-set the configuration params
-if [ "${TARGET_PLATFORM}" = $CIVO ]; then
+if match_case_insensitive "${TARGET_PLATFORM}" "$CIVO"; then
 
   connect_to_civo_cluster
   
-elif [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
+elif match_case_insensitive "${TARGET_PLATFORM}" "$Kubefirst"; then
   
   check_if_param_avaiable_in_non_interactive_mode "KUBEFIRST_CLOUD_PROVIDER" "${KUBEFIRST_CLOUD_PROVIDER}" "${help_menu_cmd}"
   KUBEFIRST_CLOUD_PROVIDER=$(if [ "${KUBEFIRST_CLOUD_PROVIDER}" != "" ]; then echo ${KUBEFIRST_CLOUD_PROVIDER}; else gum choose $AWS $Civo $GoogleCloud; fi)

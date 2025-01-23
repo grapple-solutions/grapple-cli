@@ -331,7 +331,7 @@ echo "selected target platform: ${TARGET_PLATFORM}"
 
 
 # if CIVO, then pre-set the configuration params
-if [ "${TARGET_PLATFORM}" = $CIVO ]; then
+if match_case_insensitive "${TARGET_PLATFORM}" "$CIVO"; then
 
   # first check if civo is installed or not, if not? then install it
   check_and_install_civo
@@ -460,7 +460,7 @@ fi
 
 
 # if Kubernetes, then pre-set the configuration params
-if [ "${TARGET_PLATFORM}" = $Kubernetes ]; then
+if match_case_insensitive "${TARGET_PLATFORM}" "$Kubernetes"; then
 
 #------------ GRAPPLE_DNS Input-----------
   check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "${GRAPPLE_DNS}" "${help_menu_cmd}"
@@ -509,7 +509,7 @@ fi
 
 fi
 
-if [ "${TARGET_PLATFORM}" = $Minikube ]; then
+if match_case_insensitive "${TARGET_PLATFORM}" "$Minikube"; then
 
   status_log $TYPE_INFO "going to install and run minikube"
   # first check if minikube is installed or not, if not? then install it
@@ -574,7 +574,7 @@ timeout 5" > /tmp/minikube-test
 fi
 
 # if Kubefirst, then pre-set the configuration params
-if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
+if match_case_insensitive "${TARGET_PLATFORM}" "$Kubefirst"; then
 
   check_if_cluster_is_accessible "--TARGET_PLATFORM=$TARGET_PLATFORM" "--KUBEFIRST_CLOUD_PROVIDER=$KUBEFIRST_CLOUD_PROVIDER" "--KUBEFIRST_CLOUD_REGION=$KUBEFIRST_CLOUD_REGION" "--KUBEFIRST_CLUSTER_NAME=$KUBEFIRST_CLUSTER_NAME" "--CIVO_API_KEY=$CIVO_API_KEY" "--GRAPPLE_DNS=$GRAPPLE_DNS"
 
@@ -599,7 +599,7 @@ fi
 
 
 # Prompt for GRAPPLE_DNS, CIVO_CLUSTER_ID, etc. using gum
-if [ "${TARGET_PLATFORM}" != $Minikube ]; then
+if ! match_case_insensitive "${TARGET_PLATFORM}" "$Minikube"; then
   check_if_param_avaiable_in_non_interactive_mode "GRAPPLE_DNS" "$GRAPPLE_DNS" "${help_menu_cmd}"
   GRAPPLE_DNS=$(if [ "${GRAPPLE_DNS}" != "" ]; then echo ${GRAPPLE_DNS}; else prompt_for_input_with_validation "Enter GRAPPLE_DNS: " "Valid DNS name is required" "$grpl_dns_regex" "Invalid DNS name format. Please try again."; fi) || exit $?
   echo "installing dns: ${GRAPPLE_DNS}"
@@ -697,13 +697,13 @@ cat /tmp/values-override.yaml
 if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
 
   status_log $TYPE_DEFAULT "Going to deploy grpl on ${TARGET_PLATFORM} with following configurations"  
-  if [ "${TARGET_PLATFORM}" == $CIVO ]; then 
+  if match_case_insensitive "${TARGET_PLATFORM}" "$CIVO"; then 
     status_log $TYPE_DEFAULT "CIVO_CLUSTER_ID: ${CIVO_CLUSTER_ID}"
     status_log $TYPE_DEFAULT "CIVO_CLUSTER: ${CIVO_CLUSTER}"
     status_log $TYPE_DEFAULT "CIVO_REGION: ${CIVO_REGION}"
     status_log $TYPE_DEFAULT "CIVO_EMAIL_ADDRESS: ${CIVO_EMAIL_ADDRESS}"
     status_log $TYPE_DEFAULT "CLUSTER_IP: ${CLUSTER_IP}"
-  elif [ ${TARGET_PLATFORM} == $Kubefirst ]; then
+  elif match_case_insensitive "${TARGET_PLATFORM}" "$Kubefirst"; then
     status_log $TYPE_DEFAULT "KUBEFIRST_CLOUD_PROVIDER: ${KUBEFIRST_CLOUD_PROVIDER}"
     status_log $TYPE_DEFAULT "KUBEFIRST_CLOUD_REGION: ${KUBEFIRST_CLOUD_REGION}"
     status_log $TYPE_DEFAULT "KUBEFIRST_CLUSTER_ID: ${KUBEFIRST_CLUSTER_ID}"
@@ -739,8 +739,8 @@ helm_deploy() {
 
   echo "Deploying $i with version $version"
 
-  if [ "${TARGET_PLATFORM}" = $Kubefirst ]; then
-    if [[ "$(echo "${KUBEFIRST_CLOUD_PROVIDER}" | tr '[:upper:]' '[:lower:]')" == "$(echo "${K3D}" | tr '[:upper:]' '[:lower:]')" ]]; then
+  if match_case_insensitive "${TARGET_PLATFORM}" "$Kubefirst"; then
+    if match_case_insensitive "${KUBEFIRST_CLOUD_PROVIDER}" "$K3D"; then
       Kubefirst_values=" -f ${GRPL_WORKDIR}/template-files/values-kubefirst-k3d.yaml "
     else
       Kubefirst_values=" -f ${GRPL_WORKDIR}/template-files/values-kubefirst.yaml "
@@ -775,7 +775,7 @@ if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
     kubeblocks_installation >/dev/null 2>&1 &
 fi
 
-if ([ "${TARGET_PLATFORM}" = $CIVO ] || [ "${TARGET_PLATFORM}" = $Kubernetes ]) && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+if (match_case_insensitive "${TARGET_PLATFORM}" "$CIVO" || match_case_insensitive "${TARGET_PLATFORM}" "$Kubernetes") && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 || true
   kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --env="CIVO_MASTER_IP=${CLUSTER_IP}" --restart=Never
@@ -797,7 +797,7 @@ if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; the
 fi
 
 # remove the DNS job again
-if [ "${TARGET_PLATFORM}" = $CIVO ]  && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+if match_case_insensitive "${TARGET_PLATFORM}" "$CIVO"  && ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
   kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
 fi
 
@@ -887,7 +887,7 @@ if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
 fi
 
 
-if [ "$TARGET_PLATFORM" = $CIVO ] && [ "${CLUSTER_IP}" == "" ]; then
+if match_case_insensitive "${TARGET_PLATFORM}" "$CIVO" && [ "${CLUSTER_IP}" == "" ]; then
 
   status_log $TYPE_INFO "Again Trying to Retrive cluster IP from kubectl cluster-info"
   status_log $TYPE_INFO "Waiting for cluster IP to be ready (30 seconds max)"
