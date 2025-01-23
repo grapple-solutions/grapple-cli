@@ -182,6 +182,7 @@ Usage:
   grpl doc [command]
 
 Available Commands:
+
   cli           generate web documentation for grpl cli
   crds          generate web documentation for custom grpl CRDs
   help or h     help about any command
@@ -800,7 +801,7 @@ Usage:
 
     grpl cluster status [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to get cluster status
@@ -850,7 +851,7 @@ Usage:
 
     grpl cluster patch [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to patch cluster 
@@ -912,7 +913,7 @@ Usage with params from configfile:
     grpl example deploy --configfile <file-name>.json
     e.g grpl example deploy --configfile grpl-config.json
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to get deploy example test-cases
@@ -924,12 +925,12 @@ Examples:
 
 Parameters:
 
-    GRAS_TEMPLATE=gras template e.g db-file, etc
-    DB_TYPE=db type it can either internal or external
-    KUBE_CONTEXT=kubectl context you want to use (default is 'current')
-    wait='true' / 'false', set to 'true' if you want to wait for grpl resources (grapi/gruim) to be ready (default is 'false')
-    DEPLOY_FROM_GITHUB='true' / 'false', set to 'true' if you want to deploy from github (default is 'false')
-    GITHUB_PATH=path to the resource manifest in grpl-gras-examples repository
+    --gras-template,        --GRAS_TEMPLATE string          gras template e.g db-file, etc
+    --db-type,              --DB_TYPE string                db type it can either internal or external
+    --kube-context,         --KUBE_CONTEXT string           kubectl context you want to use (default is 'current')
+    --wait,                 --WAIT string                   'true' / 'false', set to 'true' if you want to wait for grpl resources (grapi/gruim) to be ready (default is 'false')
+    --deploy-from-github,   --DEPLOY_FROM_GITHUB string     'true' / 'false', set to 'true' if you want to deploy from github (default is 'false')
+    --github-path,          --GITHUB_PATH string            path to the resource manifest in grpl-gras-examples repository
 
 " 
 
@@ -974,7 +975,7 @@ Usage:
 
     grpl example status [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to get example status
@@ -1026,7 +1027,7 @@ Usage:
 
     grpl application init [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to Initialize a grpl application
@@ -1038,10 +1039,10 @@ Examples:
 
 Parameters:
 
-    PROJECT_NAME=Name of the project
-    AUTO_CONFIRM='false' / 'true' (default is 'false')
-    GITHUBTOKEN=Token to authenticate gh 
-    GRAPPLE_TEMPLATE=the grapple-template repository to clone (default is 'grapple-solutions/grapple-template')
+    --project-name,       --PROJECT_NAME string         Name of the project
+    --auto-confirm,       --AUTO_CONFIRM string         'false' / 'true' (default is 'false')
+    --github-token,       --GITHUBTOKEN string          github token to authenticate gh 
+    --grapple-template,   --GRAPPLE_TEMPLATE string     the grapple-template repository to clone (default is 'grapple-solutions/grapple-template')
 
 "
     if [ "$type" == $WEB_DOC ]; then
@@ -1084,7 +1085,7 @@ Usage:
 
     grpl application update [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to update a grpl application
@@ -1096,7 +1097,7 @@ Examples:
 
 Parameters:
 
-    GRAPPLE_TEMPLATE=the grapple-template repository you cloned using grpl app init (default is 'grapple-solutions/grapple-template')
+    --grapple-template,   --GRAPPLE_TEMPLATE string     the grapple-template repository you cloned using grpl app init (default is 'grapple-solutions/grapple-template')
 
 "
     if [ "$type" == $WEB_DOC ]; then
@@ -1139,7 +1140,7 @@ Usage:
 
     grpl resource [command]
 
-Commands:
+Available Commands:
 
     d or deploy     to deploy a grpl template
     r or render     to render a grpl template
@@ -1204,7 +1205,7 @@ Usage with params from configfile:
   grpl resource deploy --configfile <file-name>.json
   e.g grpl resource deploy --configfile grpl-config.json
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to deploy grpl template
@@ -1216,20 +1217,20 @@ Examples:
 
 Parameters:
 
-    KUBE_CONTEXT=kubectl context you want to use (default is 'current')
-    GRAS_NAME=name of the project
-    GRAS_TEMPLATE=gras template e.g db-file, etc
-    SOURCE_DATA=source of the data
-    DB_FILE_PATH=path where data is store, (default path is /data/db.json)
-    DB_TYPE=db type it can either internal or external
-    ENABLE_GRUIM=to enable gruim, it can either be "Yes" or "No"
-    MODELS=input of models 
-    RELATIONS=models relations
-    KUBE_NS=namespace to deploy gras (default ns is 'default')
-    DATASOURCES=data sources configs
-    DISCOVERIES=discoveries configs
-    DATABASE_SCHEMA=database schema you want to use
-    AUTO_DISCOVERY=to enable auto discovery it can either be 'true' or 'false' (default is 'false')
+    --kube-context,         --KUBE_CONTEXT string       kubectl context you want to use (default is 'current')
+    --gras-name,            --GRAS_NAME string          name of the project
+    --gras-template,        --GRAS_TEMPLATE string      gras template e.g db-file, etc
+    --source-data,          --SOURCE_DATA string        source of the data
+    --db-file-path,         --DB_FILE_PATH string       path where data is store, (default path is /data/db.json)
+    --db-type,              --DB_TYPE string            db type it can either internal or external
+    --enable-gruim,         --ENABLE_GRUIM string       to enable gruim, it can either be "Yes" or "No"
+    --models,               --MODELS string             input of models 
+    --relations,            --RELATIONS string          models relations
+    --kube-ns,              --KUBE_NS string            namespace to deploy gras (default ns is 'default')
+    --datasources,          --DATASOURCES string        data sources configs
+    --discoveries,          --DISCOVERIES string        discoveries configs
+    --database-schema,      --DATABASE_SCHEMA string    database schema you want to use
+    --auto-discovery,       --AUTO_DISCOVERY string     to enable auto discovery it can either be 'true' or 'false' (default is 'false')
     
 "
 
@@ -1273,7 +1274,7 @@ Usage:
 
     grpl dev [command]
 
-Commands:
+Available Commands:
 
     h or help                           Help menu
     add                                 Adds something to devspace.yaml
@@ -1404,7 +1405,7 @@ Usage:
 
     grpl grapi [command]
 
-Commands:
+Available Commands:
 
     h or help                           Help menu
     grapi migrate-db                    to migrate db
@@ -1460,7 +1461,7 @@ Usage:
 
     grpl gruim [command]
 
-Commands:
+Available Commands:
 
     h or help                           Help menu
     gruim rebuild                       to rebuild gruim
@@ -1516,7 +1517,7 @@ Usage:
 
     grpl license [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     i or install  to install license
@@ -1573,7 +1574,7 @@ Usage:
 
     grpl license install [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to install license
@@ -1625,7 +1626,7 @@ Usage:
 
     grpl license status [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to get license status
@@ -1678,7 +1679,7 @@ Usage:
 
     grpl license remove [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to remove license
@@ -1873,7 +1874,7 @@ Usage:
 
     grpl ai [command]
 
-Commands:
+Available Commands:
 
     ai              ai commands
     *               Help menu
@@ -1925,7 +1926,7 @@ Usage:
 
     grpl ai resource [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to understand and create grpl resources
@@ -1937,11 +1938,11 @@ Examples:
 
 Parameters:
 
-    RESOURCE_ACTION=deploy (deploys the resource yaml onto the cluster), render (saves the resource into a yaml file), none (does nothing)
-    QUERY=your query to grapple ai, make sure to enclose the query in double quotes
-    KUBE_NS=kubernetes namespace where you want to deploy the resource
-    AUTO_CONFIRM='true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'false')
-    wait='true' / 'false', set to 'true' if you want to wait for the deployment to be ready (default is 'false')
+    --resource-action,       --RESOURCE_ACTION string       deploy (deploys the resource yaml onto the cluster), render (saves the resource into a yaml file), none (does nothing)
+    --query,                 --QUERY string                 your query to grapple ai, make sure to enclose the query in double quotes
+    --kube-ns,               --KUBE_NS string               kubernetes namespace where you want to deploy the resource
+    --auto-confirm,          --AUTO_CONFIRM string          'true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'false')
+    --wait,                  --WAIT string                  'true' / 'false', set to 'true' if you want to wait for the deployment to be ready (default is 'false')
 
 "
 
@@ -1983,7 +1984,7 @@ Usage:
 
     grpl aws [command]
 
-Commands:
+Available Commands:
 
     i or install    installation of grpl on was cluster
     *               Help menu
@@ -2043,7 +2044,7 @@ Usage with params from configfile:
   grpl aws install --configfile <file-name>.json
   e.g grpl aws install --configfile grpl-config.json
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to install grpl on aws cluster
@@ -2055,15 +2056,15 @@ Examples:
 
 Variables:
 
-    CLUSTER_NAME=name of the cluster to install grapple in
-    CLUSTER_IP=ip of the cluster
-    GRAPPLE_VERSION=version of grapple to install
-    AUTO_CONFIRM='true' or 'false' to auto confirm installation of grapple
-    GRAPPLE_DNS=domain name of the cluster to install grapple in
-    ORGANIZATION=name of the organization
-    EMAIL=email of the organization
-    INSTALL_KUBEBLOCKS='true' or 'false' to install kubeblocks
-    SSL='true' or 'false' to set ssl
+    --cluster-name,          --CLUSTER_NAME string          name of the cluster to install grapple in
+    --cluster-ip,            --CLUSTER_IP string            ip of the cluster
+    --grapple-version,       --GRAPPLE_VERSION string       version of grapple to install
+    --auto-confirm,          --AUTO_CONFIRM string          'true' or 'false' to auto confirm installation of grapple
+    --grapple-dns,           --GRAPPLE_DNS string           domain name of the cluster to install grapple in
+    --organization,          --ORGANIZATION string          name of the organization
+    --email,                 --EMAIL string                 email of the organization
+    --install-kubeblocks,    --INSTALL_KUBEBLOCKS string   'true' or 'false' to install kubeblocks
+    --ssl,                   --SSL string                   'true' or 'false' to set ssl
 " 
 
     if [ "$type" == $WEB_DOC ]; then
@@ -2095,29 +2096,37 @@ https://grapple-solutions.com/
 $cli_name
 $meta
 Description: 
+
     connects to a grapple cluster
+
 Usage: 
+
     grpl cluster connect [command]
-Commands:
+
+Available Commands:
+
     h or help     Help menu
     *             to connect to a grapple cluster
     
-Examples:    
+Examples:  
+
     grpl c conn h    or    grpl cluster connect help
     grpl c conn *    or    grpl cluster connect *
+
 Parameters:
-    TARGET_PLATFORM=one of your choice 'CIVO' or 'Kubefirst'
-    CIVO_REGION=CIVO region where cluster is located
-    CIVO_CLUSTER=CIVO cluster name
-    CIVO_API_KEY=api key of the CIVO account
-    GRAPPLE_DNS=grapple dns
-    KUBEFIRST_CLOUD_PROVIDER=kubefirst cloud provider (e.g. Civo, AWS, GoogleCloud)
-    KUBEFIRST_CLOUD_REGION=kubefirst cloud region (e.g. fra1, us-east1, eu-central1)
-    KUBEFIRST_CLUSTER_NAME=kubefirst cluster name
-    AWS_ACCESS_KEY_ID=aws access key id ( required if KUBEFIRST_CLOUD_PROVIDER is AWS )
-    AWS_SECRET_ACCESS_KEY=aws secret access key ( required if KUBEFIRST_CLOUD_PROVIDER is AWS )
-    AWS_SESSION_TOKEN=aws session token ( required if KUBEFIRST_CLOUD_PROVIDER is AWS )
-    GOOGLE_PROJECT_ID=google project id ( required if KUBEFIRST_CLOUD_PROVIDER is GoogleCloud )
+
+    --target-platform,          --TARGET_PLATFORM string            one of your choice 'CIVO' or 'Kubefirst'
+    --civo-region,              --CIVO_REGION string                CIVO region where cluster is located
+    --civo-cluster,             --CIVO_CLUSTER string               CIVO cluster name
+    --civo-api-key,             --CIVO_API_KEY string               api key of the CIVO account
+    --grapple-dns,              --GRAPPLE_DNS string                grapple dns
+    --kubefirst-cloud-provider, --KUBEFIRST_CLOUD_PROVIDER string   kubefirst cloud provider (e.g. Civo, AWS, GoogleCloud)
+    --kubefirst-cloud-region,   --KUBEFIRST_CLOUD_REGION string     kubefirst cloud region (e.g. fra1, us-east1, eu-central1)
+    --kubefirst-cluster-name,   --KUBEFIRST_CLUSTER_NAME string     kubefirst cluster name
+    --aws-access-key-id,        --AWS_ACCESS_KEY_ID string          aws access key id ( required if KUBEFIRST_CLOUD_PROVIDER is AWS )
+    --aws-secret-access-key,    --AWS_SECRET_ACCESS_KEY string      aws secret access key ( required if KUBEFIRST_CLOUD_PROVIDER is AWS )
+    --aws-session-token,        --AWS_SESSION_TOKEN string          aws session token ( required if KUBEFIRST_CLOUD_PROVIDER is AWS )
+    --google-project-id,        --GOOGLE_PROJECT_ID string          google project id ( required if KUBEFIRST_CLOUD_PROVIDER is GoogleCloud )
 "
 
     if [ "$type" == $WEB_DOC ]; then

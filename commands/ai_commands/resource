@@ -29,7 +29,7 @@ valid_args=(
     "QUERY"
     "KUBE_NS"
     "AUTO_CONFIRM"
-    "wait"
+    "WAIT"
 )
 
 # check if values are already passed form terminal
@@ -320,7 +320,7 @@ if [[ "$yaml_content" != "" ]]; then
         kubectl apply -f $extract_yaml_path
         status_log $TYPE_SUCCESS "resource yaml is deployed onto the cluster"
 
-        if [[ "$wait" == "true"  ]]; then
+        if [[ "$WAIT" == "true"  ]]; then
             status_log $TYPE_INFO "waiting for the resources to be ready"
             deployed_resources=$(get_deployed_resources $gras_kind)
             sleep 5
