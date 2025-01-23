@@ -167,23 +167,23 @@ https://grapple-solutions.com/
 $cli_name  - $(cat $GRPL_WORKDIR/VERSION)
 $meta
 
-Usage: 
+Usage:
+  grpl doc [flags]
+  grpl doc [command]
 
-    grpl doc [command]
+Available Commands:
+  cli           generate web documentation for grpl cli
+  crds          generate web documentation for custom grpl CRDs
+  help or h     help about any command
+  ui            generate web documentation for ui module properties
 
-Commands:
-
-    h or help     Help menu
-    cli           to generate web documentation for grpl cli 
-    crds          to generate web documentation for custom grpl CRDs
-    ui           to generate web documentation for ui module properties
-    
 Examples:
 
     grpl doc help
     grpl doc cli
     grpl doc crds
     grpl doc ui
+
 "
 
     if [ "$type" == $WEB_DOC ]; then
@@ -228,7 +228,7 @@ Usage:
 
     grpl [command]
 
-Commands:
+Available Commands:
 
     i or install                Installation
     c or cluster                Cluster commands
@@ -298,7 +298,7 @@ Usage:
 
     grpl application [command]
 
-Commands:
+Available Commands:
 
     i or init       Initialize new grpl application
     *               Help menu
@@ -349,7 +349,7 @@ Usage:
 
     grpl cluster [command]
 
-Commands:
+Available Commands:
 
     s or status     Cluster status
     i or install    Cluster installation
@@ -405,7 +405,7 @@ Usage:
 
     grpl example [command]
 
-Commands:
+Available Commands:
 
     s or status     status of example
     d or deploy     deploy an example
@@ -499,7 +499,7 @@ Usage:
     
     grpl upgrade [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to upgrade
@@ -550,7 +550,7 @@ Usage:
 
     grpl version [command]
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to get version details
@@ -622,7 +622,7 @@ Usage with params from configfile:
   e.g grpl cluster create --configfile grpl-create-config.json
 
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to create cluster
@@ -636,13 +636,13 @@ Examples:
 Parameters:
 
     Common Parameters:
-        TARGET_PLATFORM= CIVO / Kubernetes / minikube / Kubefirst
-        CLUSTER_NAME= name of the cluster
-        CIVO_API_KEY= civo api key (optional)
-        CIVO_REGION=Available CIVO regions (e.g. FRA1)
-        wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready (default is 'false')
-        AUTO_CONFIRM= 'true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'true')
-        INSTALL_KUBEBLOCKS= 'true' / 'false', set to 'true' if you want to install kubeblocks (default is 'true')
+        --target-platform,      --TARGET_PLATFORM string         On of the following - CIVO / Kubernetes / minikube / Kubefirst
+        --cluster-name,         --CLUSTER_NAME    string         name of the cluster
+        --civo-api-key,         --CIVO_API_KEY    string         civo api key (optional)
+        --civo-region,          --CIVO_REGION     string         Available CIVO regions (e.g. FRA1)
+        --wait,                 --WAIT            string         wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready (default is 'false')
+        --auto-confirm,         --AUTO_CONFIRM    string         AUTO_CONFIRM= 'true' / 'false', set to 'true' if you want to skip confirmation prompt (default is 'true')
+        --install-kubeblocks,   --INSTALL_KUBEBLOCKS string      INSTALL_KUBEBLOCKS= 'true' / 'false', set to 'true' if you want to install kubeblocks (default is 'true')
 
 
     CIVO Parameters:
@@ -708,7 +708,7 @@ Usage with values yaml:
   grpl cluster install --values <file1>.yaml <file2>.yaml
   e.g grpl cluster install --values config-values.yaml config-values2.yaml
 
-Commands:
+Available Commands:
 
     h or help     Help menu
     *             to install cluster
@@ -721,31 +721,26 @@ Examples:
 
 Parameters:
 
-  TARGET_PLATFORM=CIVO / Kubernetes / minikube / Kubefirst
-  # general configurations
-  GRAPPLE_VERSION = version of the grapple deployment e.g. '0.2.0', '0.2.1' (default is 'latest')
-  AUTO_CONFIRM='false' / 'true' (default is 'false')
-  EMAIL = email
-  ORGANIZATION = organization
-  # kubernetes related configurations
-  KUBE_CONTEXT=kubernetes context (default is 'current')
-  # minikube related configurations
-  # no additional configurations
-  # CIVO related configurations
-  CIVO_REGION=Available CIVO regions (e.g. FRA1)
-  CIVO_CLUSTER=CIVO cluster
-  CIVO_CLUSTER_ID=CIVO cluster ID
-  CIVO_EMAIL_ADDRESS=email address of your CIVO account
-  CIVO_API_KEY=api key of your CIVO account
-  CLUSTER_IP= Cluster IP address
-  KUBEFIRST_CLOUD_PROVIDER = cloud provider for kubefirst
-  KUBEFIRST_CLOUD_REGION = cloud region of kubefirst cloud provider
-  KUBEFIRST_CLUSTER_ID = cluster id of kubefirst cluster
-  KUBEFIRST_CLUSTER_NAME = cluster name for kubefirst cluster
-  GITHUB_USERNAME = github username
-  GITLAB_USERNAME = gitlab username
-  INSTALL_KUBEBLOCKS = 'true' / 'false', set to 'true' if you want to install kubeblocks (default is 'false')
-  wait = 'true' / 'false', set to 'true' if you want to wait for grpl to be ready (default is 'false')
+  --target-platform,            --TARGET_PLATFORM string         On of the following - CIVO / Kubernetes / minikube / Kubefirst
+  --grapple-version,            --GRAPPLE_VERSION string         version of the grapple deployment e.g. '0.2.0', '0.2.1' (default is 'latest')
+  --auto-confirm,               --AUTO_CONFIRM string             AUTO_CONFIRM='false' / 'true' (default is 'false')
+  --email,                      --EMAIL string                            email of the civo user
+  --organization,               --ORGANIZATION string            organization
+  --kube-context,               --KUBE_CONTEXT string            kubernetes context (default is 'current')
+  --civo-region,                --CIVO_REGION string                Available CIVO regions (e.g. FRA1)
+  --civo-cluster,               --CIVO_CLUSTER string              CIVO cluster
+  --civo-cluster-id,            --CIVO_CLUSTER_ID string        CIVO cluster ID
+  --civo-email-address,         --CIVO_EMAIL_ADDRESS string  email address of your CIVO account
+  --civo-api-key,               --CIVO_API_KEY string            api key of your CIVO account
+  --cluster-ip,                 --CLUSTER_IP string                Cluster IP address
+  --kubefirst-cloud-provider,   --KUBEFIRST_CLOUD_PROVIDER string  cloud provider for kubefirst
+  --kubefirst-cloud-region,     --KUBEFIRST_CLOUD_REGION string  cloud region of kubefirst cloud provider
+  --kubefirst-cluster-id,       --KUBEFIRST_CLUSTER_ID string  cluster id of kubefirst cluster
+  --kubefirst-cluster-name,     --KUBEFIRST_CLUSTER_NAME string  cluster name for kubefirst cluster
+  --github-username,            --GITHUB_USERNAME string  github username
+  --gitlab-username,            --GITLAB_USERNAME string  gitlab username
+  --install-kubeblocks,         --INSTALL_KUBEBLOCKS string  'true' / 'false', set to 'true' if you want to install kubeblocks (default is 'false')
+  --wait,                       --WAIT string     'true' / 'false', set to 'true' if you want to wait for grpl to be ready (default is 'false')
 
 " 
 
