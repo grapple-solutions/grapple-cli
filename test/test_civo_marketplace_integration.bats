@@ -62,7 +62,7 @@ check_previous_test_failed() {
 }
 
 # Test: Deploy example application
-@test "Deploy example application and wait for it to be ready" {
+@test "Deploy example application" {
 
   check_previous_test_failed
   if [ "$DB_MYSQL_DISCOVERY_BASED" = "" ] || [ "$EXTERNAL_DB" = "" ]; then
