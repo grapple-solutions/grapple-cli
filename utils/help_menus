@@ -1046,7 +1046,8 @@ Parameters:
     PROJECT_NAME=Name of the project
     AUTO_CONFIRM='false' / 'true' (default is 'false')
     GITHUBTOKEN=Token to authenticate gh 
-    GRAPPLE_TEMPLATE=the grapple-template repository to clone (default is 'grapple-solutions/grapple-template')
+    GRAPPLE_TEMPLATE=the grapple-template repository to clone (default is grapple-solutions/grapple-svelte-template)
+    GRAPPLE_TYPE=the grapple-template type to clone (two options are available: svelte or react, default is 'svelte')
 
 "
     if [ "$type" == $WEB_DOC ]; then

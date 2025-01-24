@@ -22,6 +22,7 @@ valid_args=(
     "AUTO_CONFIRM"
     "GITHUBTOKEN"
     "GRAPPLE_TEMPLATE"
+    "GRAPPLE_TYPE"
   )
   
 
@@ -32,8 +33,24 @@ extract_input_params_from_cli $valid_args "grpl a i h" "$@"
 cli_log "application init BEGIN"
 status_log $TYPE_INFO "application initialization is in progress"
 
+if  [[ $GRAPPLE_TYPE == "" ]]; then
+
+  if [[ $AUTO_CONFIRM == "true" ]]; then
+    GRAPPLE_TYPE="svelte"
+  elif [[ $TTY == "enabled" ]]; then
+    GRAPPLE_TYPE=$(gum choose "svelte" "react")
+  elif [[ $TTY != "enabled" ]]; then
+    GRAPPLE_TYPE="svelte"
+  fi
+
+fi
+
 if [[ $GRAPPLE_TEMPLATE == "" ]]; then
-  GRAPPLE_TEMPLATE="grapple-solutions/grapple-template"
+  if [[ $GRAPPLE_TYPE == "svelte" ]]; then
+    GRAPPLE_TEMPLATE="grapple-solutions/grapple-svelte-template"
+  elif [[ $GRAPPLE_TYPE == "react" ]]; then
+    GRAPPLE_TEMPLATE="grapple-solutions/grapple-react-template"
+  fi
 fi
 
 
