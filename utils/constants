@@ -80,3 +80,8 @@ K3D="k3d"
 RESOURCE_DEPLOY="deploy"
 RESOURCE_RENDER="render"
 NO_ACTION="none"
+
+
+# GRAPPLE_TEMPLATE_TYPEs
+SVELTE="svelte"
+REACT="react"
