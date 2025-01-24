@@ -45,11 +45,14 @@ if  [[ $GRAPPLE_TYPE == "" ]]; then
 
 fi
 
+status_log $TYPE_INFO "GRAPPLE_TYPE: $GRAPPLE_TYPE"
+
+
 if [[ $GRAPPLE_TEMPLATE == "" ]]; then
   if [[ $GRAPPLE_TYPE == "svelte" ]]; then
-    GRAPPLE_TEMPLATE="grapple-solutions/grapple-svelte-template"
+    GRAPPLE_TEMPLATE="grapple-solution/grapple-svelte-template"
   elif [[ $GRAPPLE_TYPE == "react" ]]; then
-    GRAPPLE_TEMPLATE="grapple-solutions/grapple-react-template"
+    GRAPPLE_TEMPLATE="grapple-solution/grapple-react-template"
   fi
 fi
 
@@ -147,4 +150,5 @@ status_log $TYPE_SUCCESS "application initialization is complete"
 status_log $TYPE_INFO "What's Next?"
 status_log $TYPE_INFO "please run 'cd $PROJECT_NAME' to move into the project $PROJECT_NAME folder"
 status_log $TYPE_INFO "run 'grpl dev help' to displays help menu for grpl dev"
+status_log $TYPE_INFO "run 'grpl dev ns <namespace>' to create and select the namespace for grpl dev"
 status_log $TYPE_INFO "run 'grpl dev' to start the project"
