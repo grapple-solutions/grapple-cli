@@ -72,29 +72,6 @@ fi
 
 #-------------Functions-------------------
 
-build_cluster_creation_command() {
-    local base_command=$1
-    local valid_args
-    if match_case_insensitive "$TARGET_PLATFORM" "$CIVO"; then
-          valid_args=("${civo_valid_args[@]}")
-    fi
-
-    for arg in "${valid_args[@]}"; do
-        # Check if a variable named after the argument exists and has a value
-        local var_name=$(echo "$arg" | tr '[:lower:]' '[:upper:]' | tr '-' '_')
-        if [[ -n "${!var_name}" ]]; then
-            # If the argument has a short flag (single letter), prepend a dash
-            if [[ ${#var_name} -eq 1 ]]; then
-                base_command+=" -$arg=${!var_name}"
-            else
-                base_command+=" --$arg=${!var_name}"
-            fi
-        fi
-    done
-    
-    echo "$base_command"
-}
-
 wait_for_civo_cluster_ready() {
   local cluster_name=$1
   local max_wait_time=300  # 5 minutes in seconds
@@ -269,7 +246,6 @@ civo_cluster_create() {
     status_log $TYPE_INFO "grpl is already installed"
   fi
 
-  status_log $TYPE_SUCCESS "Successfully got status of cluster ${CLUSTER_NAME}"
   
 }
 
