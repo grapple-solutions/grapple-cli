@@ -17,8 +17,6 @@ cli_help() {
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
-  status_log $TYPE_INFO "here2"
-
 NS=grpl-system
 awsregistry="p7h7z5g3"
 SSL="false"
