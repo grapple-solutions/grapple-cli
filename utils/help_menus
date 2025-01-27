@@ -1075,6 +1075,7 @@ Parameters:
     --auto-confirm,       --AUTO_CONFIRM string         'false' / 'true' (default is 'false')
     --github-token,       --GITHUBTOKEN string          github token to authenticate gh 
     --grapple-template,   --GRAPPLE_TEMPLATE string     the grapple-template repository to clone (default is 'grapple-solutions/grapple-template')
+    --grapple-type,       --GRAPPLE_TYPE string         the grapple-template type to clone (two options are available: 'svelte' or 'react', default is 'svelte')
 
 "
     if [ "$type" == $WEB_DOC ]; then

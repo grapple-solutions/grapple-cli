@@ -17,8 +17,6 @@ cli_help() {
 
 [ "$1" = "help" ] || [ "$1" = "h" ] && cli_help
 
-  status_log $TYPE_INFO "here2"
-
 NS=grpl-system
 awsregistry="p7h7z5g3"
 SSL="false"
@@ -67,15 +65,6 @@ kubeblocks_installation() {
   fi
 }
 
-#-------------Variables-------------------
-
-
-if [ "${GRAPPLE_DNS}" == "" ]; then 
-    GRAPPLE_DNS=${CLUSTER_NAME}
-    GRAPPLE_DOMAIN=".grplaws.grapple-demo.com"
-fi
-
-
 #----------- CLUSTER_NAME input --------
 
 check_if_param_avaiable_in_non_interactive_mode "CLUSTER_NAME" "${CLUSTER_NAME}" "${help_menu_cmd}"
@@ -85,6 +74,141 @@ check_if_param_avaiable_in_non_interactive_mode "CLUSTER_NAME" "${CLUSTER_NAME}"
 # fi
 CLUSTER_NAME=$(if [ "${CLUSTER_NAME}" != "" ]; then echo "${CLUSTER_NAME}"; else (gum spin --title "fetching aws eks clusters" -- bash -c 'eksctl get cluster | awk "NR>1 {print \$1}" > /dev/null' && eksctl get cluster | awk "NR>1 {print \$1}" | gum choose) || echo ""; fi)
 echo "selected aws cluster: ${CLUSTER_NAME}"
+
+
+
+#----------- Prerequisites installation -------------------
+
+# Install EBS CSI Driver Service Account if not exists
+if ! kubectl get serviceaccount ebs-csi-controller-sa -n kube-system >/dev/null 2>&1; then
+  status_log $TYPE_INFO "Creating EBS CSI Driver service account"
+  if ! eval "$(getGumSpinnerOrLogger 'Creating EBS CSI Driver service account') eksctl create iamserviceaccount \
+    --name ebs-csi-controller-sa \
+    --namespace kube-system \
+    --cluster ${CLUSTER_NAME} \
+    --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+    --approve --role-only \
+    --role-name AmazonEKS_EBS_CSI_DriverRole"; then
+    status_log $TYPE_ERROR "Failed to create EBS CSI Driver service account"
+    exit 1
+  fi
+else
+  status_log $TYPE_INFO "EBS CSI Driver service account already exists"
+fi
+
+# Install EFS CSI Driver Service Account if not exists 
+if ! kubectl get serviceaccount efs-csi-controller-sa -n kube-system >/dev/null 2>&1; then
+  status_log $TYPE_INFO "Creating EFS CSI Driver service account"
+  if ! eval "$(getGumSpinnerOrLogger 'Creating EFS CSI Driver service account') eksctl create iamserviceaccount \
+    --name efs-csi-controller-sa \
+    --namespace kube-system \
+    --cluster ${CLUSTER_NAME} \
+    --attach-policy-arn arn:aws:iam::832137119998:policy/AmazonEKS_EFS_CSI_Driver_Policy \
+    --approve --role-only \
+    --role-name AmazonEKS_EFS_CSI_DriverRole"; then
+    status_log $TYPE_ERROR "Failed to create EFS CSI Driver service account"
+    exit 1
+  fi
+else
+  status_log $TYPE_INFO "EFS CSI Driver service account already exists"
+fi
+
+# Install EBS CSI Driver addon if not exists
+if ! eksctl get addon --cluster ${CLUSTER_NAME} | grep aws-ebs-csi-driver >/dev/null 2>&1; then
+  status_log $TYPE_INFO "Installing EBS CSI Driver addon"
+  if ! eval "$(getGumSpinnerOrLogger 'Installing EBS CSI Driver addon') eksctl create addon \
+    --name aws-ebs-csi-driver \
+    --cluster ${CLUSTER_NAME} \
+    --service-account-role-arn arn:aws:iam::832137119998:role/AmazonEKS_EBS_CSI_DriverRole \
+    --force"; then
+    status_log $TYPE_ERROR "Failed to install EBS CSI Driver addon"
+    exit 1
+  fi
+else
+  status_log $TYPE_INFO "EBS CSI Driver addon already exists"
+fi
+
+# Install cluster autoscaler if not exists
+if ! kubectl get deployment cluster-autoscaler -n kube-system >/dev/null 2>&1; then
+  status_log $TYPE_INFO "Installing cluster autoscaler"
+  if ! eval "$(getGumSpinnerOrLogger 'Installing cluster autoscaler') curl -s https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml | \
+    sed \"s,<YOUR CLUSTER NAME>,${CLUSTER_NAME},g\" | \
+    kubectl apply -f -"; then
+    status_log $TYPE_ERROR "Failed to install cluster autoscaler"
+    exit 1
+  fi
+else
+  status_log $TYPE_INFO "Cluster autoscaler already exists"
+fi
+
+# Add traefik helm repo if not exists
+if ! helm repo list | grep traefik >/dev/null 2>&1; then
+  status_log $TYPE_INFO "Adding Traefik repository"
+  if ! eval "$(getGumSpinnerOrLogger 'Adding Traefik repository') helm repo add traefik https://helm.traefik.io/traefik"; then
+    status_log $TYPE_ERROR "Failed to add Traefik repository"
+    exit 1
+  fi
+else
+  status_log $TYPE_INFO "Traefik repository already exists"
+fi
+
+# Add aws-efs-csi-driver helm repo if not exists
+if ! helm repo list | grep aws-efs-csi-driver >/dev/null 2>&1; then
+  status_log $TYPE_INFO "Adding AWS EFS CSI Driver repository"
+  if ! eval "$(getGumSpinnerOrLogger 'Adding AWS EFS CSI Driver repository') helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver/"; then
+    status_log $TYPE_ERROR "Failed to add AWS EFS CSI Driver repository"
+    exit 1
+  fi
+else
+  status_log $TYPE_INFO "AWS EFS CSI Driver repository already exists"
+fi
+
+# Update helm repos
+if ! eval "$(getGumSpinnerOrLogger 'Updating Helm repositories') helm repo update"; then
+  status_log $TYPE_ERROR "Failed to update Helm repositories"
+  exit 1
+fi
+
+# Install EFS CSI Driver if not exists
+if ! helm list -n kube-system | grep aws-efs-csi-driver >/dev/null 2>&1; then
+  status_log $TYPE_INFO "Installing EFS CSI Driver"
+  if ! eval "$(getGumSpinnerOrLogger 'Installing EFS CSI Driver') helm upgrade -i aws-efs-csi-driver aws-efs-csi-driver/aws-efs-csi-driver \
+    --namespace kube-system \
+    --set image.repository=602401143452.dkr.ecr.eu-central-1.amazonaws.com/eks/aws-efs-csi-driver \
+    --set controller.serviceAccount.create=false \
+    --set controller.serviceAccount.name=efs-csi-controller-sa"; then
+    status_log $TYPE_ERROR "Failed to install EFS CSI Driver"
+    exit 1
+  fi
+else
+  status_log $TYPE_INFO "EFS CSI Driver already exists"
+fi
+
+# Install Traefik if not exists
+if ! helm list -n traefik | grep traefik >/dev/null 2>&1; then
+  status_log $TYPE_INFO "Installing Traefik"
+  if ! eval "$(getGumSpinnerOrLogger 'Installing Traefik') helm upgrade -i traefik traefik/traefik \
+    --create-namespace \
+    --namespace=traefik \
+    --values=$GRPL_WORKDIR/template-files/traefik-values.yaml"; then
+    status_log $TYPE_ERROR "Failed to install Traefik"
+    exit 1
+  fi
+else
+  status_log $TYPE_INFO "Traefik already exists"
+fi
+
+
+
+
+#-------------Variables-------------------
+
+
+if [ "${GRAPPLE_DNS}" == "" ]; then 
+    GRAPPLE_DNS=${CLUSTER_NAME}
+    GRAPPLE_DOMAIN=".grplaws.grapple-demo.com"
+fi
+
 
 
 #----------- creating complete domain --------
