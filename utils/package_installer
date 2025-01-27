@@ -469,7 +469,9 @@ extract_helm_cli_version(){
         helm_version=$(echo "$helm_output" | sed -n 's/version.BuildInfo{Version:"\([^"]*\).*/\1/p')
 
         # Output the latest version
-        echo "      $helm_version - helm" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      $helm_version - helm" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add helm version to dependency_versions"
+        fi
     fi
 
 }
@@ -485,7 +487,9 @@ extract_kubectl_cli_version(){
         kubectl_client_version=$(echo "$kubectl_output" | awk '/Client Version:/{print $NF}')
 
         # Output the latest version
-        echo "      $kubectl_client_version - kubectl" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      $kubectl_client_version - kubectl" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add kubectl version to dependency_versions"
+        fi
     fi
 
 }
@@ -502,7 +506,9 @@ extract_gum_cli_version(){
         gum_version=$(echo "$gum_output" | grep -o '[0-9][0-9.]*')
 
         # Output the latest version
-        echo "      v$gum_version - gum" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      v$gum_version - gum" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add gum version to dependency_versions"
+        fi
     fi
 
 }
@@ -518,7 +524,9 @@ extract_civo_cli_version(){
         civo_version=$(echo "$civo_output" | grep -o 'Civo CLI v[0-9.]*' | awk '{print $3}')
 
         # Output the latest version
-        echo "      $civo_version - civo" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      $civo_version - civo" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add civo version to dependency_versions"
+        fi
     fi
 
 }
@@ -535,7 +543,9 @@ extract_minikube_cli_version(){
         minikube_version=$(echo "$minikube_output" | grep -o 'minikube version: v[0-9.]*' | awk '{print $3}')
 
         # Output the latest version
-        echo "      $minikube_version - minikube" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      $minikube_version - minikube" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add minikube version to dependency_versions"
+        fi
     fi
 
 }
@@ -552,7 +562,9 @@ extract_kbcli_cli_version(){
         kbcli_version=$(echo "$kbcli_output" | grep -o 'kbcli: [0-9.]*' | awk '{print $2}')
 
         # Output the latest version
-        echo "      v$kbcli_version - kbcli" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      v$kbcli_version - kbcli" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add kbcli version to dependency_versions"
+        fi
     fi
 
 }
@@ -568,7 +580,9 @@ extract_kubeblocks_cli_version(){
         kubeblocks_version=$(echo "$output" | grep -o 'KubeBlocks: [0-9.]*' | awk '{print $2}')
 
         # Output the latest version
-        echo "      v$kubeblocks_version - kubeblocks" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      v$kubeblocks_version - kubeblocks" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add kubeblocks version to dependency_versions"
+        fi
     fi
 
 }
@@ -580,7 +594,9 @@ extract_grapple_cli_version(){
         # Extract grpl-cli version number
         grpl_version=$(brew list --versions grapple-cli | grep grapple-cli | awk '{print $2}')
         # Output the latest version
-        echo "$grpl_version" > "$GRPL_WORKDIR/VERSION"
+        if ! echo "$grpl_version" > "$GRPL_WORKDIR/VERSION" >/dev/null 2>&1; then
+            echo "failed to add grapple-cli version to VERSION"
+        fi
     fi
 
 }
@@ -598,14 +614,15 @@ extract_git_cli_version(){
         version_number=""
         if [[ $git_version =~ $regex ]]; then
             version_number=${BASH_REMATCH[1]}
-            echo "Git version number: $version_number"
         else
             echo "Failed to extract version number from git version output."
             return 0
         fi
 
         # Output the latest version
-        echo "      v$version_number - git" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      v$version_number - git" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add git version to dependency_versions"
+        fi
     fi
 
 }
@@ -622,14 +639,15 @@ extract_gh_cli_version(){
         version_number=""
         if [[ $gh_version =~ $regex ]]; then
             version_number=${BASH_REMATCH[1]}
-            echo "gh version number: $version_number"
         else
             echo "Failed to extract version number from gh version output."
             return 0
         fi
 
         # Output the latest version
-        echo "      v$version_number - git" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      v$version_number - git" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add git version to dependency_versions"
+        fi
     fi
 
 }
@@ -642,7 +660,9 @@ extract_jq_cli_version(){
         jq_version=$(jq --version | awk -F'[- ]' '{print $2}')
 
         # Output the latest version
-        echo "      v$jq_version - jq" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      v$jq_version - jq" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add jq version to dependency_versions"
+        fi
     fi
 
 }
@@ -657,7 +677,9 @@ extract_yq_cli_version(){
         yq_version=$(yq --version | awk '{print $NF}')
 
         # Output the latest version
-        echo "      $yq_version - yq" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      $yq_version - yq" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add yq version to dependency_versions"
+        fi
     fi
 
 }
@@ -670,7 +692,9 @@ extract_devspace_cli_version(){
         devspace_version=$(devspace version | awk -F ': ' '/DevSpace version/{print $2}')
 
         # Output the latest version
-        echo "      $devspace_version - devspace" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      $devspace_version - devspace" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add devspace version to dependency_versions"
+        fi
     fi
 
 }
@@ -684,7 +708,9 @@ extract_task_cli_version(){
         task_version=$(task --version | awk '{print $3}')
 
         # Output the latest version
-        echo "      $task_version - task" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      $task_version - task" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add task version to dependency_versions"
+        fi
     fi
 }
 
@@ -697,7 +723,9 @@ extract_glow_cli_version(){
         glow_version=$(glow --version | awk '{print $3}')
 
         # Output the latest version
-        echo "      $glow_version - glow" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      $glow_version - glow" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add glow version to dependency_versions"
+        fi
     fi
 }
 
@@ -709,7 +737,9 @@ extract_aws_cli_version(){
         # Get yq version
         aws_version=$(aws --version | awk '{print $1}' | awk -F'/' '{print $2}')
         # Output the latest version
-        echo "      $aws_version - aws" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      $aws_version - aws" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add aws version to dependency_versions"
+        fi
     fi
 }
 
@@ -720,6 +750,8 @@ extract_gcloud_cli_version(){
         # Get gcloud version
         gcloud_version=$(gcloud --version | head -n 1 | awk '{print $4}')
         # Output the latest version
-        echo "      $gcloud_version - gcloud" >> "$GRPL_WORKDIR/dependency_versions"
+        if ! echo "      $gcloud_version - gcloud" >> "$GRPL_WORKDIR/dependency_versions" >/dev/null 2>&1; then
+            echo "failed to add gcloud version to dependency_versions"
+        fi
     fi
 }
