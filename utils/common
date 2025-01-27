@@ -471,6 +471,30 @@ kubeblocks_installation() {
 }
 
 
+
+build_cluster_creation_command() {
+    local base_command=$1
+    local valid_args
+    if [[ $TARGET_PLATFORM = $CIVO ]]; then
+          valid_args=("${civo_valid_args[@]}")
+    fi
+
+    for arg in "${valid_args[@]}"; do
+        # Check if a variable named after the argument exists and has a value
+        local var_name=${arg//-/_}
+
+        if [[ -n "${!var_name}" ]]; then
+            # If the argument has a short flag (single letter), prepend a dash
+            if [[ ${#var_name} -eq 1 ]]; then
+                base_command+=" -$arg=${!var_name}"
+            else
+                base_command+=" --$arg=${!var_name}"
+            fi
+        fi
+    done
+    
+    echo "$base_command"
+}
 match_case_insensitive() {
     local value1=$(echo "$1" | tr '[:upper:]' '[:lower:]')
     local value2=$(echo "$2" | tr '[:upper:]' '[:lower:]')
@@ -481,3 +505,44 @@ match_case_insensitive() {
     fi
 }
 
+
+
+
+
+get_k3d_cluster_ip() {
+
+
+  # Namespace where the LoadBalancer is located
+  NAMESPACE="kube-system"
+
+  # Service name to look for
+  SERVICE_NAME="traefik"
+
+  # Maximum wait time in seconds
+  MAX_WAIT=300
+  INTERVAL=5
+  WAITED=0
+
+  status_log $TYPE_INFO "Waiting for the external IP of LoadBalancer '$SERVICE_NAME' in namespace '$NAMESPACE'"
+
+  while [ $WAITED -lt $MAX_WAIT ]; do
+    EXTERNAL_IP=$(kubectl get svc -n $NAMESPACE | awk -v svc="$SERVICE_NAME" '$1 == svc && $2 == "LoadBalancer" {print $4}')
+    
+    # Check if EXTERNAL_IP is assigned
+    if [[ "$EXTERNAL_IP" != "<none>" && "$EXTERNAL_IP" != "<pending>" && -n "$EXTERNAL_IP" ]]; then
+      status_log $TYPE_INFO "\nExternal IP for LoadBalancer '$SERVICE_NAME': $EXTERNAL_IP"
+      CLUSTER_IP=$EXTERNAL_IP
+      return 0
+    fi
+    
+    # Add a dot to indicate waiting
+    echo -n "." >&2
+    sleep $INTERVAL
+    WAITED=$((WAITED + INTERVAL))
+  done
+
+  status_log $TYPE_ERROR "Error: External IP not assigned for service '$SERVICE_NAME' in namespace '$NAMESPACE' within $MAX_WAIT seconds."
+  exit 1
+
+
+}

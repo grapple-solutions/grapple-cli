@@ -1,0 +1,8 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: provider-helm-namespace-manager
+rules:
+  - apiGroups: ["*"]  # Matches all API groups
+    resources: ["*"]  # Matches all resources
+    verbs: ["*"]      # Allows all actions (create, get, list, delete, update, patch, etc.)
