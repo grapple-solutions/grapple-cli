@@ -93,8 +93,10 @@ EOF
 NAMESPACE="grpl-system"
 SECRET_NAME="grsf-config"
 
+
+
 # Try to get the secret and check if it exists
-SECRET_DATA=$(kubectl get secret $SECRET_NAME -n $NAMESPACE -o jsonpath="{.data.KUBEFIRST_CLOUD_PROVIDER}" 2>/dev/null)
+SECRET_DATA=$(kubectl get secret $SECRET_NAME -n $NAMESPACE -o jsonpath="{.data.PROVIDER_CLUSTER_TYPE}" 2>/dev/null)
 
 # Check if the secret or namespace doesn't exist
 if [[ $? -ne 0 ]]; then
@@ -102,19 +104,48 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-# Check if the KUBEFIRST_CLOUD_PROVIDER key exists in the secret
+# Check if the PROVIDER_CLUSTER_TYPE key exists in the secret
 if [[ -z "$SECRET_DATA" ]]; then
-    status_log $TYPE_ERROR "Error: KUBEFIRST_CLOUD_PROVIDER key not found in the '$SECRET_NAME' secret."
+    status_log $TYPE_ERROR "Error: PROVIDER_CLUSTER_TYPE key not found in the '$SECRET_NAME' secret."
     exit 1
 fi
 
-# Decode the KUBEFIRST_CLOUD_PROVIDER value
-KUBEFIRST_CLOUD_PROVIDER=$(echo "$SECRET_DATA" | base64 --decode 2>/dev/null)
+# Decode the PROVIDER_CLUSTER_TYPE value
+PROVIDER_CLUSTER_TYPE=$(echo "$SECRET_DATA" | base64 --decode 2>/dev/null)
 
 # Check if decoding was successful
 if [[ $? -ne 0 ]]; then
-    status_log $TYPE_ERROR "Error: Failed to decode the KUBEFIRST_CLOUD_PROVIDER value."
+    status_log $TYPE_ERROR "Error: Failed to decode the PROVIDER_CLUSTER_TYPE value."
     exit 1
+fi
+
+if [[ "$PROVIDER_CLUSTER_TYPE" != "k3d" ]]; then
+
+  # Try to get the secret and check if it exists
+  SECRET_DATA=$(kubectl get secret $SECRET_NAME -n $NAMESPACE -o jsonpath="{.data.KUBEFIRST_CLOUD_PROVIDER}" 2>/dev/null)
+
+  # Check if the secret or namespace doesn't exist
+  if [[ $? -ne 0 ]]; then
+      status_log $TYPE_ERROR "Error: Secret '$SECRET_NAME' or namespace '$NAMESPACE' does not exist."
+      exit 1
+  fi
+
+  # Check if the KUBEFIRST_CLOUD_PROVIDER key exists in the secret
+  if [[ -z "$SECRET_DATA" ]]; then
+      status_log $TYPE_ERROR "Error: KUBEFIRST_CLOUD_PROVIDER key not found in the '$SECRET_NAME' secret."
+      exit 1
+  fi
+
+  # Decode the KUBEFIRST_CLOUD_PROVIDER value
+  KUBEFIRST_CLOUD_PROVIDER=$(echo "$SECRET_DATA" | base64 --decode 2>/dev/null)
+
+  # Check if decoding was successful
+  if [[ $? -ne 0 ]]; then
+      status_log $TYPE_ERROR "Error: Failed to decode the KUBEFIRST_CLOUD_PROVIDER value."
+      exit 1
+  fi
+else
+  KUBEFIRST_CLOUD_PROVIDER="k3d"
 fi
 
 # Perform a case-insensitive comparison with "k3d"
