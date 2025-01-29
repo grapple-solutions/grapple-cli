@@ -358,26 +358,26 @@ if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
 fi
 
 
-
+get_cluster_external_ip "traefik"
 
 
 # Check if domain is not resolvable, create DNS route53 upsert job
 if ! host "$GRAPPLE_DNS" >/dev/null 2>&1; then
   status_log $TYPE_INFO "Domain not resolvable. Creating DNS upsert job."
 
-  # Extract domain from GRAPPLE_DNS
-  DOMAIN=$(echo "$GRAPPLE_DNS" | cut -d'.' -f2-)
-
   # Construct JSON payload
   JSON_PAYLOAD=$(cat <<EOF
 {
   "zoneId": "Z0454103342YLLKJIY5JV",
-  "zoneName": "*.$DOMAIN",
+  "zoneName": "*.$complete_domain",
   "recordType": "CNAME", 
-  "targetDNS": "$LOADBALANCER_EXTERNAL_IP"
+  "targetDNS": "$EXTERNAL_IP"
 }
 EOF
 )
+
+
+status_log $TYPE_INFO "Creating route53 upsert job with json payload: $JSON_PAYLOAD"
 
   # Make API call to Lambda function
   if ! curl -s -X POST -H "Content-Type: application/json" \
@@ -392,7 +392,7 @@ fi
 
 
 
-
+exit 0
 
 
 

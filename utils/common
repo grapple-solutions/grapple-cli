@@ -509,11 +509,11 @@ match_case_insensitive() {
 
 
 
-get_k3d_cluster_ip() {
+get_cluster_external_ip() {
 
 
   # Namespace where the LoadBalancer is located
-  NAMESPACE="kube-system"
+  NAMESPACE=$1
 
   # Service name to look for
   SERVICE_NAME="traefik"

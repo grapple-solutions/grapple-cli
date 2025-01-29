@@ -73,6 +73,7 @@ display_deployment_details(){
     status_log $TYPE_INFO "Resource Name: ${resource_name}-gruim can be accessed at ${namespace}-${resource_name}-gruim.${clusterdomain}"
   fi
 
+  exit 0
 }
 
 clone_github_repo_and_validate_yaml(){ 
