@@ -357,11 +357,46 @@ if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
     kubeblocks_installation >/dev/null 2>&1 &
 fi
 
-if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
-  status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
-  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
-  kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --env="CIVO_MASTER_IP=${CLUSTER_IP}" --restart=Never
+
+
+
+
+# Check if domain is not resolvable, create DNS route53 upsert job
+if ! host "$GRAPPLE_DNS" >/dev/null 2>&1; then
+  status_log $TYPE_INFO "Domain not resolvable. Creating DNS upsert job."
+
+  # Extract domain from GRAPPLE_DNS
+  DOMAIN=$(echo "$GRAPPLE_DNS" | cut -d'.' -f2-)
+
+  # Construct JSON payload
+  JSON_PAYLOAD=$(cat <<EOF
+{
+  "zoneId": "Z0454103342YLLKJIY5JV",
+  "zoneName": "*.$DOMAIN",
+  "recordType": "CNAME", 
+  "targetDNS": "$LOADBALANCER_EXTERNAL_IP"
+}
+EOF
+)
+
+  # Make API call to Lambda function
+  if ! curl -s -X POST -H "Content-Type: application/json" \
+       -d "$JSON_PAYLOAD" \
+       "https://p5yko4exwzv7yrlzurcctglkuy0urrkf.lambda-url.eu-central-1.on.aws/" > /dev/null; then
+    status_log $TYPE_ERROR "Failed to create route53 upsert job"
+  else
+    status_log $TYPE_INFO "Created route53 upsert job successfully"
+  fi
+
 fi
+
+
+
+
+
+
+
+
 
 echo 
 echo ----
@@ -378,10 +413,8 @@ if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; the
     CRD=ClusterIssuer && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
 fi
 
-# remove the DNS job again
-if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
-  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
-fi
+
+ 
 
 echo "wait for crossplane to be ready"
 if kubectl get deploy -n grpl-system crossplane >/dev/null 2>&1; then 
