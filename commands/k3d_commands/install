@@ -380,7 +380,7 @@ fi
 
 
 #----------- CLUSTER_IP Input -----------
-get_k3d_cluster_ip
+get_cluster_external_ip "kube-system"
 CLUSTER_IP=$EXTERNAL_IP
 export CLUSTER_IP=$CLUSTER_IP
 grpl k3d patch_dns

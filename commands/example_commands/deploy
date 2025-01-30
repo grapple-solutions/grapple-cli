@@ -230,10 +230,13 @@ if [[ "${GRAS_TEMPLATE}" == $DB_FILE ]]; then
   GITHUB_PATH="db-file/resource.yaml"
   clone_github_repo_and_validate_yaml
   deploy_from_github
+  exit 0
 elif [[ "${GRAS_TEMPLATE}" == $DB_CACHE_REDIS ]]; then
   GITHUB_PATH="db-cache-redis/resource.yaml"
   clone_github_repo_and_validate_yaml
+  kubeblocks_installation
   deploy_from_github
+  exit 0
 fi
 
 
