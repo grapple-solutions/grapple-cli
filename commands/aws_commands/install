@@ -219,7 +219,6 @@ else
   complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
 fi
 
-
 #----------- GRAPPLE_VERSION Input --------
 
 if [ "${GRAPPLE_VERSION}" == "latest" ] || [ "${GRAPPLE_VERSION}" == "" ]; then
@@ -312,6 +311,22 @@ if [ "$values_yaml_file_names" != "" ]; then
   values_yaml_file_names=$(echo "$values_yaml_file_names" | sed 's/"//g')
 fi
 
+get_cluster_external_ip "traefik"
+
+
+if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
+  complete_domain="*.$complete_domain"
+  status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
+  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 || true
+  kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=zaialpha/grpl-dns-aws \
+  --env="FNAME=grpl-route53-dns-manager" \
+  --env="HOSTED_ZONE_ID=Z0454103342YLLKJIY5JV" \
+  --env="GRAPPLE_DNS=${complete_domain}" \
+  --env="GRPL_TARGET=${EXTERNAL_IP}" \
+  --env="TYPE=CNAME" \
+  --restart=Never
+fi
+
 echo 
 echo ----
 
@@ -356,45 +371,6 @@ if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
     status_log $TYPE_INFO "Installing kubeblocks in background"
     kubeblocks_installation >/dev/null 2>&1 &
 fi
-
-
-get_cluster_external_ip "traefik"
-
-
-# Check if domain is not resolvable, create DNS route53 upsert job
-if ! host "$GRAPPLE_DNS" >/dev/null 2>&1; then
-  status_log $TYPE_INFO "Domain not resolvable. Creating DNS upsert job."
-
-  # Construct JSON payload
-  JSON_PAYLOAD=$(cat <<EOF
-{
-  "zoneId": "Z0454103342YLLKJIY5JV",
-  "zoneName": "*.$complete_domain",
-  "recordType": "CNAME", 
-  "targetDNS": "$EXTERNAL_IP"
-}
-EOF
-)
-
-
-status_log $TYPE_INFO "Creating route53 upsert job with json payload: $JSON_PAYLOAD"
-
-  # Make API call to Lambda function
-  if ! curl -s -X POST -H "Content-Type: application/json" \
-       -d "$JSON_PAYLOAD" \
-       "https://p5yko4exwzv7yrlzurcctglkuy0urrkf.lambda-url.eu-central-1.on.aws/" > /dev/null; then
-    status_log $TYPE_ERROR "Failed to create route53 upsert job"
-  else
-    status_log $TYPE_INFO "Created route53 upsert job successfully"
-  fi
-
-fi
-
-
-
-exit 0
-
-
 
 
 
