@@ -596,7 +596,6 @@ upsert_dns_record() {
   # update the dns, only if the domain is a valid FQDN
   if host $(extract_domain_name "$complete_domain") 2>&1 > /dev/null; then
 
-    code_verification_server_address="http://verification-server.$complete_domain/code"
     cd="*.$complete_domain"
     status_log $TYPE_INFO "Deploying grpl-dns-route53-upsert"
     kubectl delete po -n default grpl-dns-route53-upsert >/dev/null 2>&1 || true
@@ -606,7 +605,6 @@ upsert_dns_record() {
     --env="GRPL_TARGET=${external_ip}" \
     --env="TYPE=${type}" \
     --env="CODE=${code}" \
-    --env="CODE_VERIFICATION_SERVER_ADDRESS=${code_verification_server_address}" \
     --restart=Never
 
 
