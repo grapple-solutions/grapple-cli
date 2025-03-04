@@ -586,11 +586,12 @@ setup_code_verification_server() {
 
 upsert_dns_record() {
 
-  complete_domain=$1
-  code=$2
-  external_ip=$3
-  hosted_zone_id=$4
-  type=$5
+  api_url=$1
+  complete_domain=$2
+  code=$3
+  external_ip=$4
+  hosted_zone_id=$5
+  type=$6
 
 
   # update the dns, only if the domain is a valid FQDN
@@ -599,13 +600,16 @@ upsert_dns_record() {
     cd="*.$complete_domain"
     status_log $TYPE_INFO "Deploying grpl-dns-route53-upsert"
     kubectl delete po -n default grpl-dns-route53-upsert >/dev/null 2>&1 || true
-    kubectl run -n default grpl-dns-route53-upsert --image=zaialpha/grpl-route53-upsert:latest \
-    --env="HOSTED_ZONE_ID=${hosted_zone_id}" \
-    --env="GRAPPLE_DNS=${cd}" \
-    --env="GRPL_TARGET=${external_ip}" \
-    --env="TYPE=${type}" \
-    --env="CODE=${code}" \
-    --restart=Never
+    cmd="kubectl run -n default grpl-dns-route53-upsert --image=zaialpha/grpl-route53-upsert:latest \
+    --env=\"HOSTED_ZONE_ID=${hosted_zone_id}\" \
+    --env=\"GRAPPLE_DNS=${cd}\" \
+    --env=\"GRPL_TARGET=${external_ip}\" \
+    --env=\"TYPE=${type}\" \
+    --env=\"CODE=${code}\" \
+    --env=\"API_URL=${api_url}\" \
+    --restart=Never"
+    # status_log $TYPE_INFO "Running command: $cmd"
+    eval "$cmd"
 
 
     # Wait for pod to complete with timeout
