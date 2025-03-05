@@ -41,7 +41,6 @@ metadata:
   name: code-verification-server-ingress
   namespace: verification-server
 spec:
-  ingressClassName: traefik
   rules:
   - host: $CLUSTER_ADDRESS
     http:
@@ -54,14 +53,3 @@ spec:
             port:
               number: 80
 
-
-# ---
-# apiVersion: traefik.io/v1alpha1
-# kind: Middleware
-# metadata:
-#   name: code-rewrite
-#   namespace: verification-server
-# spec:
-#   stripPrefix:
-#     prefixes:
-#       - /code

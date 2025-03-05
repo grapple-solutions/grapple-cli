@@ -554,6 +554,7 @@ setup_code_verification_server() {
   
   code=$1
   complete_domain=$2
+  cloud=$3
 
   # Create verification-server namespace if it doesn't exist
   kubectl create namespace verification-server --dry-run=client -o yaml | kubectl apply -f -
@@ -570,6 +571,14 @@ setup_code_verification_server() {
   envsubst < /tmp/code-verification-server-deployment.yaml > /tmp/code-verification-server-deployment.yaml.tmp && \
   mv /tmp/code-verification-server-deployment.yaml.tmp /tmp/code-verification-server-deployment.yaml
 
+  # Add ingressClassName for AWS
+  if [ "$cloud" = "aws" ]; then
+    yq eval-all '
+      select(kind == "Ingress") |= 
+      .spec.ingressClassName = "traefik"
+    ' -i /tmp/code-verification-server-deployment.yaml
+  fi
+
   # Apply the deployment
   kubectl apply -f /tmp/code-verification-server-deployment.yaml
 
@@ -579,7 +588,6 @@ setup_code_verification_server() {
 
   # Set CODE env var in deployment
   kubectl set env deployment/code-verification-server -n verification-server CODE="${code}"
-
 
 }
 
