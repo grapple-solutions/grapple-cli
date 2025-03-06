@@ -48,6 +48,7 @@ check_previous_test_failed() {
 
 @test "Install Grapple" {
   check_previous_test_failed
+  CIVO_CLUSTER_ID=$(civo k8s show "$CLUSTERNAME" -o custom -f ID)
   grpl c i --params --KUBE_CONTEXT=$CLUSTERNAME --TARGET_PLATFORM=CIVO --CIVO_REGION=fra1 --CIVO_CLUSTER=$CLUSTERNAME --CIVO_EMAIL_ADDRESS=info@grapple-solutions.com --AUTO_CONFIRM=true
   echo "Waiting for Grapple to be ready"
   run sleep 10
