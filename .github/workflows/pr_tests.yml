@@ -20,6 +20,7 @@ jobs:
         run: |
           echo "Setting up code for CLI..."
           sudo cp -r $GITHUB_WORKSPACE /usr/local/bin/grpl-cli
+          sudo chmod -R 777 /usr/local/bin/grpl-cli
           export PATH="/usr/local/bin/grpl-cli:$PATH"
           echo "Testing grpl CLI..."
           grpl
@@ -58,4 +59,8 @@ jobs:
           echo 'export PATH="/usr/local/bin/grpl-cli:$PATH"' >> ~/.bashrc
           export PATH="/usr/local/bin/grpl-cli:$PATH"
           source ~/.bashrc
+
+          mkdir -p /usr/local/bin/grpl-cli/logs
+          sudo chmod -R 777 /usr/local/bin/grpl-cli/logs
+
           bats test
