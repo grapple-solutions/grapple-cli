@@ -39,12 +39,24 @@ check_previous_test_failed() {
 
 @test "Create the cluster" {
   check_previous_test_failed
-  run civo k8s create "$CLUSTERNAME" --size=g4c.kube.small --nodes=2 --applications=traefik2-nodeport,civo-cluster-autoscaler,metrics-server,grapple-solution-framework --wait --save --switch -y
+  run civo k8s create "$CLUSTERNAME" --size=g4c.kube.small --nodes=2 --applications=traefik2-nodeport,civo-cluster-autoscaler,metrics-server --wait --save --switch -y
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
   fi
   [ "$status" -eq 0 ] # Ensure cluster creation succeeds
 }
+
+@test "Install Grapple" {
+  check_previous_test_failed
+  grpl c i --params --KUBE_CONTEXT=$CLUSTERNAME --TARGET_PLATFORM=CIVO --CIVO_REGION=fra1 --CIVO_CLUSTER=$CLUSTERNAME --CIVO_EMAIL_ADDRESS=info@grapple-solutions.com --AUTO_CONFIRM=true
+  echo "Waiting for Grapple to be ready"
+  run sleep 10
+  if [ "$status" -ne 0 ]; then
+    echo "true" > /tmp/failed_flag # Set FAILED to true
+  fi
+  [ "$status" -eq 0 ]
+}
+
 
 # Test: Wait for Grapple to be ready
 @test "Wait for Grapple to be ready" {
