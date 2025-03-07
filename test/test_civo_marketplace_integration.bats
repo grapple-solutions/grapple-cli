@@ -99,16 +99,13 @@ check_previous_test_failed() {
   run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=900s
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
-    return 1
   fi
-  
+  [ "$status" -eq 0 ]
+
   run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=900s
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
-    return 1
   fi
-
-  sleep 10
   [ "$status" -eq 0 ]
 }
 
