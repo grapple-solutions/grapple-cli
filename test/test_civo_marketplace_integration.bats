@@ -96,12 +96,19 @@ check_previous_test_failed() {
 # Test: Wait for example readiness
 @test "Wait for example readiness" {
   check_previous_test_failed
-  kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=900s
-  kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=900s
-  sleep 10
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=900s
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
+    return 1
   fi
+  
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=900s
+  if [ "$status" -ne 0 ]; then
+    echo "true" > /tmp/failed_flag # Set FAILED to true
+    return 1
+  fi
+
+  sleep 10
   [ "$status" -eq 0 ]
 }
 
