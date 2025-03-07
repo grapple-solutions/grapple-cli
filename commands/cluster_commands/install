@@ -775,15 +775,6 @@ if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
     kubeblocks_installation >/dev/null 2>&1 &
 fi
 
-if (match_case_insensitive "${TARGET_PLATFORM}" "$CIVO" || match_case_insensitive "${TARGET_PLATFORM}" "$Kubernetes") 2>&1 > /dev/null; then
-
-  CODE="$(openssl rand -hex 32)"
-  setup_code_verification_server $CODE $complete_domain $TARGET_PLATFORM
-  API_URL="https://0anfj8jy8j.execute-api.eu-central-1.amazonaws.com/prod/grpl-route53-dns-manager-v2"
-  upsert_dns_record $API_URL $complete_domain $CODE $CLUSTER_IP "Z008820536Y8KC83QNPB2" "A"
-
-fi
-
 
 echo 
 echo ----
@@ -942,4 +933,14 @@ if [ "${WAIT}" == "true" ]; then
     kubectl wait -n grpl-system configuration.pkg.crossplane.io grpl --for condition=Healthy=True --timeout=300s
 
   status_log $TYPE_SUCCESS "grpl is ready"
+fi
+
+
+if (match_case_insensitive "${TARGET_PLATFORM}" "$CIVO" || match_case_insensitive "${TARGET_PLATFORM}" "$Kubernetes") 2>&1 > /dev/null; then
+
+  CODE="$(openssl rand -hex 32)"
+  setup_code_verification_server $CODE $complete_domain $TARGET_PLATFORM
+  API_URL="https://0anfj8jy8j.execute-api.eu-central-1.amazonaws.com/prod/grpl-route53-dns-manager-v2"
+  upsert_dns_record $API_URL $complete_domain $CODE $CLUSTER_IP "Z008820536Y8KC83QNPB2" "A"
+
 fi
