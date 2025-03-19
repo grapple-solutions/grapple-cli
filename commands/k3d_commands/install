@@ -527,4 +527,4 @@ kubectl apply -f $GRPL_WORKDIR/files/all-resource-clusterrole.yaml
 kubectl apply -f $GRPL_WORKDIR/files/all-resource-clusterrolebinding.yaml
 
 
-/home/zahid/projects/grapple-cli/grpl c p
+grpl c p
