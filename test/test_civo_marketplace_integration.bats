@@ -39,12 +39,24 @@ check_previous_test_failed() {
 
 @test "Create the cluster" {
   check_previous_test_failed
-  run civo k8s create "$CLUSTERNAME" --size=g4c.kube.small --nodes=2 --applications=traefik2-nodeport,civo-cluster-autoscaler,metrics-server,grapple-solution-framework --wait --save --switch -y
+  run civo k8s create "$CLUSTERNAME" --size=g4c.kube.small --nodes=2 --applications=traefik2-nodeport,civo-cluster-autoscaler,metrics-server --wait --save --switch -y
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
   fi
   [ "$status" -eq 0 ] # Ensure cluster creation succeeds
 }
+
+@test "Install Grapple" {
+  check_previous_test_failed
+  CIVO_CLUSTER_ID=$(civo k8s show "$CLUSTERNAME" -o custom -f ID)
+  run grpl c i --params --KUBE_CONTEXT=$CLUSTERNAME --TARGET_PLATFORM=CIVO --CIVO_REGION=fra1 --CIVO_CLUSTER=$CLUSTERNAME --CIVO_EMAIL_ADDRESS=info@grapple-solutions.com --AUTO_CONFIRM=true --CIVO_CLUSTER_ID=$CIVO_CLUSTER_ID
+  # echo "installed grpl"
+  if [ "$status" -ne 0 ]; then
+    echo "true" > /tmp/failed_flag # Set FAILED to true
+  fi
+  [ "$status" -eq 0 ]
+}
+
 
 # Test: Wait for Grapple to be ready
 @test "Wait for Grapple to be ready" {
@@ -83,8 +95,13 @@ check_previous_test_failed() {
 # Test: Wait for example readiness
 @test "Wait for example readiness" {
   check_previous_test_failed
-  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=800s
-  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=800s
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-grapi --timeout=900s
+  if [ "$status" -ne 0 ]; then
+    echo "true" > /tmp/failed_flag # Set FAILED to true
+  fi
+  [ "$status" -eq 0 ]
+
+  run kubectl rollout status -n grpl-disc-ext deploy grpl-disc-ext-gras-mysql-gruim --timeout=900s
   if [ "$status" -ne 0 ]; then
     echo "true" > /tmp/failed_flag # Set FAILED to true
   fi

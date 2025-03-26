@@ -67,10 +67,10 @@ kubeblocks_installation() {
 
 #----------- CLUSTER_NAME input --------
 
+
 check_if_param_avaiable_in_non_interactive_mode "CLUSTER_NAME" "${CLUSTER_NAME}" "${help_menu_cmd}"
 # if [ "${CLUSTER_NAME}" != "" ] && [ $TTY == "enabled" ]; then 
-#   # TODO add validation
-#   #is_correct_CLUSTER_NAME_provided $CLUSTER_NAME 
+#   is_correct_aws_cluster_provided $CLUSTER_NAME 
 # fi
 CLUSTER_NAME=$(if [ "${CLUSTER_NAME}" != "" ]; then echo "${CLUSTER_NAME}"; else (gum spin --title "fetching aws eks clusters" -- bash -c 'eksctl get cluster | awk "NR>1 {print \$1}" > /dev/null' && eksctl get cluster | awk "NR>1 {print \$1}" | gum choose) || echo ""; fi)
 echo "selected aws cluster: ${CLUSTER_NAME}"
@@ -169,6 +169,8 @@ if ! eval "$(getGumSpinnerOrLogger 'Updating Helm repositories') helm repo updat
   exit 1
 fi
 
+
+
 # Install EFS CSI Driver if not exists
 if ! helm list -n kube-system | grep aws-efs-csi-driver >/dev/null 2>&1; then
   status_log $TYPE_INFO "Installing EFS CSI Driver"
@@ -218,7 +220,6 @@ if host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null;then
 else 
   complete_domain=${GRAPPLE_DNS}${GRAPPLE_DOMAIN}
 fi
-
 
 #----------- GRAPPLE_VERSION Input --------
 
@@ -291,8 +292,6 @@ cat /tmp/values-override.yaml
 if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
 
   status_log $TYPE_DEFAULT "Going to deploy grpl on ${TARGET_PLATFORM} with following configurations"  
-
-
   status_log $TYPE_DEFAULT "CLUSTER_NAME: ${CLUSTER_NAME}"
   status_log $TYPE_DEFAULT "GRAPPLE_VERSION: ${GRAPPLE_VERSION}"
   status_log $TYPE_DEFAULT "GRAPPLE_DNS: ${complete_domain}"
@@ -304,6 +303,7 @@ if [ "${AUTO_CONFIRM}" != "true" ]  && [ "$TTY" == "enabled" ]; then
   status_log $TYPE_DEFAULT "PROVIDER_CLUSTER_NAME: ${PROVIDER_CLUSTER_NAME}"
 
   gum confirm "Proceed with deployment using the values above?" || (status_log $TYPE_ERROR "Failed to install grpl" && exit 1)
+
 fi
 
 # Define helm_deploy function 
@@ -311,6 +311,14 @@ if [ "$values_yaml_file_names" != "" ]; then
   values_yaml_file_names=$(echo "$values_yaml_file_names" | awk -v grpl_workdir="$GRPL_WORKDIR" '{gsub("values-templates", "\"" grpl_workdir "/values-templates\"")}1')
   values_yaml_file_names=$(echo "$values_yaml_file_names" | sed 's/"//g')
 fi
+
+get_cluster_external_ip "traefik"
+
+CODE="$(openssl rand -hex 32)"
+setup_code_verification_server $CODE $complete_domain "aws"
+API_URL="https://4t2skptq3g.execute-api.eu-central-1.amazonaws.com/dev/grpl-route53-dns-manager-v2"
+upsert_dns_record $API_URL $complete_domain $CODE $EXTERNAL_IP "Z0454103342YLLKJIY5JV" "CNAME"
+
 
 echo 
 echo ----
@@ -357,11 +365,7 @@ if [ "${INSTALL_KUBEBLOCKS}" == "true" ]; then
     kubeblocks_installation >/dev/null 2>&1 &
 fi
 
-if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
-  status_log $TYPE_INFO "Deploying grpl-dns-aws-route53-upsert"
-  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} >/dev/null 2>&1 | true
-  kubectl run -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} --image=grpl/dns-aws-route53-upsert --env="GRAPPLE_DNS=${complete_domain}" --env="CIVO_MASTER_IP=${CLUSTER_IP}" --restart=Never
-fi
+
 
 echo 
 echo ----
@@ -378,10 +382,8 @@ if kubectl get deploy -n grpl-system grsf-init-cert-manager >/dev/null 2>&1; the
     CRD=ClusterIssuer && echo "wait for $CRD to be deployed:" && until kubectl explain $CRD >/dev/null 2>&1; do echo -n .; sleep 1; done && echo "$CRD deployed"
 fi
 
-# remove the DNS job again
-if ! host $(extract_domain_name "$GRAPPLE_DNS") 2>&1 > /dev/null; then
-  kubectl delete po -n default grpl-dns-aws-route53-upsert-${GRAPPLE_DNS} 
-fi
+
+ 
 
 echo "wait for crossplane to be ready"
 if kubectl get deploy -n grpl-system crossplane >/dev/null 2>&1; then 

@@ -380,7 +380,7 @@ fi
 
 
 #----------- CLUSTER_IP Input -----------
-get_k3d_cluster_ip
+get_cluster_external_ip "kube-system"
 CLUSTER_IP=$EXTERNAL_IP
 export CLUSTER_IP=$CLUSTER_IP
 grpl k3d patch_dns
@@ -527,4 +527,4 @@ kubectl apply -f $GRPL_WORKDIR/files/all-resource-clusterrole.yaml
 kubectl apply -f $GRPL_WORKDIR/files/all-resource-clusterrolebinding.yaml
 
 
-/home/zahid/projects/grapple-cli/grpl c p
+grpl c p
